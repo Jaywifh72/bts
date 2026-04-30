@@ -3,6 +3,7 @@ import { db as defaultDb, sql as defaultSql } from '../db.ts';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { seedManufacturers } from './data/manufacturers.ts';
 import { seedRoles } from './data/roles.ts';
+import { seedStudios } from './data/studios.ts';
 
 export type SeedDb = PostgresJsDatabase<Record<string, never>>;
 export type Step = { name: string; run: (db: SeedDb) => Promise<void> };
@@ -16,6 +17,7 @@ export type Step = { name: string; run: (db: SeedDb) => Promise<void> };
 export const steps: Step[] = [
   { name: 'manufacturers', run: async (db) => { await seedManufacturers(db); } },
   { name: 'roles', run: async (db) => { await seedRoles(db); } },
+  { name: 'studios', run: async (db) => { await seedStudios(db); } },
 ];
 
 export async function runSeed(db: SeedDb = defaultDb): Promise<void> {
