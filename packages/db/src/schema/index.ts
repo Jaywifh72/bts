@@ -1,3 +1,4 @@
 export * from './enums.js';
 export * from './people.js';
 export * from './roles.js';
+export * from './equipment.js';
