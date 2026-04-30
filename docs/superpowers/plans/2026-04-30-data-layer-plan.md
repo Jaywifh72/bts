@@ -384,13 +384,16 @@ git commit -m "feat: postgres 16 dev + test databases via docker compose"
   "extends": "../../tsconfig.base.json",
   "compilerOptions": {
     "outDir": "./dist",
-    "rootDir": "./src",
-    "types": ["node"]
+    "noEmit": true,
+    "types": ["node"],
+    "allowImportingTsExtensions": true
   },
-  "include": ["src/**/*", "drizzle.config.ts", "vitest.config.ts"],
+  "include": ["src/**/*", "drizzle.config.ts", "vitest.config.ts", "scripts/**/*"],
   "exclude": ["node_modules", "dist"]
 }
 ```
+
+**Note on `allowImportingTsExtensions: true`:** drizzle-kit v0.30 loads schema files via a CJS `require()` chain (esbuild-register + pirates). Inter-schema imports written as `from './enums.js'` fail because Node's CJS resolver doesn't fall back from `.js` to `.ts`, and the literal `.js` file doesn't exist. The fix: use **`.ts` extensions in inter-schema imports** (e.g. `import { foo } from './enums.ts'`). drizzle-kit's pirates hook accepts `.ts`, and `tsx`/Vitest accept `.ts` extensions at runtime. Re-exports in `src/schema/index.ts` for *consumer* code should still use `.js` (standard NodeNext convention). `noEmit: true` is required because TypeScript only allows `.ts` import extensions when not emitting.
 
 - [ ] **Step 3: Create `packages/db/drizzle.config.ts`**
 
@@ -734,7 +737,7 @@ git commit -m "feat(db): add people table"
 ```ts
 import { pgTable, smallserial, text, timestamp, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
-import { roleCategoryEnum } from './enums.js';
+import { roleCategoryEnum } from './enums.ts';
 
 export const roles = pgTable('roles', {
   id: smallserial('id').primaryKey(),
@@ -783,7 +786,7 @@ import {
   equipmentManufacturerKindEnum,
   equipmentSeriesCategoryEnum,
   equipmentItemStatusEnum,
-} from './enums.js';
+} from './enums.ts';
 
 export const equipmentManufacturers = pgTable('equipment_manufacturers', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
@@ -918,7 +921,7 @@ import {
   productionTypeEnum,
   studioKindEnum,
   productionStudioRoleEnum,
-} from './enums.js';
+} from './enums.ts';
 
 export const studios = pgTable('studios', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
@@ -1026,9 +1029,9 @@ git commit -m "feat(db): add productions, studios, formats, production_studios"
 import {
   pgTable, bigserial, bigint, integer, smallint, text, timestamp, date, unique, index,
 } from 'drizzle-orm/pg-core';
-import { productions } from './productions.js';
-import { people } from './people.js';
-import { roles } from './roles.js';
+import { productions } from './productions.ts';
+import { people } from './people.ts';
+import { roles } from './roles.ts';
 
 export const crewAssignments = pgTable('crew_assignments', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
@@ -1088,10 +1091,10 @@ import { sql } from 'drizzle-orm';
 import {
   sceneInteriorExteriorEnum,
   sceneTimeOfDayEnum,
-} from './enums.js';
-import { productions } from './productions.js';
-import { equipmentSeries, equipmentItems } from './equipment.js';
-import { crewAssignments } from './crew.js';
+} from './enums.ts';
+import { productions } from './productions.ts';
+import { equipmentSeries, equipmentItems } from './equipment.ts';
+import { crewAssignments } from './crew.ts';
 
 export const scenes = pgTable('scenes', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
@@ -1244,10 +1247,10 @@ import {
   pgTable, bigserial, bigint, text, timestamp, date, primaryKey, index, uniqueIndex,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
-import { sourceKindEnum, sourceConfidenceEnum } from './enums.js';
-import { productions } from './productions.js';
-import { scenes, equipmentUsage } from './scenes.js';
-import { crewAssignments } from './crew.js';
+import { sourceKindEnum, sourceConfidenceEnum } from './enums.ts';
+import { productions } from './productions.ts';
+import { scenes, equipmentUsage } from './scenes.ts';
+import { crewAssignments } from './crew.ts';
 
 export const sources = pgTable('sources', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
