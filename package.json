@@ -1,0 +1,12 @@
+{
+  "name": "bts",
+  "version": "0.0.0",
+  "private": true,
+  "packageManager": "pnpm@9.0.0",
+  "scripts": {
+    "db:test": "pnpm --filter @bts/db test",
+    "db:migrate": "pnpm --filter @bts/db migrate",
+    "db:seed": "pnpm --filter @bts/db seed",
+    "db:studio": "pnpm --filter @bts/db studio"
+  }
+}
