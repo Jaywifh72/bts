@@ -7,6 +7,7 @@ import { seedStudios } from './data/studios.ts';
 import { seedSeries } from './data/series.ts';
 import { seedItems } from './data/items.ts';
 import { seedPeople } from './data/people.ts';
+import { seedSources } from './data/sources.ts';
 
 export type SeedDb = PostgresJsDatabase<Record<string, never>>;
 export type Step = { name: string; run: (db: SeedDb) => Promise<void> };
@@ -24,6 +25,7 @@ export const steps: Step[] = [
   { name: 'series', run: async (db) => { await seedSeries(db); } },
   { name: 'items', run: async (db) => { await seedItems(db); } },
   { name: 'people', run: async (db) => { await seedPeople(db); } },
+  { name: 'sources', run: async (db) => { await seedSources(db); } },
 ];
 
 export async function runSeed(db: SeedDb = defaultDb): Promise<void> {
