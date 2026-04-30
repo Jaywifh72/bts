@@ -1,6 +1,7 @@
 import 'dotenv/config';
 import { db as defaultDb, sql as defaultSql } from '../db.ts';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+import { seedManufacturers } from './data/manufacturers.ts';
 
 export type SeedDb = PostgresJsDatabase<Record<string, never>>;
 export type Step = { name: string; run: (db: SeedDb) => Promise<void> };
@@ -12,7 +13,7 @@ export type Step = { name: string; run: (db: SeedDb) => Promise<void> };
 //   9. scenes         10. crew_assignments
 //  11. equipment_usage 12. attributions (all four _sources)
 export const steps: Step[] = [
-  // populated in later tasks
+  { name: 'manufacturers', run: async (db) => { await seedManufacturers(db); } },
 ];
 
 export async function runSeed(db: SeedDb = defaultDb): Promise<void> {
