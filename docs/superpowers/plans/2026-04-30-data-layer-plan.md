@@ -403,7 +403,7 @@ if (!process.env.DATABASE_URL) {
 }
 
 export default defineConfig({
-  schema: './src/schema/index.ts',
+  schema: './src/schema/!(index).ts',
   out: './migrations',
   dialect: 'postgresql',
   dbCredentials: {
@@ -413,6 +413,8 @@ export default defineConfig({
   verbose: true,
 });
 ```
+
+**Note on `schema` path:** drizzle-kit v0.30 uses a CJS `require()` loader that does NOT understand NodeNext ESM `.js` extensions in TypeScript re-exports. If `schema` points at `index.ts` and that file does `export * from './enums.js'`, drizzle-kit tries to resolve a literal `enums.js` file and fails. The glob `'./src/schema/!(index).ts'` matches every schema file *except* the index, sidestepping the issue while letting runtime code use the standard NodeNext re-export pattern.
 
 - [ ] **Step 4: Create `packages/db/vitest.config.ts`**
 
