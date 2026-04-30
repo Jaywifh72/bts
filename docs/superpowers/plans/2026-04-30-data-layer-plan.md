@@ -1685,7 +1685,11 @@ export async function runSeed(db: SeedDb = defaultDb): Promise<void> {
 }
 
 // CLI entry: only when this file is invoked directly via `tsx src/seed/run.ts`.
-if (import.meta.url === `file://${process.argv[1]}`) {
+// Windows note: process.argv[1] uses backslashes (`C:\...\run.ts`) while
+// import.meta.url uses forward slashes with a triple slash (`file:///C:/.../run.ts`).
+// Normalize both sides so the guard fires on Windows AND POSIX.
+const _argv1AsUrl = `file:///${process.argv[1].replace(/\\/g, '/').replace(/^\//, '')}`;
+if (import.meta.url === _argv1AsUrl || import.meta.url === `file://${process.argv[1]}`) {
   runSeed(defaultDb)
     .then(() => defaultSql.end())
     .catch((e) => { console.error('seed failed:', e); process.exit(1); });
