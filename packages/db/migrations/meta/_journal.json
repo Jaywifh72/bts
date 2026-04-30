@@ -50,6 +50,13 @@
       "when": 1777584363765,
       "tag": "0006_unusual_kat_farrell",
       "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1777584649788,
+      "tag": "0007_tired_abomination",
+      "breakpoints": true
     }
   ]
 }
