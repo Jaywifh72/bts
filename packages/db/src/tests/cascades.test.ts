@@ -1,0 +1,225 @@
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { migrate } from 'drizzle-orm/postgres-js/migrator';
+import { eq } from 'drizzle-orm';
+import { createTestDb, resetTestSchema } from './helpers.ts';
+import {
+  productions, scenes, productionFormats, productionStudios, productionSources,
+  studios, people, roles, crewAssignments, crewAssignmentSources,
+  equipmentManufacturers, equipmentSeries, equipmentItems,
+  equipmentUsage, equipmentUsageSources,
+  sources, sceneSources,
+} from '../schema/index.ts';
+
+const { sql, db } = createTestDb();
+
+beforeAll(async () => {
+  await resetTestSchema(sql);
+  await migrate(db, { migrationsFolder: './migrations' });
+}, 60_000);
+
+afterAll(async () => { await sql.end(); });
+
+// Each test uses unique slugs — no per-test schema reset needed.
+
+describe('cascade matrix — direct edges', () => {
+  it('production deletion CASCADEs to scenes', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-p-1', type: 'feature', title: 'Test' }).returning();
+    await db.insert(scenes).values({ productionId: p.id, slug: 's1', title: 'S' });
+    await db.delete(productions).where(eq(productions.id, p.id));
+    const orphans = await db.select().from(scenes).where(eq(scenes.productionId, p.id));
+    expect(orphans.length).toBe(0);
+  });
+
+  it('production deletion CASCADEs to production_formats', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-p-2', type: 'feature', title: 'Test' }).returning();
+    await db.insert(productionFormats).values({
+      productionId: p.id, aspectRatio: '2.39:1', acquisitionFormat: 'ARRIRAW', isPrimary: true,
+    });
+    await db.delete(productions).where(eq(productions.id, p.id));
+    const orphans = await db.select().from(productionFormats).where(eq(productionFormats.productionId, p.id));
+    expect(orphans.length).toBe(0);
+  });
+
+  it('production deletion CASCADEs to production_studios', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-p-3', type: 'feature', title: 'Test' }).returning();
+    const [s] = await db.insert(studios).values({ slug: 'casc-s-3', name: 'TestStudio', kind: 'studio' }).returning();
+    await db.insert(productionStudios).values({ productionId: p.id, studioId: s.id, role: 'distributor' });
+    await db.delete(productions).where(eq(productions.id, p.id));
+    const orphans = await db.select().from(productionStudios).where(eq(productionStudios.productionId, p.id));
+    expect(orphans.length).toBe(0);
+    // studio itself should remain
+    await db.delete(studios).where(eq(studios.id, s.id));
+  });
+
+  it('production deletion CASCADEs to production_sources', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-p-4', type: 'feature', title: 'Test' }).returning();
+    const [src] = await db.insert(sources).values({ slug: 'casc-src-4', kind: 'wiki', title: 'S' }).returning();
+    await db.insert(productionSources).values({ productionId: p.id, sourceId: src.id, confidence: 'primary' });
+    await db.delete(productions).where(eq(productions.id, p.id));
+    const orphans = await db.select().from(productionSources).where(eq(productionSources.productionId, p.id));
+    expect(orphans.length).toBe(0);
+    await db.delete(sources).where(eq(sources.id, src.id));
+  });
+
+  it('scene deletion CASCADEs to equipment_usage', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-p-5', type: 'feature', title: 'Test' }).returning();
+    const [sc] = await db.insert(scenes).values({ productionId: p.id, slug: 's1', title: 'S' }).returning();
+    const [m] = await db.insert(equipmentManufacturers).values({ slug: 'casc-m-5', name: 'M', kind: 'manufacturer' }).returning();
+    const [es] = await db.insert(equipmentSeries).values({ slug: 'casc-es-5', name: 'ES', category: 'camera_body', manufacturerId: m.id }).returning();
+    await db.insert(equipmentUsage).values({ sceneId: sc.id, equipmentSeriesId: es.id });
+    await db.delete(scenes).where(eq(scenes.id, sc.id));
+    const orphans = await db.select().from(equipmentUsage).where(eq(equipmentUsage.sceneId, sc.id));
+    expect(orphans.length).toBe(0);
+    await db.delete(productions).where(eq(productions.id, p.id));
+    await db.delete(equipmentSeries).where(eq(equipmentSeries.id, es.id));
+    await db.delete(equipmentManufacturers).where(eq(equipmentManufacturers.id, m.id));
+  });
+
+  it('scene deletion CASCADEs to scene_sources', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-p-6', type: 'feature', title: 'Test' }).returning();
+    const [sc] = await db.insert(scenes).values({ productionId: p.id, slug: 's1', title: 'S' }).returning();
+    const [src] = await db.insert(sources).values({ slug: 'casc-src-6', kind: 'wiki', title: 'S' }).returning();
+    await db.insert(sceneSources).values({ sceneId: sc.id, sourceId: src.id, confidence: 'primary' });
+    await db.delete(scenes).where(eq(scenes.id, sc.id));
+    const orphans = await db.select().from(sceneSources).where(eq(sceneSources.sceneId, sc.id));
+    expect(orphans.length).toBe(0);
+    await db.delete(productions).where(eq(productions.id, p.id));
+    await db.delete(sources).where(eq(sources.id, src.id));
+  });
+
+  it('crew_assignment deletion CASCADEs to crew_assignment_sources', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-p-7', type: 'feature', title: 'Test' }).returning();
+    const [person] = await db.insert(people).values({ slug: 'casc-pp-7', displayName: 'P' }).returning();
+    const [role] = await db.insert(roles).values({ slug: 'casc-r-7', name: 'R', category: 'production' }).returning();
+    const [src] = await db.insert(sources).values({ slug: 'casc-src-7', kind: 'wiki', title: 'S' }).returning();
+    const [ca] = await db.insert(crewAssignments).values({ productionId: p.id, personId: person.id, roleId: role.id }).returning();
+    await db.insert(crewAssignmentSources).values({ crewAssignmentId: ca.id, sourceId: src.id, confidence: 'primary' });
+    await db.delete(crewAssignments).where(eq(crewAssignments.id, ca.id));
+    const orphans = await db.select().from(crewAssignmentSources).where(eq(crewAssignmentSources.crewAssignmentId, ca.id));
+    expect(orphans.length).toBe(0);
+    await db.delete(productions).where(eq(productions.id, p.id));
+    await db.delete(people).where(eq(people.id, person.id));
+    await db.delete(roles).where(eq(roles.id, role.id));
+    await db.delete(sources).where(eq(sources.id, src.id));
+  });
+
+  it('equipment_usage deletion CASCADEs to equipment_usage_sources', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-p-8', type: 'feature', title: 'Test' }).returning();
+    const [sc] = await db.insert(scenes).values({ productionId: p.id, slug: 's1', title: 'S' }).returning();
+    const [m] = await db.insert(equipmentManufacturers).values({ slug: 'casc-m-8', name: 'M', kind: 'manufacturer' }).returning();
+    const [es] = await db.insert(equipmentSeries).values({ slug: 'casc-es-8', name: 'ES', category: 'camera_body', manufacturerId: m.id }).returning();
+    const [eu] = await db.insert(equipmentUsage).values({ sceneId: sc.id, equipmentSeriesId: es.id }).returning();
+    const [src] = await db.insert(sources).values({ slug: 'casc-src-8', kind: 'wiki', title: 'S' }).returning();
+    await db.insert(equipmentUsageSources).values({ equipmentUsageId: eu.id, sourceId: src.id, confidence: 'primary' });
+    await db.delete(equipmentUsage).where(eq(equipmentUsage.id, eu.id));
+    const orphans = await db.select().from(equipmentUsageSources).where(eq(equipmentUsageSources.equipmentUsageId, eu.id));
+    expect(orphans.length).toBe(0);
+    await db.delete(productions).where(eq(productions.id, p.id));
+    await db.delete(equipmentSeries).where(eq(equipmentSeries.id, es.id));
+    await db.delete(equipmentManufacturers).where(eq(equipmentManufacturers.id, m.id));
+    await db.delete(sources).where(eq(sources.id, src.id));
+  });
+});
+
+describe('cascade matrix — RESTRICT edges', () => {
+  it('person deletion is RESTRICTED when person has crew_assignments', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-r-p-1', type: 'feature', title: 'T' }).returning();
+    const [person] = await db.insert(people).values({ slug: 'casc-r-pp-1', displayName: 'P' }).returning();
+    const [role] = await db.insert(roles).values({ slug: 'casc-r-rr-1', name: 'R', category: 'production' }).returning();
+    await db.insert(crewAssignments).values({ productionId: p.id, personId: person.id, roleId: role.id });
+    await expect(db.delete(people).where(eq(people.id, person.id))).rejects.toThrow(/foreign key/i);
+    // Cleanup: delete production first (cascades crew_assignments), then person/role
+    await db.delete(productions).where(eq(productions.id, p.id));
+    await db.delete(people).where(eq(people.id, person.id));
+    await db.delete(roles).where(eq(roles.id, role.id));
+  });
+
+  it('equipment_item deletion is RESTRICTED when item has equipment_usage', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-r-p-2', type: 'feature', title: 'T' }).returning();
+    const [sc] = await db.insert(scenes).values({ productionId: p.id, slug: 's', title: 'S' }).returning();
+    const [m] = await db.insert(equipmentManufacturers).values({ slug: 'casc-r-m-2', name: 'M', kind: 'manufacturer' }).returning();
+    const [es] = await db.insert(equipmentSeries).values({ slug: 'casc-r-es-2', name: 'ES', category: 'camera_body', manufacturerId: m.id }).returning();
+    const [it] = await db.insert(equipmentItems).values({ slug: 'casc-r-it-2', name: 'IT', seriesId: es.id, status: 'active' }).returning();
+    await db.insert(equipmentUsage).values({ sceneId: sc.id, equipmentSeriesId: es.id, equipmentItemId: it.id });
+    await expect(db.delete(equipmentItems).where(eq(equipmentItems.id, it.id))).rejects.toThrow(/foreign key/i);
+    // Cleanup: production cascade wipes scenes+equipment_usage, then items/series/manufacturer
+    await db.delete(productions).where(eq(productions.id, p.id));
+    await db.delete(equipmentItems).where(eq(equipmentItems.id, it.id));
+    await db.delete(equipmentSeries).where(eq(equipmentSeries.id, es.id));
+    await db.delete(equipmentManufacturers).where(eq(equipmentManufacturers.id, m.id));
+  });
+
+  it('equipment_series deletion is RESTRICTED when it has items', async () => {
+    const [m] = await db.insert(equipmentManufacturers).values({ slug: 'casc-r-m-3', name: 'M', kind: 'manufacturer' }).returning();
+    const [es] = await db.insert(equipmentSeries).values({ slug: 'casc-r-es-3', name: 'ES', category: 'camera_body', manufacturerId: m.id }).returning();
+    await db.insert(equipmentItems).values({ slug: 'casc-r-it-3', name: 'IT', seriesId: es.id, status: 'active' });
+    await expect(db.delete(equipmentSeries).where(eq(equipmentSeries.id, es.id))).rejects.toThrow(/foreign key/i);
+    await db.delete(equipmentItems).where(eq(equipmentItems.seriesId, es.id));
+    await db.delete(equipmentSeries).where(eq(equipmentSeries.id, es.id));
+    await db.delete(equipmentManufacturers).where(eq(equipmentManufacturers.id, m.id));
+  });
+
+  it('equipment_manufacturer deletion is RESTRICTED when it has series', async () => {
+    const [m] = await db.insert(equipmentManufacturers).values({ slug: 'casc-r-m-4', name: 'M', kind: 'manufacturer' }).returning();
+    await db.insert(equipmentSeries).values({ slug: 'casc-r-es-4', name: 'ES', category: 'camera_body', manufacturerId: m.id });
+    await expect(db.delete(equipmentManufacturers).where(eq(equipmentManufacturers.id, m.id))).rejects.toThrow(/foreign key/i);
+    await db.delete(equipmentSeries).where(eq(equipmentSeries.manufacturerId, m.id));
+    await db.delete(equipmentManufacturers).where(eq(equipmentManufacturers.id, m.id));
+  });
+
+  it('studio deletion is RESTRICTED when it has production_studios links', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-r-p-5', type: 'feature', title: 'T' }).returning();
+    const [s] = await db.insert(studios).values({ slug: 'casc-r-s-5', name: 'S', kind: 'studio' }).returning();
+    await db.insert(productionStudios).values({ productionId: p.id, studioId: s.id, role: 'distributor' });
+    await expect(db.delete(studios).where(eq(studios.id, s.id))).rejects.toThrow(/foreign key/i);
+    await db.delete(productions).where(eq(productions.id, p.id));
+    await db.delete(studios).where(eq(studios.id, s.id));
+  });
+
+  it('role deletion is RESTRICTED when it has crew_assignments', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-r-p-6', type: 'feature', title: 'T' }).returning();
+    const [person] = await db.insert(people).values({ slug: 'casc-r-pp-6', displayName: 'P' }).returning();
+    const [role] = await db.insert(roles).values({ slug: 'casc-r-rr-6', name: 'R', category: 'production' }).returning();
+    await db.insert(crewAssignments).values({ productionId: p.id, personId: person.id, roleId: role.id });
+    await expect(db.delete(roles).where(eq(roles.id, role.id))).rejects.toThrow(/foreign key/i);
+    await db.delete(productions).where(eq(productions.id, p.id));
+    await db.delete(people).where(eq(people.id, person.id));
+    await db.delete(roles).where(eq(roles.id, role.id));
+  });
+
+  it('source deletion is RESTRICTED when it has attributions', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-r-p-7', type: 'feature', title: 'T' }).returning();
+    const [src] = await db.insert(sources).values({ slug: 'casc-r-src-7', kind: 'wiki', title: 'S' }).returning();
+    await db.insert(productionSources).values({ productionId: p.id, sourceId: src.id, confidence: 'primary' });
+    await expect(db.delete(sources).where(eq(sources.id, src.id))).rejects.toThrow(/foreign key/i);
+    await db.delete(productions).where(eq(productions.id, p.id));
+    await db.delete(sources).where(eq(sources.id, src.id));
+  });
+});
+
+describe('cascade matrix — transitive', () => {
+  it('deleting a production cascades through scenes -> equipment_usage -> equipment_usage_sources', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-t-p-1', type: 'feature', title: 'T' }).returning();
+    const [sc] = await db.insert(scenes).values({ productionId: p.id, slug: 's', title: 'S' }).returning();
+    const [m] = await db.insert(equipmentManufacturers).values({ slug: 'casc-t-m-1', name: 'M', kind: 'manufacturer' }).returning();
+    const [es] = await db.insert(equipmentSeries).values({ slug: 'casc-t-es-1', name: 'ES', category: 'camera_body', manufacturerId: m.id }).returning();
+    const [eu] = await db.insert(equipmentUsage).values({ sceneId: sc.id, equipmentSeriesId: es.id }).returning();
+    const [src] = await db.insert(sources).values({ slug: 'casc-t-src-1', kind: 'wiki', title: 'S' }).returning();
+    await db.insert(equipmentUsageSources).values({ equipmentUsageId: eu.id, sourceId: src.id, confidence: 'primary' });
+
+    // Delete the production at the top of the chain
+    await db.delete(productions).where(eq(productions.id, p.id));
+
+    // Everything below should be gone
+    expect((await db.select().from(scenes).where(eq(scenes.id, sc.id))).length).toBe(0);
+    expect((await db.select().from(equipmentUsage).where(eq(equipmentUsage.id, eu.id))).length).toBe(0);
+    expect((await db.select().from(equipmentUsageSources).where(eq(equipmentUsageSources.equipmentUsageId, eu.id))).length).toBe(0);
+
+    // The source itself should remain (RESTRICT on source side, but CASCADE removed the join row first)
+    expect((await db.select().from(sources).where(eq(sources.id, src.id))).length).toBe(1);
+
+    await db.delete(sources).where(eq(sources.id, src.id));
+    await db.delete(equipmentSeries).where(eq(equipmentSeries.id, es.id));
+    await db.delete(equipmentManufacturers).where(eq(equipmentManufacturers.id, m.id));
+  });
+});
