@@ -2,7 +2,7 @@
   "name": "bts",
   "version": "0.0.0",
   "private": true,
-  "packageManager": "pnpm@9.0.0",
+  "packageManager": "pnpm@10.33.2",
   "scripts": {
     "db:test": "pnpm --filter @bts/db test",
     "db:migrate": "pnpm --filter @bts/db migrate",
