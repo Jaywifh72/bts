@@ -1,0 +1,20 @@
+CREATE TABLE "people" (
+	"id" bigserial PRIMARY KEY NOT NULL,
+	"slug" text NOT NULL,
+	"display_name" text NOT NULL,
+	"given_name" text,
+	"family_name" text,
+	"aliases" text[] DEFAULT ARRAY[]::text[] NOT NULL,
+	"birth_date" date,
+	"death_date" date,
+	"country" text,
+	"bio" text,
+	"member_societies" text[] DEFAULT ARRAY[]::text[] NOT NULL,
+	"imdb_id" text,
+	"wikidata_id" text,
+	"created_at" timestamp with time zone DEFAULT now() NOT NULL,
+	"updated_at" timestamp with time zone DEFAULT now() NOT NULL,
+	CONSTRAINT "people_slug_unique" UNIQUE("slug"),
+	CONSTRAINT "people_imdb_id_unique" UNIQUE("imdb_id"),
+	CONSTRAINT "people_wikidata_id_unique" UNIQUE("wikidata_id")
+);
