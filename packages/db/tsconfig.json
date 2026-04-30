@@ -3,7 +3,8 @@
   "compilerOptions": {
     "outDir": "./dist",
     "noEmit": true,
-    "types": ["node"]
+    "types": ["node"],
+    "allowImportingTsExtensions": true
   },
   "include": ["src/**/*", "drizzle.config.ts", "vitest.config.ts", "scripts/**/*"],
   "exclude": ["node_modules", "dist"]
