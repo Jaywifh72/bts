@@ -10,6 +10,7 @@ import {
   sources, sceneSources,
   vfxHouses, vfxCredits, vfxTechniques,
   productionVfxTechniques, vfxHouseSources,
+  productionVideos,
 } from '../schema/index.ts';
 
 const { sql, db } = createTestDb();
@@ -103,6 +104,28 @@ describe('cascade matrix — direct edges', () => {
     await db.delete(people).where(eq(people.id, person.id));
     await db.delete(roles).where(eq(roles.id, role.id));
     await db.delete(sources).where(eq(sources.id, src.id));
+  });
+
+  it('production deletion CASCADEs to production_videos', async () => {
+    const [p] = await db.insert(productions)
+      .values({ slug: 'casc-vid-1', type: 'feature', title: 'Test' })
+      .returning();
+    await db.insert(productionVideos).values({
+      productionId: p!.id,
+      source: 'youtube',
+      externalId: 'abc123',
+      url: 'https://www.youtube.com/watch?v=abc123',
+      title: 'Test Video',
+      category: 'vfx_breakdown',
+      confidenceScore: '0.800',
+      status: 'published',
+    });
+    await db.delete(productions).where(eq(productions.id, p!.id));
+    const orphans = await db
+      .select()
+      .from(productionVideos)
+      .where(eq(productionVideos.productionId, p!.id));
+    expect(orphans.length).toBe(0);
   });
 
   it('equipment_usage deletion CASCADEs to equipment_usage_sources', async () => {
