@@ -7,6 +7,10 @@
     "db:test": "pnpm --filter @bts/db test",
     "db:migrate": "pnpm --filter @bts/db migrate",
     "db:seed": "pnpm --filter @bts/db seed",
-    "db:studio": "pnpm --filter @bts/db studio"
+    "db:studio": "pnpm --filter @bts/db studio",
+    "web:dev": "pnpm --filter @bts/web dev",
+    "web:build": "pnpm --filter @bts/web build",
+    "web:typecheck": "pnpm --filter @bts/web typecheck",
+    "typecheck": "pnpm --filter @bts/db typecheck && pnpm --filter @bts/web typecheck"
   }
 }
