@@ -13,8 +13,8 @@ export async function listPeople(db: SeedDb = defaultDb) {
     SELECT
       p.slug,
       p.display_name,
-      p.birth_year,
-      p.nationality,
+      EXTRACT(YEAR FROM p.birth_date)::int AS birth_year,
+      p.country AS nationality,
       pr.role_name AS primary_role
     FROM people p
     LEFT JOIN (
@@ -36,6 +36,7 @@ export async function listPeople(db: SeedDb = defaultDb) {
 
 export async function getPersonBySlug(db: SeedDb = defaultDb, slug: string) {
   const [person] = await db.execute<{
+    id: number;
     slug: string;
     display_name: string;
     birth_year: number | null;
@@ -44,7 +45,12 @@ export async function getPersonBySlug(db: SeedDb = defaultDb, slug: string) {
     biography: string | null;
     imdb_id: string | null;
   }>(sql`
-    SELECT slug, display_name, birth_year, death_year, nationality, biography, imdb_id
+    SELECT id, slug, display_name,
+           EXTRACT(YEAR FROM birth_date)::int AS birth_year,
+           EXTRACT(YEAR FROM death_date)::int AS death_year,
+           country AS nationality,
+           bio AS biography,
+           imdb_id
     FROM people
     WHERE slug = ${slug}
   `);
