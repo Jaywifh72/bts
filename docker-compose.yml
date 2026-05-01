@@ -16,3 +16,19 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
+
+  scraper:
+    build:
+      context: .
+      dockerfile: packages/scraper/Dockerfile
+    environment:
+      DATABASE_URL: postgres://bts:bts@postgres:5432/bts_dev
+      SCRAPER_CRON: "0 3 * * 1"
+    volumes:
+      - ./packages/scraper/data:/app/packages/scraper/data
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: unless-stopped
+    profiles:
+      - scraper
