@@ -1,12 +1,12 @@
-import React from 'react';
+import type { ReactNode } from 'react';
 
-interface Column {
+export interface Column {
   key: string;
   header: string;
-  render: (row: Record<string, unknown>) => React.ReactNode;
+  render: (row: Record<string, unknown>) => ReactNode;
 }
 
-interface KillerQueryTableProps {
+export interface KillerQueryTableProps {
   columns: Column[];
   rows: Record<string, unknown>[];
   emptyMessage?: string;
