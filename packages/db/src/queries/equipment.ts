@@ -56,11 +56,11 @@ export async function listSeriesByManufacturer(db: SeedDb = defaultDb, manufactu
 
 export async function getSeriesBySlug(db: SeedDb = defaultDb, seriesSlug: string) {
   const [series] = await db.execute<{
-    slug: string; name: string; category: string;
+    id: number; slug: string; name: string; category: string;
     year_introduced: number | null; year_discontinued: number | null;
     description: string | null; manufacturer_slug: string; manufacturer_name: string;
   }>(sql`
-    SELECT es.slug, es.name, es.category, es.year_introduced, es.year_discontinued,
+    SELECT es.id, es.slug, es.name, es.category, es.year_introduced, es.year_discontinued,
            es.description, em.slug AS manufacturer_slug, em.name AS manufacturer_name
     FROM equipment_series es
     JOIN equipment_manufacturers em ON em.id = es.manufacturer_id
@@ -74,17 +74,15 @@ export async function getSeriesBySlug(db: SeedDb = defaultDb, seriesSlug: string
       year_introduced: number | null; specs: unknown;
     }>(sql`
       SELECT slug, name, status, year_introduced, specs
-      FROM equipment_items WHERE series_id = (
-        SELECT id FROM equipment_series WHERE slug = ${seriesSlug}
-      ) ORDER BY name
+      FROM equipment_items WHERE series_id = ${series.id}
+      ORDER BY name
     `),
     db.execute<{ production_slug: string; production_title: string; release_year: number | null }>(sql`
       SELECT DISTINCT p.slug AS production_slug, p.title AS production_title, p.release_year
       FROM equipment_usage eu
-      JOIN equipment_series es ON es.id = eu.equipment_series_id
       JOIN scenes sc ON sc.id = eu.scene_id
       JOIN productions p ON p.id = sc.production_id
-      WHERE es.slug = ${seriesSlug}
+      WHERE eu.equipment_series_id = ${series.id}
       ORDER BY p.release_year DESC NULLS LAST
     `),
   ]);
