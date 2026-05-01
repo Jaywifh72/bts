@@ -83,19 +83,30 @@ bts/                          ← pnpm workspace root (C:\dev\bts)
 
 A broken slug in `generateStaticParams` fails the build rather than silently serving a runtime 404. This is intentional — it makes data integrity problems visible in CI.
 
+**Slug sourcing:** Slugs are hardcoded in seed data files (`packages/db/src/seed/data/*.ts`), loaded into the DB by the seed runner, and read back from the DB by `generateStaticParams`. The web app never generates or transforms slugs itself. The data layer spec (§4.1) defines the slug format: kebab-case, lowercase, ASCII-only, year-suffix on collision.
+
+**DB access model:** Query functions are called server-side only (in RSC and `generateStaticParams`). `DATABASE_URL` is provided via `.env.local` (git-ignored). No client-side DB access. No row-level security required for v1 (fully read-only, statically generated). Access model is audited before adding auth in sub-project 6.
+
 ### 3.3 Query layer convention
 
 All DB queries live in `packages/db/src/queries/`, organized by entity. Each file exports typed async functions that accept a `db` instance and return plain objects — no Drizzle internal types leak into `apps/web`. New query files added for the web app:
 
 ```
 packages/db/src/queries/
-  killer-queries.ts        ← exists
+  killer-queries.ts        ← exists: findFeaturesShotOnAlexa65WithSphero(),
+                                      findLensesByDpOnProduction(), findMagicHourExteriorLightingByYear()
   productions.ts           ← listProductions(), getProductionBySlug(), getProductionWithFullDetail()
   people.ts                ← listPeople(), getPersonBySlug(), getPersonFilmography()
   equipment.ts             ← listManufacturers(), getManufacturerBySlug(),
                               getSeriesBySlug(), getItemBySlug(),
                               getProductionsUsingItem()
 ```
+
+**Scene queries:** Scenes are never fetched as standalone entities. They are always loaded as part of `getProductionWithFullDetail()`, which returns a production with its scenes and equipment usage inline. No `getSceneBySlug()` function exists or is needed — scenes have no standalone URL.
+
+**Spec schemas import:** `SpecsTable.tsx` imports Zod schemas from `packages/db/src/schema/specs/` via a `"./schema/specs"` subpath export in `packages/db/package.json`. This export must be added to the data layer package's `exports` map as part of the data layer's setup for this sub-project (it is not yet present — adding it is a task in the implementation plan). The Zod schema per equipment category (lens, camera, lighting, filter) is used to parse and validate the JSONB `specs` field before rendering. Unknown keys outside the schema are rendered in a catch-all "other specs" row — they are not discarded.
+
+**Killer query function names:** The three functions in `packages/db/src/queries/killer-queries.ts` are `findFeaturesShotOnAlexa65WithSphero(db)`, `findLensesByDpOnProduction(db, personSlug, productionSlug)`, and `findMagicHourExteriorLightingByYear(db, year)`. These names are confirmed in the data layer implementation and are the exact identifiers the killer query pages import.
 
 Query functions are called directly from `async` Server Components. No `fetch()`, no Route Handlers, no client-side data loading.
 
@@ -124,6 +135,18 @@ Query functions are called directly from `async` Server Components. No `fetch()`
 /gear/[manufacturer]/[series]/[item]             Item detail
 ```
 
+Every detail route exports a `generateStaticParams` function. The query used to populate each:
+
+| Route | generateStaticParams calls |
+|---|---|
+| `/films/[slug]` | `listProductions(db)` → returns `{ slug }[]` |
+| `/crew/[slug]` | `listPeople(db)` → returns `{ slug }[]` |
+| `/gear/[manufacturer]` | `listManufacturers(db)` → returns `{ slug }[]` |
+| `/gear/[manufacturer]/[series]` | `listManufacturers(db)` then for each, fetch series → returns `{ manufacturer, series }[]` |
+| `/gear/[manufacturer]/[series]/[item]` | Nested: manufacturers → series → items → returns `{ manufacturer, series, item }[]` |
+
+The gear hierarchy uses a single `generateStaticParams` per segment level (Next.js evaluates each `[param]` level independently). Alternatively, the deepest level (`[item]`) can emit all ancestor slugs in one flat call — either approach is valid; the implementation plan resolves this.
+
 ### 4.3 Killer query pages (statically generated, data baked in at build)
 
 ```
@@ -131,6 +154,26 @@ Query functions are called directly from `async` Server Components. No `fetch()`
 /queries/dune-part-two-lenses     Q2: Lenses Greig Fraser used on Dune: Part Two
 /queries/magic-hour-2023          Q3: Magic-hour exterior lighting in 2023 features
 ```
+
+These pages are **not parameterized**. Each page calls its corresponding function with hardcoded arguments and bakes the results into a static HTML table at build time.
+
+**Q1 — `/queries/alexa65-sphero`**
+- Calls `findFeaturesShotOnAlexa65WithSphero(db)` (no arguments; slug filters are hardcoded inside the function).
+- Renders a `KillerQueryTable` with columns: **Production** (linked to `/films/[slug]`), **Year**, **DP** (linked to `/crew/[slug]`).
+- Row data shape: `{ title, slug, release_year, dp_name, dp_slug }`.
+- Sorted by DP name ascending (per the function's `ORDER BY`).
+
+**Q2 — `/queries/dune-part-two-lenses`**
+- Calls `findLensesByDpOnProduction(db, 'greig-fraser', 'dune-part-two')` (slugs hardcoded in the page).
+- Renders a `KillerQueryTable` with columns: **Lens Series** (linked to `/gear/[manufacturer]/[series]`), **Item** (linked to `/gear/[manufacturer]/[series]/[item]` when known, otherwise `—`).
+- Row data shape: `{ series_slug, series_name, item_slug, item_name }`.
+
+**Q3 — `/queries/magic-hour-2023`**
+- Calls `findMagicHourExteriorLightingByYear(db, 2023)` (year hardcoded in the page).
+- Renders a `KillerQueryTable` with columns: **Production** (linked), **Scene**, **Lighting Series** (linked), **Item** (linked when known).
+- Row data shape: `{ title, slug, scene_title, lighting_series, lighting_item }`.
+
+All three pages share a page header (`SectionHeader`) that describes the query in plain English, and a `KillerQueryTable` that renders the result set.
 
 ### 4.4 Utility
 
@@ -150,7 +193,9 @@ Scenes have no standalone URL — they render inline within `/films/[slug]` as a
 
 ### 5.1 Server vs. client split
 
-All components are Server Components by default. A component becomes a Client Component only if it requires `useState`, `useEffect`, event handlers, or browser APIs. For this sub-project (read-only, no interactivity beyond navigation links), no Client Components are needed.
+All components are Server Components by default. A component becomes a Client Component only if it requires `useState`, `useEffect`, event handlers, or browser APIs.
+
+The one exception is `SourceCitation.tsx`, which uses the HTML5 `<details>/<summary>` element for collapsible citation disclosure. This requires no JavaScript and no Client Component — `<details>` is a native browser disclosure widget that works without JS and resets on page navigation. No `useState` or `'use client'` directive is needed.
 
 ### 5.2 Layout nesting
 
@@ -169,7 +214,9 @@ components/
     ProductionCard.tsx             Card for /films grid
     ProductionDetail.tsx           Full detail layout for /films/[slug]
     SceneList.tsx                  Scenes + inline equipment for a production
-    FormatBadge.tsx                Aspect ratio / format pill
+    FormatBadge.tsx                Single production_format row rendered as a pill showing aspect_ratio + acquisition_format.
+                                   ProductionCard passes the primary format (is_primary=true).
+                                   ProductionDetail passes all formats as a vertical stack (one badge per row).
   people/
     PersonCard.tsx                 Card for /crew grid
     FilmographyTable.tsx           Production list for /crew/[slug]
@@ -182,12 +229,15 @@ components/
     DataTable.tsx                  Dark-themed table primitive (reused across all entities)
     Badge.tsx                      Pill: confidence level / equipment category / production type
     SectionHeader.tsx              Amber left-border rule + label + heading
-    SourceCitation.tsx             Collapsible footnote block for _sources attribution
+    SourceCitation.tsx             Disclosure block using HTML5 <details>/<summary> (no JS required).
+                                   Trigger text: "N source(s)" with confidence badge. Expanded: full
+                                   citation with title, publication, author, date, URL, confidence badge,
+                                   and optional claim_quote.
 ```
 
 ### 5.4 Attribution display
 
-Every production, scene, crew assignment, and equipment usage row surfaces its `_sources` rows as collapsible citation footnotes. The `confidence` enum drives a visual badge:
+Every production, scene, crew assignment, and equipment usage row surfaces its `_sources` rows as collapsible citation footnotes using `SourceCitation`. The disclosure widget is an HTML5 `<details>/<summary>` element — no JS, no Client Component. The `confidence` enum drives a visual badge:
 
 | Confidence | Badge style |
 |---|---|
@@ -238,7 +288,7 @@ All built with Tailwind utility classes. No component library (no shadcn, no Rad
 | `DataTable` | `zinc-900` background, `zinc-800` borders, `odd:bg-zinc-900 even:bg-zinc-950` zebra striping |
 | `Badge` | Pill-shaped, one variant per confidence level, equipment category, and production type |
 | `SectionHeader` | Amber left-border rule + `zinc-400` label + `zinc-50` heading |
-| `SourceCitation` | `text-xs`, muted, collapsible footnote |
+| `SourceCitation` | `text-xs`, muted. HTML5 `<details>/<summary>` disclosure. Trigger shows count + highest-confidence badge. Expanded body shows full citation fields. |
 
 ---
 
@@ -250,7 +300,7 @@ All built with Tailwind utility classes. No component library (no shadcn, no Rad
 
 **Unexpected errors:** A single `app/error.tsx` catches unexpected Server Component errors. No per-route error boundaries — the data is read-only and query failures are rare.
 
-**Environment:** `DATABASE_URL` loaded from `.env.local` (git-ignored) at dev and build time. Reuses the same variable name as `packages/db/.env`.
+**Environment:** `DATABASE_URL` loaded from `.env.local` (git-ignored) at dev and build time. Reuses the same variable name as `packages/db/.env`. The DB user requires read access to all tables; no row-level security policies are needed for v1 (fully static, no user sessions). Auth and RLS are addressed in sub-project 6.
 
 ---
 
