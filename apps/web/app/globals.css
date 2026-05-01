@@ -1,0 +1,22 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html {
+    @apply bg-zinc-950 text-zinc-50;
+  }
+
+  /* Amber focus rings */
+  :focus-visible {
+    @apply outline-2 outline-amber-400 outline-offset-2;
+  }
+
+  /* Native details/summary styling */
+  details > summary {
+    @apply cursor-pointer list-none;
+  }
+  details > summary::-webkit-details-marker {
+    display: none;
+  }
+}
