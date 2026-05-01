@@ -31,6 +31,7 @@
 | category | videoCategoryEnum NOT NULL | Auto-assigned; see below |
 | confidence_score | numeric(4,3) NOT NULL | 0.000–1.000 |
 | status | videoStatusEnum NOT NULL | `published \| pending \| rejected`; default `pending` |
+| category_locked | boolean NOT NULL | Default `false`; set `true` when category is manually overridden — prevents re-discovery from overwriting |
 | notes | text | For manual reviewer notes on `pending` rows |
 | created_at / updated_at | timestamptz | |
 
@@ -74,6 +75,12 @@ packages/scraper/src/discovery/
   upsert.ts        # Scored + categorised results → Postgres
   run.ts           # Orchestrates: search → deduplicate → score → categorise → upsert
 ```
+
+### API notes
+
+**YouTube Data API v3** (`youtube.ts`): Uses the `search.list` endpoint with `type=video` and `q=<query string>`. Quoted-phrase search is supported. Requires a standard API key; default quota is 10,000 units/day — each search costs 100 units, so 6 queries × N productions must fit within quota. For the current ~40-production dataset this is ~240 units/run, well within limits.
+
+**Vimeo API** (`vimeo.ts`): Uses the `/videos` endpoint with `query=<keywords>`. Vimeo does not support quoted-phrase search — query strings are issued as plain keyword searches (quotes stripped). Rate limits on the free `VIMEO_ACCESS_TOKEN` tier are 1,000 API calls/day and 60 calls/minute. A standard authenticated token (free Vimeo account) is sufficient; no paid plan required. `vimeo.ts` must respect the 60 calls/minute limit with inter-request delays.
 
 ### Query strategies
 
@@ -144,9 +151,7 @@ On conflict `(production_id, source, external_id)`:
 - `status` is only upgraded (pending → published), never downgraded — a manually rejected video stays rejected even if re-discovered
 - `view_count`, `thumbnail_url`, and `title` are refreshed to the latest API values
 - `confidence_score` is updated to the latest score
-- `category` is not changed once manually overridden (detected via a `category_locked` boolean column — add this to the table)
-
-**Add to `production_videos` table:** `category_locked boolean NOT NULL DEFAULT false` — set to `true` when a reviewer manually changes the category; prevents re-discovery from overwriting it.
+- `category` is not changed when `category_locked = true` (set by a reviewer who manually corrected the auto-assigned category)
 
 ### CLI commands
 
