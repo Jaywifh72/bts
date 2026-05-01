@@ -54,8 +54,8 @@ export async function findLensesByDpOnProduction(db: SeedDb, personSlug: string,
  * Q3: Every magic-hour exterior in {year} features, by lighting fixture.
  */
 export async function findMagicHourExteriorLightingByYear(db: SeedDb, year: number) {
-  return db.execute<{ title: string; scene_title: string; lighting_series: string; lighting_item: string | null }>(sql`
-    SELECT p.title, sc.title AS scene_title,
+  return db.execute<{ title: string; slug: string; scene_title: string; lighting_series: string; lighting_item: string | null }>(sql`
+    SELECT p.title, p.slug, sc.title AS scene_title,
            es.name AS lighting_series, ei.name AS lighting_item
     FROM productions p
     JOIN scenes sc ON sc.production_id = p.id
