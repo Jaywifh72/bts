@@ -56,3 +56,17 @@ export const vfxTechniqueCategoryEnum = pgEnum('vfx_technique_category_enum', [
   'creature', 'environment', 'character', 'practical_enhancement',
   'simulation', 'compositing', 'other',
 ]);
+
+export const videoSourceEnum = pgEnum('video_source_enum', [
+  'youtube', 'vimeo',
+]);
+
+export const videoStatusEnum = pgEnum('video_status_enum', [
+  'published', 'pending', 'rejected',
+]);
+
+export const videoCategoryEnum = pgEnum('video_category_enum', [
+  'vfx_breakdown', 'compositing', 'making_of', 'behind_the_scenes',
+  'director_interview', 'dp_interview', 'production_design',
+  'stunts', 'sound', 'music', 'other',
+]);
