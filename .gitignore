@@ -30,3 +30,7 @@ pnpm-debug.log*
 
 # git worktrees
 .worktrees/
+
+# scraper raw data
+packages/scraper/data/vfx-raw/*.json
+packages/scraper/data/vfx-raw/**/*.json

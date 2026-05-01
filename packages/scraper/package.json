@@ -1,0 +1,28 @@
+{
+  "name": "@bts/scraper",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "scrape:artofvfx": "tsx src/cli.ts scrape:artofvfx",
+    "scrape:beforesandafters": "tsx src/cli.ts scrape:beforesandafters",
+    "import:vfx": "tsx src/cli.ts import:vfx",
+    "run": "tsx src/cli.ts run",
+    "start": "tsx src/scheduler.ts",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@bts/db": "workspace:*",
+    "playwright": "^1.44.0",
+    "fuse.js": "^7.0.0",
+    "node-cron": "^3.0.0",
+    "dotenv": "^16.0.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@types/node-cron": "^3.0.0",
+    "tsx": "^4.0.0",
+    "typescript": "^5.6.0"
+  }
+}
