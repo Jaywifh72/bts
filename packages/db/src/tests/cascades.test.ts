@@ -8,6 +8,8 @@ import {
   equipmentManufacturers, equipmentSeries, equipmentItems,
   equipmentUsage, equipmentUsageSources,
   sources, sceneSources,
+  vfxHouses, vfxCredits, vfxTechniques,
+  productionVfxTechniques, vfxHouseSources,
 } from '../schema/index.ts';
 
 const { sql, db } = createTestDb();
@@ -221,5 +223,46 @@ describe('cascade matrix — transitive', () => {
     await db.delete(sources).where(eq(sources.id, src.id));
     await db.delete(equipmentSeries).where(eq(equipmentSeries.id, es.id));
     await db.delete(equipmentManufacturers).where(eq(equipmentManufacturers.id, m.id));
+  });
+});
+
+describe('cascade matrix — VFX tables', () => {
+  it('production deletion CASCADEs to vfx_credits', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-vfx-p-1', type: 'feature', title: 'T' }).returning();
+    const [h] = await db.insert(vfxHouses).values({ slug: 'casc-vfx-h-1', name: 'TestHouse' }).returning();
+    await db.insert(vfxCredits).values({ productionId: p.id, vfxHouseId: h.id, role: 'primary' });
+    await db.delete(productions).where(eq(productions.id, p.id));
+    const orphans = await db.select().from(vfxCredits).where(eq(vfxCredits.productionId, p.id));
+    expect(orphans.length).toBe(0);
+    await db.delete(vfxHouses).where(eq(vfxHouses.id, h.id));
+  });
+
+  it('production deletion CASCADEs to production_vfx_techniques', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-vfx-p-2', type: 'feature', title: 'T' }).returning();
+    const [t] = await db.insert(vfxTechniques).values({ slug: 'casc-vfx-t-2', name: 'Test', category: 'creature' }).returning();
+    await db.insert(productionVfxTechniques).values({ productionId: p.id, techniqueId: t.id });
+    await db.delete(productions).where(eq(productions.id, p.id));
+    const orphans = await db.select().from(productionVfxTechniques).where(eq(productionVfxTechniques.productionId, p.id));
+    expect(orphans.length).toBe(0);
+    await db.delete(vfxTechniques).where(eq(vfxTechniques.id, t.id));
+  });
+
+  it('vfx_house deletion CASCADEs to vfx_house_sources', async () => {
+    const [h] = await db.insert(vfxHouses).values({ slug: 'casc-vfx-h-3', name: 'H' }).returning();
+    const [src] = await db.insert(sources).values({ slug: 'casc-vfx-src-3', kind: 'wiki', title: 'S' }).returning();
+    await db.insert(vfxHouseSources).values({ vfxHouseId: h.id, sourceId: src.id, confidence: 'primary' });
+    await db.delete(vfxHouses).where(eq(vfxHouses.id, h.id));
+    const orphans = await db.select().from(vfxHouseSources).where(eq(vfxHouseSources.vfxHouseId, h.id));
+    expect(orphans.length).toBe(0);
+    await db.delete(sources).where(eq(sources.id, src.id));
+  });
+
+  it('vfx_house deletion is RESTRICTED when it has vfx_credits', async () => {
+    const [p] = await db.insert(productions).values({ slug: 'casc-vfx-r-p-1', type: 'feature', title: 'T' }).returning();
+    const [h] = await db.insert(vfxHouses).values({ slug: 'casc-vfx-r-h-1', name: 'H' }).returning();
+    await db.insert(vfxCredits).values({ productionId: p.id, vfxHouseId: h.id, role: 'primary' });
+    await expect(db.delete(vfxHouses).where(eq(vfxHouses.id, h.id))).rejects.toThrow(/foreign key/i);
+    await db.delete(productions).where(eq(productions.id, p.id));
+    await db.delete(vfxHouses).where(eq(vfxHouses.id, h.id));
   });
 });
