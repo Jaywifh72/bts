@@ -1,5 +1,5 @@
 import {
-  pgTable, bigserial, bigint, smallserial, smallint,
+  pgTable, bigserial, bigint, smallserial,
   integer, text, timestamp, primaryKey, unique, index,
 } from 'drizzle-orm/pg-core';
 import {
@@ -42,7 +42,7 @@ export const vfxCredits = pgTable('vfx_credits', {
 }));
 
 export const vfxTechniques = pgTable('vfx_techniques', {
-  id: smallserial('id').primaryKey(),
+  id: integer('id').primaryKey(),
   slug: text('slug').notNull().unique(),
   name: text('name').notNull(),
   category: vfxTechniqueCategoryEnum('category').notNull(),
@@ -52,7 +52,7 @@ export const productionVfxTechniques = pgTable('production_vfx_techniques', {
   productionId: bigint('production_id', { mode: 'number' })
     .notNull()
     .references(() => productions.id, { onDelete: 'cascade' }),
-  techniqueId: smallint('technique_id')
+  techniqueId: integer('technique_id')
     .notNull()
     .references(() => vfxTechniques.id, { onDelete: 'restrict' }),
 }, (t) => ({
