@@ -106,7 +106,20 @@ packages/db/src/queries/
 
 **Spec schemas import:** `SpecsTable.tsx` imports Zod schemas from `packages/db/src/schema/specs/` via a `"./schema/specs"` subpath export in `packages/db/package.json`. This export must be added to the data layer package's `exports` map as part of the data layer's setup for this sub-project (it is not yet present — adding it is a task in the implementation plan). The Zod schema per equipment category (lens, camera, lighting, filter) is used to parse and validate the JSONB `specs` field before rendering. Unknown keys outside the schema are rendered in a catch-all "other specs" row — they are not discarded.
 
-**Killer query function names:** The three functions in `packages/db/src/queries/killer-queries.ts` are `findFeaturesShotOnAlexa65WithSphero(db)`, `findLensesByDpOnProduction(db, personSlug, productionSlug)`, and `findMagicHourExteriorLightingByYear(db, year)`. These names are confirmed in the data layer implementation and are the exact identifiers the killer query pages import.
+**Killer query function names:** The three functions in `packages/db/src/queries/killer-queries.ts` are confirmed in the actual implementation file:
+- `findFeaturesShotOnAlexa65WithSphero(db)` — no arguments beyond db; slug filters hardcoded inside
+- `findLensesByDpOnProduction(db, personSlug, productionSlug)` — Q2 page passes `'greig-fraser'` and `'dune-part-two'`
+- `findMagicHourExteriorLightingByYear(db, year)` — Q3 page passes `2023`
+
+These are the exact export names imported by the killer query pages.
+
+**Zod schema path alias prerequisite:** The `"./schema/specs"` subpath export does **not yet exist** in `packages/db/package.json`. Adding it is task #1 of the implementation plan — it must be done before `SpecsTable.tsx` can compile. The Zod schema files themselves (`lens.ts`, `camera.ts`, `lighting.ts`, `filter.ts`) exist at `packages/db/src/schema/specs/`. The export to add is:
+```json
+"exports": {
+  ".": "./src/index.ts",
+  "./schema/specs": "./src/schema/specs/index.ts"
+}
+```
 
 Query functions are called directly from `async` Server Components. No `fetch()`, no Route Handlers, no client-side data loading.
 
@@ -162,6 +175,7 @@ These pages are **not parameterized**. Each page calls its corresponding functio
 - Renders a `KillerQueryTable` with columns: **Production** (linked to `/films/[slug]`), **Year**, **DP** (linked to `/crew/[slug]`).
 - Row data shape: `{ title, slug, release_year, dp_name, dp_slug }`.
 - Sorted by DP name ascending (per the function's `ORDER BY`).
+- Expected result set (v1 seed): ~1–3 productions. *The Revenant* is the confirmed match per the data layer regression contract.
 
 **Q2 — `/queries/dune-part-two-lenses`**
 - Calls `findLensesByDpOnProduction(db, 'greig-fraser', 'dune-part-two')` (slugs hardcoded in the page).
@@ -237,7 +251,22 @@ components/
 
 ### 5.4 Attribution display
 
-Every production, scene, crew assignment, and equipment usage row surfaces its `_sources` rows as collapsible citation footnotes using `SourceCitation`. The disclosure widget is an HTML5 `<details>/<summary>` element — no JS, no Client Component. The `confidence` enum drives a visual badge:
+Every production, scene, crew assignment, and equipment usage row surfaces its `_sources` rows as collapsible citation footnotes using `SourceCitation`. The disclosure widget is an HTML5 `<details>/<summary>` element — no JS, no Client Component.
+
+**Grouping:** One `<details>` widget **per entity instance** (one per production, one per scene, one per crew assignment, one per equipment usage row). All `_sources` rows for that entity are listed inside a single expanded body. Example: a scene with 3 sources renders as:
+
+```html
+<details>
+  <summary>3 sources — [primary badge]</summary>
+  <!-- source 1, source 2, source 3 listed inline -->
+</details>
+```
+
+The summary trigger shows the count and the highest-confidence badge among the entity's sources.
+
+**Fields displayed in the expanded body:** `title`, `publication`, `author`, `published_at` (rendered as "Published DATE"), `url` (or `archive_url` when `url` is null), `confidence` badge, and `claim_quote` when present. The `notes` and `accessed_at` fields are not displayed in v1 — editorial use only.
+
+**Confidence badge styles:**
 
 | Confidence | Badge style |
 |---|---|
