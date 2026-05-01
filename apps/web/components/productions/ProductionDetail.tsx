@@ -1,6 +1,8 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { getProductionWithFullDetail, getProductionVfxData } from '@bts/db';
+import type { getProductionVideos } from '@bts/db';
+import { VideoGallery } from './VideoGallery';
 import { FormatBadge } from './FormatBadge';
 import { MediaGallery } from './MediaGallery';
 import { SceneList } from './SceneList';
@@ -11,8 +13,9 @@ import type { TmdbMedia } from '@/lib/tmdb';
 
 type DetailData = NonNullable<Awaited<ReturnType<typeof getProductionWithFullDetail>>>;
 type VfxData = Awaited<ReturnType<typeof getProductionVfxData>>;
+type VideosData = Awaited<ReturnType<typeof getProductionVideos>>;
 
-export function ProductionDetail({ data, media, vfx }: { data: DetailData; media: TmdbMedia | null; vfx: VfxData }) {
+export function ProductionDetail({ data, media, vfx, videos }: { data: DetailData; media: TmdbMedia | null; vfx: VfxData; videos: VideosData }) {
   const { production, formats, studios, crew, scenes, productionSources } = data;
 
   type CrewMember = (typeof crew)[number];
@@ -109,6 +112,7 @@ export function ProductionDetail({ data, media, vfx }: { data: DetailData; media
       ))}
 
       <VfxSection credits={vfx.credits} techniques={vfx.techniques} />
+      <VideoGallery videos={videos} />
       <SceneList rows={scenes} />
     </article>
   );
