@@ -64,6 +64,13 @@
       "when": 1777584798967,
       "tag": "0008_updated_at_triggers",
       "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1777652206672,
+      "tag": "0009_tired_morlocks",
+      "breakpoints": true
     }
   ]
 }
