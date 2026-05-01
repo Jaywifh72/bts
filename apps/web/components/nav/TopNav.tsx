@@ -4,6 +4,7 @@ const links = [
   { href: '/films', label: 'Films' },
   { href: '/crew', label: 'Crew' },
   { href: '/gear', label: 'Gear' },
+  { href: '/vfx', label: 'VFX' },
   { href: '/queries/alexa65-sphero', label: 'Queries' },
 ] as const;
 
