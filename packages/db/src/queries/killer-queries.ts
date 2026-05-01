@@ -8,8 +8,8 @@ import { sql } from 'drizzle-orm';
  * Expected for v1 seed: at least The Revenant.
  */
 export async function findFeaturesShotOnAlexa65WithSphero(db: SeedDb = defaultDb) {
-  return db.execute<{ title: string; release_year: number | null; dp_name: string }>(sql`
-    SELECT DISTINCT p.title, p.release_year, ppl.display_name AS dp_name
+  return db.execute<{ title: string; slug: string; release_year: number | null; dp_name: string; dp_slug: string }>(sql`
+    SELECT DISTINCT p.title, p.slug, p.release_year, ppl.display_name AS dp_name, ppl.slug AS dp_slug
     FROM productions p
     JOIN scenes sc ON sc.production_id = p.id
     JOIN equipment_usage eu_cam ON eu_cam.scene_id = sc.id
