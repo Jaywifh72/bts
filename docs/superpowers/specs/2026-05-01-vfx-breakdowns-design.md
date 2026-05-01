@@ -43,7 +43,7 @@ Links a VFX house to a production with structured breakdown data.
 | notes | text | |
 | created_at / updated_at | timestamptz | |
 
-Unique constraint on `(production_id, vfx_house_id)`.
+**Deliberate simplification — one row per house per production.** A unique constraint on `(production_id, vfx_house_id)` enforces this. In cases where a house has multiple roles (e.g. both primary vendor and special sequences), `role` should reflect the highest-priority role (`primary` > `special_sequences` > `additional` > etc.) and additional context goes in `notes`. This keeps the credit model simple and avoids ambiguous aggregation.
 
 **`vfxCreditRoleEnum`** (new): `primary | additional | special_sequences | miniatures | previsualization`
 
@@ -146,7 +146,7 @@ One file per scraped article, named `<production-slug>--<source>.json` (e.g. `av
 }
 ```
 
-The `sequences` array is best-effort — present when the article structures content by sequence, absent otherwise.
+The `sequences` array is best-effort — present when the article structures content by sequence, absent otherwise. The import step discards `sequences` entirely; it is not persisted to the database (scene-to-VFX linking is out of scope).
 
 ### Scraper strategy
 
@@ -161,7 +161,24 @@ Both scrapers use Playwright (headless Chromium) to handle any JS-rendered conte
 
 ### Production matching
 
-The scraper resolves a scraped film title + year to a `production_slug` by querying `productions` and fuzzy-matching on `title` + `release_year`. Unmatched = written to `unmatched/`. Manual fix = rename the file with the correct slug prefix.
+The scraper resolves a scraped film title + year to a `production_slug` as follows:
+
+1. **Exact year match first** — filter `productions` by `release_year` (must match exactly)
+2. **Fuzzy title match** — use `fuse.js` with `threshold: 0.3` on the `title` field within the year-filtered set
+3. **Accept if exactly one match** — if multiple candidates score above the threshold, write to `unmatched/` for manual review
+4. **No match** — also write to `unmatched/`
+
+Manual fix: rename the JSON file so its path prefix matches the correct `production_slug` (e.g. `avatar-the-way-of-water-2022--artofvfx.json`), then re-run `import:vfx`.
+
+### Upsert conflict resolution
+
+When `import:vfx` encounters an existing `vfx_credits` row for the same `(production_id, vfx_house_id)`:
+
+- **Art of VFX wins over Befores & Afters** — Art of VFX articles are more structured and typically cite shot counts directly from VFX houses; B&A data is treated as lower confidence. If both exist, the Art of VFX values for `shot_count` and `role` are kept.
+- **Non-null wins over null** — if the existing row has a `shot_count` and the incoming data does not, the existing value is preserved.
+- **`notes` are appended** — if both sources have notes, they are concatenated with a source label prefix (e.g. `[artofvfx] ... [beforesandafters] ...`).
+
+The source URL for each import run is upserted into `sources` and linked via `vfx_house_sources` regardless of which value "wins" for the credit row, so both articles remain attributed.
 
 ### CLI commands
 
