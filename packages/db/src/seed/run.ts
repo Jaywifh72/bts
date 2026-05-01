@@ -55,5 +55,12 @@ const _argv1AsUrl = `file:///${process.argv[1].replace(/\\/g, '/')}`;
 if (import.meta.url === _argv1AsUrl) {
   runSeed(defaultDb)
     .then(() => defaultSql.end())
-    .catch((e) => { console.error('seed failed:', e); process.exit(1); });
+    .catch((e) => {
+      try {
+        console.error('seed failed:', e instanceof Error ? `${e.message}\n${e.stack}` : String(e));
+      } catch {
+        console.error('seed failed (error unprintable):', typeof e, Object.keys(e ?? {}));
+      }
+      process.exit(1);
+    });
 }

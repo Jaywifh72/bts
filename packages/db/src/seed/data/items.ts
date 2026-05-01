@@ -46,6 +46,22 @@ export const itemsData: ItemSeed[] = [
     name: 'ARRI Orbiter', status: 'active',
     specs: { fixture_kind: 'led_fresnel', color_temperature_range_k: '2000-20000', rgb_color_mixing: true, weight_kg: 12 } },
 
+  // ===== Cooke S4/i — workhorse Super 35 prime set =====
+  { slug: 'cooke-s4i-18mm-t2', seriesSlug: 'cooke-s4i', name: 'Cooke S4/i 18mm T2.0', status: 'active',
+    specs: { focal_length_mm: 18, max_aperture_t: 2.0, lens_format: 's35', mount: 'PL', is_anamorphic: false } },
+  { slug: 'cooke-s4i-25mm-t2', seriesSlug: 'cooke-s4i', name: 'Cooke S4/i 25mm T2.0', status: 'active',
+    specs: { focal_length_mm: 25, max_aperture_t: 2.0, lens_format: 's35', mount: 'PL', is_anamorphic: false } },
+  { slug: 'cooke-s4i-32mm-t2', seriesSlug: 'cooke-s4i', name: 'Cooke S4/i 32mm T2.0', status: 'active',
+    specs: { focal_length_mm: 32, max_aperture_t: 2.0, lens_format: 's35', mount: 'PL', is_anamorphic: false } },
+  { slug: 'cooke-s4i-40mm-t2', seriesSlug: 'cooke-s4i', name: 'Cooke S4/i 40mm T2.0', status: 'active',
+    specs: { focal_length_mm: 40, max_aperture_t: 2.0, lens_format: 's35', mount: 'PL', is_anamorphic: false } },
+  { slug: 'cooke-s4i-50mm-t2', seriesSlug: 'cooke-s4i', name: 'Cooke S4/i 50mm T2.0', status: 'active',
+    specs: { focal_length_mm: 50, max_aperture_t: 2.0, lens_format: 's35', mount: 'PL', is_anamorphic: false } },
+  { slug: 'cooke-s4i-75mm-t2', seriesSlug: 'cooke-s4i', name: 'Cooke S4/i 75mm T2.0', status: 'active',
+    specs: { focal_length_mm: 75, max_aperture_t: 2.0, lens_format: 's35', mount: 'PL', is_anamorphic: false } },
+  { slug: 'cooke-s4i-100mm-t2', seriesSlug: 'cooke-s4i', name: 'Cooke S4/i 100mm T2.0', status: 'active',
+    specs: { focal_length_mm: 100, max_aperture_t: 2.0, lens_format: 's35', mount: 'PL', is_anamorphic: false } },
+
   // ===== Cooke S7/i FF+ — full focal-length set =====
   { slug: 'cooke-s7i-18mm-t2', seriesSlug: 'cooke-s7i-ff-plus', name: 'Cooke S7/i 18mm T2.0', status: 'active',
     specs: { focal_length_mm: 18, max_aperture_t: 2.0, lens_format: 'full_frame_plus', mount: 'PL', is_anamorphic: false } },
@@ -163,6 +179,110 @@ export const itemsData: ItemSeed[] = [
     specs: { filter_kind: 'ir_nd', strengths_available: [0.9] } },
   { slug: 'tiffen-irnd-1-2', seriesSlug: 'tiffen-irnd', name: 'Tiffen IRND 1.2', status: 'active',
     specs: { filter_kind: 'ir_nd', strengths_available: [1.2] } },
+
+  // ===== ARRI ALEXA M (modular) =====
+  { slug: 'arri-alexa-m', seriesSlug: 'arri-alexa-family', name: 'ARRI ALEXA M', status: 'discontinued',
+    specs: { sensor_size: 's35', mount: 'PL', weight_kg: 1.8 } },
+
+  // ===== ARRICAM film cameras =====
+  { slug: 'arricam-lt', seriesSlug: 'arricam-lt-st', name: 'ARRICAM LT (35mm)', status: 'discontinued',
+    specs: { sensor_size: 's35', mount: 'PL' } },
+  { slug: 'arricam-st', seriesSlug: 'arricam-lt-st', name: 'ARRICAM ST (35mm)', status: 'discontinued',
+    specs: { sensor_size: 's35', mount: 'PL' } },
+
+  // ===== ARRI 416 Super 16mm =====
+  { slug: 'arri-416-body', seriesSlug: 'arri-416', name: 'ARRI 416 (Super 16mm)', status: 'discontinued',
+    specs: { sensor_size: 's16', mount: 'PL' } },
+
+  // ===== Panavision System 65 =====
+  { slug: 'panavision-system-65-studio', seriesSlug: 'panavision-system-65', name: 'Panavision Panaflex System 65 Studio', status: 'discontinued',
+    specs: { sensor_size: 'LF', mount: 'PV' } },
+  { slug: 'panavision-panaflex-hr', seriesSlug: 'panavision-system-65', name: 'Panavision Panaflex 65 HR', status: 'discontinued',
+    specs: { sensor_size: 'LF', mount: 'PV' } },
+
+  // ===== Panavision Millennium XL2 =====
+  { slug: 'panavision-millennium-xl2', seriesSlug: 'panavision-millennium-xl', name: 'Panavision Millennium XL2 (35mm)', status: 'discontinued',
+    specs: { sensor_size: 's35', mount: 'PV' } },
+
+  // ===== IMAX film cameras =====
+  { slug: 'imax-msm-9802', seriesSlug: 'imax-film-camera', name: 'IMAX MSM 9802 (65mm 15-perf)', status: 'discontinued',
+    specs: { sensor_size: 'imax_65', mount: 'PL' } },
+  { slug: 'imax-mkiv', seriesSlug: 'imax-film-camera', name: 'IMAX MKIV (65mm 15-perf)', status: 'discontinued',
+    specs: { sensor_size: 'imax_65', mount: 'PL' } },
+
+  // ===== RED cameras =====
+  { slug: 'red-one-mx', seriesSlug: 'red-camera-family', name: 'RED One MX (Mysterium-X)', status: 'discontinued',
+    specs: { sensor_size: 's35', sensor_resolution_max: '4096x2304', mount: 'PL' } },
+  { slug: 'red-helium-8k', seriesSlug: 'red-camera-family', name: 'RED Helium 8K', status: 'discontinued',
+    specs: { sensor_size: 's35', sensor_resolution_max: '8192x4320', mount: 'PL' } },
+  { slug: 'red-monstro-8k', seriesSlug: 'red-camera-family', name: 'RED Monstro 8K VV', status: 'discontinued',
+    specs: { sensor_size: 'vista_vision', sensor_resolution_max: '8192x4320', mount: 'PL' } },
+  { slug: 'red-v-raptor-8k', seriesSlug: 'red-camera-family', name: 'RED V-RAPTOR 8K VV', status: 'active',
+    specs: { sensor_size: 'vista_vision', sensor_resolution_max: '8192x4320', mount: 'PL' } },
+
+  // ===== Sony Venice =====
+  { slug: 'sony-venice-2-body', seriesSlug: 'sony-venice-family', name: 'Sony VENICE 2', status: 'active',
+    specs: { sensor_size: 'full_frame', sensor_resolution_max: '8640x5760', mount: 'PL', color_science: 'S-Cinetone' } },
+  { slug: 'sony-hdw-f900-body', seriesSlug: 'sony-hdw-f900', name: 'Sony HDW-F900 (HD video)', status: 'discontinued',
+    specs: { sensor_size: 's16', color_science: '2/3" CCD HDV — HD 1080i/24p native, no interchangeable mount' } },
+
+  // ===== Mitchell BNCR =====
+  { slug: 'mitchell-bncr-body', seriesSlug: 'mitchell-bncr', name: 'Mitchell BNCR (35mm reflex)', status: 'discontinued',
+    specs: { sensor_size: 's35', mount: 'M' } },
+
+  // ===== Panavision anamorphic families =====
+  { slug: 'panavision-c-series-35mm', seriesSlug: 'panavision-c-series', name: 'Panavision C35 T2.3', status: 'active',
+    specs: { focal_length_mm: 35, max_aperture_t: 2.3, is_anamorphic: true, anamorphic_squeeze: 2.0, mount: 'PV', lens_format: 's35' } },
+  { slug: 'panavision-c-series-50mm', seriesSlug: 'panavision-c-series', name: 'Panavision C50 T2.3', status: 'active',
+    specs: { focal_length_mm: 50, max_aperture_t: 2.3, is_anamorphic: true, anamorphic_squeeze: 2.0, mount: 'PV', lens_format: 's35' } },
+  { slug: 'panavision-e-series-35mm', seriesSlug: 'panavision-e-series', name: 'Panavision E35 T2.0', status: 'active',
+    specs: { focal_length_mm: 35, max_aperture_t: 2.0, is_anamorphic: true, anamorphic_squeeze: 2.0, mount: 'PV', lens_format: 's35' } },
+  { slug: 'panavision-e-series-50mm', seriesSlug: 'panavision-e-series', name: 'Panavision E50 T2.0', status: 'active',
+    specs: { focal_length_mm: 50, max_aperture_t: 2.0, is_anamorphic: true, anamorphic_squeeze: 2.0, mount: 'PV', lens_format: 's35' } },
+  { slug: 'panavision-h-series-40mm', seriesSlug: 'panavision-h-series', name: 'Panavision H40 (LF Anamorphic)', status: 'active',
+    specs: { focal_length_mm: 40, is_anamorphic: true, anamorphic_squeeze: 1.65, mount: 'PL', lens_format: 'large_format' } },
+  { slug: 'ultra-panavision-70-40mm', seriesSlug: 'ultra-panavision-70', name: 'Ultra Panavision 70 40mm (2.76:1)', status: 'rare',
+    specs: { focal_length_mm: 40, is_anamorphic: true, anamorphic_squeeze: 1.25, mount: 'PV', lens_format: 'large_format' } },
+  { slug: 'ultra-panatar-65mm', seriesSlug: 'panavision-ultra-panatar', name: 'Panavision Ultra Panatar 65mm (1.3×)', status: 'active',
+    specs: { focal_length_mm: 65, is_anamorphic: true, anamorphic_squeeze: 1.3, mount: 'LPL', lens_format: 'large_format' } },
+  { slug: 'panavision-va-40mm', seriesSlug: 'panavision-va', name: 'Panavision VA 40mm', status: 'active',
+    specs: { focal_length_mm: 40, is_anamorphic: false, mount: 'PL', lens_format: 'large_format' } },
+  { slug: 'panavision-super-speed-40mm', seriesSlug: 'panavision-super-speed', name: 'Panavision Ultra High Speed 40mm T1.1', status: 'active',
+    specs: { focal_length_mm: 40, max_aperture_t: 1.1, is_anamorphic: false, mount: 'PV', lens_format: 's35' } },
+
+  // ===== Zeiss additional =====
+  { slug: 'zeiss-ultra-prime-25mm', seriesSlug: 'zeiss-ultra-prime', name: 'Zeiss Ultra Prime 25mm T1.9', status: 'active',
+    specs: { focal_length_mm: 25, max_aperture_t: 1.9, is_anamorphic: false, mount: 'PL', lens_format: 's35' } },
+  { slug: 'zeiss-ultra-prime-40mm', seriesSlug: 'zeiss-ultra-prime', name: 'Zeiss Ultra Prime 40mm T1.9', status: 'active',
+    specs: { focal_length_mm: 40, max_aperture_t: 1.9, is_anamorphic: false, mount: 'PL', lens_format: 's35' } },
+  { slug: 'zeiss-super-speed-35mm', seriesSlug: 'zeiss-super-speed', name: 'Zeiss Super Speed 35mm T1.3', status: 'discontinued',
+    specs: { focal_length_mm: 35, max_aperture_t: 1.3, is_anamorphic: false, mount: 'PL', lens_format: 's35' } },
+  { slug: 'zeiss-planar-50mm-f07', seriesSlug: 'zeiss-planar-f07', name: 'Zeiss Planar 50mm f/0.7 (NASA)', status: 'rare',
+    specs: { focal_length_mm: 50, max_aperture_t: 0.7, is_anamorphic: false, mount: 'M', lens_format: 's35' } },
+
+  // ===== Hawk V-Lite =====
+  { slug: 'hawk-v-lite-40mm', seriesSlug: 'hawk-v-lite', name: 'Hawk V-Lite Vintage 40mm T2.2', status: 'active',
+    specs: { focal_length_mm: 40, max_aperture_t: 2.2, is_anamorphic: true, anamorphic_squeeze: 2.0, mount: 'PL', lens_format: 's35' } },
+
+  // ===== Angénieux Optimo Anamorphic =====
+  { slug: 'angenieux-optimo-anam-30-76', seriesSlug: 'angenieux-optimo-anamorphic', name: 'Angénieux Optimo Anamorphic 30–76mm T2.8', status: 'active',
+    specs: { focal_length_mm: 30, is_anamorphic: true, anamorphic_squeeze: 2.0, mount: 'PL', lens_format: 's35' } },
+
+  // ===== Bausch & Lomb Baltar (vintage) =====
+  { slug: 'bausch-lomb-baltar-40mm', seriesSlug: 'bausch-lomb-baltar', name: 'Bausch & Lomb Super Baltar 40mm', status: 'rare',
+    specs: { focal_length_mm: 40, is_anamorphic: false, mount: 'M', lens_format: 's35' } },
+
+  // ===== LOMO Round Front Anamorphic =====
+  { slug: 'lomo-round-front-50mm', seriesSlug: 'lomo-round-front', name: 'Lomo Round Front 50mm Anamorphic', status: 'rare',
+    specs: { focal_length_mm: 50, is_anamorphic: true, anamorphic_squeeze: 2.0, mount: 'PL', lens_format: 's35' } },
+
+  // ===== Leitz additional =====
+  { slug: 'leitz-summilux-c-35mm', seriesSlug: 'leitz-summilux-c', name: 'Leitz Summilux-C 35mm T1.4', status: 'active',
+    specs: { focal_length_mm: 35, max_aperture_t: 1.4, is_anamorphic: false, mount: 'PL', lens_format: 's35' } },
+  { slug: 'leitz-summilux-c-50mm', seriesSlug: 'leitz-summilux-c', name: 'Leitz Summilux-C 50mm T1.4', status: 'active',
+    specs: { focal_length_mm: 50, max_aperture_t: 1.4, is_anamorphic: false, mount: 'PL', lens_format: 's35' } },
+  { slug: 'leitz-thalia-25mm', seriesSlug: 'leitz-thalia', name: 'Leitz Thalia 25mm T2.6', status: 'active',
+    specs: { focal_length_mm: 25, max_aperture_t: 2.6, is_anamorphic: false, mount: 'PL', lens_format: 'large_format' } },
 ];
 
 export async function seedItems(db: SeedDb) {
