@@ -41,9 +41,18 @@ export const sourceKindEnum = pgEnum('source_kind_enum', [
   'magazine_article', 'press_release', 'epk_document', 'interview_transcript',
   'book', 'podcast', 'commentary_track', 'documentary',
   'manufacturer_product_page', 'social_media', 'personal_communication',
-  'forum_post', 'wiki', 'other',
+  'forum_post', 'wiki', 'vfx_breakdown_article', 'other',
 ]);
 
 export const sourceConfidenceEnum = pgEnum('source_confidence_enum', [
   'primary', 'secondary', 'manufacturer_marketing', 'speculative',
+]);
+
+export const vfxCreditRoleEnum = pgEnum('vfx_credit_role_enum', [
+  'primary', 'additional', 'special_sequences', 'miniatures', 'previsualization',
+]);
+
+export const vfxTechniqueCategoryEnum = pgEnum('vfx_technique_category_enum', [
+  'creature', 'environment', 'character', 'practical_enhancement',
+  'simulation', 'compositing', 'other',
 ]);
