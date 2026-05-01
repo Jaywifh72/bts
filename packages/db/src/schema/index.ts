@@ -6,3 +6,4 @@ export * from './productions.ts';
 export * from './crew.ts';
 export * from './scenes.ts';
 export * from './sources.ts';
+export * from './vfx.ts';
