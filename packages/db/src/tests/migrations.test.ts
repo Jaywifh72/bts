@@ -17,7 +17,7 @@ describe('migration sanity', () => {
       ORDER BY table_name
     `;
     const tables = rows.map((r) => r.table_name);
-    expect(tables.length).toBe(22);
+    expect(tables.length).toBe(23);
   }, 30_000);
 
   it('migrations are idempotent (re-applying does nothing)', async () => {
