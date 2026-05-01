@@ -59,28 +59,30 @@ export async function getPersonBySlug(db: SeedDb = defaultDb, slug: string) {
   return person ?? null;
 }
 
-export async function getPersonFilmography(db: SeedDb = defaultDb, personId: number) {
+export async function getPersonFilmography(db: SeedDb = defaultDb, slug: string) {
   return db.execute<{
     production_slug: string;
     production_title: string;
-    production_type: string;
     release_year: number | null;
+    production_type: string;
     role_name: string;
     role_category: string;
-    credit_order: number | null;
+    credit_name_override: string | null;
+    primary_aspect_ratio: string | null;
+    primary_acquisition_format: string | null;
   }>(sql`
-    SELECT
-      p.slug AS production_slug,
-      p.title AS production_title,
-      p.type AS production_type,
-      p.release_year,
-      r.name AS role_name,
-      r.category AS role_category,
-      ca.credit_order
+    SELECT p.slug AS production_slug, p.title AS production_title,
+           p.release_year, p.type AS production_type,
+           r.name AS role_name, r.category AS role_category,
+           ca.credit_name_override,
+           pf.aspect_ratio AS primary_aspect_ratio,
+           pf.acquisition_format AS primary_acquisition_format
     FROM crew_assignments ca
+    JOIN people ppl ON ppl.id = ca.person_id
     JOIN productions p ON p.id = ca.production_id
     JOIN roles r ON r.id = ca.role_id
-    WHERE ca.person_id = ${personId}
+    LEFT JOIN production_formats pf ON pf.production_id = p.id AND pf.is_primary = true
+    WHERE ppl.slug = ${slug}
     ORDER BY p.release_year DESC NULLS LAST, p.title ASC
   `);
 }
