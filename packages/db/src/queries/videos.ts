@@ -3,7 +3,7 @@ import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 type SeedDb = PostgresJsDatabase<Record<string, never>>;
 import { sql } from 'drizzle-orm';
 
-export interface ProductionVideo extends Record<string, unknown> {
+export type ProductionVideo = {
   id: number;
   source: 'youtube' | 'vimeo';
   external_id: string;
@@ -16,7 +16,7 @@ export interface ProductionVideo extends Record<string, unknown> {
   published_at: string | null;
   category: string;
   confidence_score: string;
-}
+};
 
 /**
  * Returns all published videos for a production, sorted by category then view_count DESC.
