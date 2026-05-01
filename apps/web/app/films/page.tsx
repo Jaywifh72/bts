@@ -1,6 +1,5 @@
 import type { Metadata } from 'next';
-import { db } from '@bts/db';
-import { listProductions } from '@bts/db/src/queries/productions';
+import { db, listProductions } from '@bts/db';
 import { ProductionCard } from '@/components/productions/ProductionCard';
 
 export const metadata: Metadata = { title: 'Films' };

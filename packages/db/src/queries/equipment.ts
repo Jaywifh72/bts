@@ -1,5 +1,6 @@
 import { db as defaultDb } from '../db.ts';
-import type { SeedDb } from '../seed/run.ts';
+import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
+type SeedDb = PostgresJsDatabase<Record<string, never>>;
 import { sql } from 'drizzle-orm';
 
 // ── Manufacturers ──────────────────────────────────────────────────────────────
