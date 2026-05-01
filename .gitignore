@@ -27,3 +27,6 @@ pnpm-debug.log*
 
 # postgres data
 .postgres-data/
+
+# git worktrees
+.worktrees/
