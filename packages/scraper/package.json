@@ -7,6 +7,7 @@
     "scrape:artofvfx": "tsx src/cli.ts scrape:artofvfx",
     "scrape:beforesandafters": "tsx src/cli.ts scrape:beforesandafters",
     "import:vfx": "tsx src/cli.ts import:vfx",
+    "discover:videos": "tsx src/cli.ts discover:videos",
     "run": "tsx src/cli.ts run",
     "start": "tsx src/scheduler.ts",
     "typecheck": "tsc --noEmit"

@@ -4,6 +4,7 @@ import { scrapeArtOfVfx } from './scrapers/art-of-vfx.ts';
 import { scrapeBeforesAndAfters } from './scrapers/befores-and-afters.ts';
 import { loadRawBreakdowns } from './import/transform.ts';
 import { upsertBreakdown } from './import/upsert.ts';
+import { discoverVideos } from './discovery/run.ts';
 
 const schedule = process.env.SCRAPER_CRON ?? '0 3 * * 1'; // Monday 3AM
 
@@ -28,8 +29,13 @@ cron.schedule(schedule, async () => {
         console.error(`upsert failed for ${b.production_slug}:`, err instanceof Error ? err.message : String(err));
       });
     }
-    console.log(`[${new Date().toISOString()}] Scheduled run complete`);
   } catch (e) {
     console.error('import:vfx failed:', e instanceof Error ? e.message : String(e));
   }
+  try {
+    await discoverVideos();
+  } catch (e) {
+    console.error('discover:videos failed:', e instanceof Error ? e.message : String(e));
+  }
+  console.log(`[${new Date().toISOString()}] Scheduled run complete`);
 });

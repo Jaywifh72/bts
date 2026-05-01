@@ -3,6 +3,7 @@ import { scrapeArtOfVfx } from './scrapers/art-of-vfx.ts';
 import { scrapeBeforesAndAfters } from './scrapers/befores-and-afters.ts';
 import { loadRawBreakdowns } from './import/transform.ts';
 import { upsertBreakdown } from './import/upsert.ts';
+import { discoverVideos, rescorePending } from './discovery/run.ts';
 
 const [, , command, ...args] = process.argv;
 const slugFlag = args.find((_, i) => args[i - 1] === '--slug');
@@ -30,15 +31,29 @@ async function main() {
     case 'import:vfx':
       await importVfx();
       break;
+    case 'discover:videos': {
+      const isPending = args.includes('--pending');
+      if (isPending) {
+        await rescorePending();
+      } else {
+        await discoverVideos(slugFlag);
+      }
+      break;
+    }
     case 'run':
-      console.log('run: scrape:artofvfx → scrape:beforesandafters → import:vfx');
+      console.log('run: scrape:artofvfx → scrape:beforesandafters → import:vfx → discover:videos');
       await scrapeArtOfVfx(slugFlag);
       await scrapeBeforesAndAfters(slugFlag);
       await importVfx();
+      try {
+        await discoverVideos(slugFlag);
+      } catch (e) {
+        console.error('discover:videos failed:', e instanceof Error ? e.message : String(e));
+      }
       break;
     default:
       console.error(`Unknown command: ${command}`);
-      console.error('Usage: tsx src/cli.ts <scrape:artofvfx|scrape:beforesandafters|import:vfx|run> [--slug <production-slug>]');
+      console.error('Usage: tsx src/cli.ts <scrape:artofvfx|scrape:beforesandafters|import:vfx|discover:videos|run> [--slug <slug>] [--pending]');
       process.exit(1);
   }
 }
