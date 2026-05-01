@@ -13,6 +13,7 @@ import { seedScenes } from './data/scenes.ts';
 import { seedCrew } from './data/crew.ts';
 import { seedEquipmentUsage } from './data/equipment-usage.ts';
 import { seedAttributions } from './data/attributions.ts';
+import { seedVfxTechniques } from './data/vfx-techniques.ts';
 
 export type SeedDb = PostgresJsDatabase<Record<string, never>>;
 export type Step = { name: string; run: (db: SeedDb) => Promise<void> };
@@ -36,6 +37,7 @@ export const steps: Step[] = [
   { name: 'crew', run: async (db) => { await seedCrew(db); } },
   { name: 'equipment_usage', run: async (db) => { await seedEquipmentUsage(db); } },
   { name: 'attributions', run: async (db) => { await seedAttributions(db); } },
+  { name: 'vfx_techniques', run: async (db) => { await seedVfxTechniques(db); } },
 ];
 
 export async function runSeed(db: SeedDb = defaultDb): Promise<void> {
