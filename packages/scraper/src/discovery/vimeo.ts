@@ -26,9 +26,12 @@ async function rateLimitedFetch(url: string, headers: Record<string, string>): P
   const now = Date.now();
   const elapsed = now - _lastCallAt;
   if (elapsed < RATE_LIMIT_DELAY_MS) {
+    // Reserve the slot immediately so concurrent callers see the updated timestamp
+    _lastCallAt = now + (RATE_LIMIT_DELAY_MS - elapsed);
     await new Promise((r) => setTimeout(r, RATE_LIMIT_DELAY_MS - elapsed));
+  } else {
+    _lastCallAt = now;
   }
-  _lastCallAt = Date.now();
   return fetch(url, { headers });
 }
 
