@@ -1,6 +1,6 @@
-import { sql } from 'drizzle-orm';
-import type { SeedDb } from '../seed/run.ts';
 import { db as defaultDb } from '../db.ts';
+import type { SeedDb } from '../seed/run.ts';
+import { sql } from 'drizzle-orm';
 
 export async function listProductions(db: SeedDb = defaultDb) {
   return db.execute<{
@@ -99,7 +99,12 @@ export async function getProductionWithFullDetail(db: SeedDb = defaultDb, slug: 
              ps.confidence, ps.claim_quote
       FROM production_sources ps JOIN sources s ON s.id = ps.source_id
       WHERE ps.production_id = ${prod.id}
-      ORDER BY ps.confidence`),
+      ORDER BY CASE ps.confidence
+               WHEN 'primary' THEN 1
+               WHEN 'secondary' THEN 2
+               WHEN 'manufacturer_marketing' THEN 3
+               WHEN 'speculative' THEN 4
+               END`),
   ]);
 
   return { production: prod, formats, studios, crew, scenes, productionSources };
