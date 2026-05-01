@@ -5,6 +5,7 @@ export default defineConfig({
     environment: 'node',
     globals: false,
     sequence: { concurrent: false },     // schema tests share a DB; serialize
+    fileParallelism: false,              // all test files share one bts_test DB; run serially
     pool: 'forks',
     testTimeout: 30_000,
   },
