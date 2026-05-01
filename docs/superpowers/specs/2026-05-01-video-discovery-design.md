@@ -95,6 +95,8 @@ For each production, all six queries run against both YouTube and Vimeo. Results
 | `"[title] [year] cinematography"` | `dp_interview` |
 | `"[title] [year] production design"` | `production_design` |
 
+Query strings are used verbatim for YouTube (which supports quoted-phrase search). For Vimeo, quotes are stripped and the string is passed as plain keywords — see API notes above.
+
 Each query fetches the top 10 results. After deduplication, a production typically yields 20–50 candidates.
 
 ### Confidence scoring (`score.ts`)
@@ -121,7 +123,8 @@ Category is assigned after scoring, in priority order:
 
 1. **Channel identity** — if the channel is a known VFX house (ILM, Weta, DNEG, MPC, Framestore, Rodeo FX, etc.), assign `vfx_breakdown` regardless of title
 2. **Title keyword matching** — scan video title against per-category keyword lists:
-   - `vfx_breakdown`: "vfx", "visual effects", "breakdown", "cgi", "compositing"
+   - `compositing`: "compositing", "nuke", "colour grade", "color grade" ← checked first to avoid being swallowed by `vfx_breakdown`
+   - `vfx_breakdown`: "vfx", "visual effects", "breakdown", "cgi"
    - `making_of`: "making of", "making-of", "the making"
    - `behind_the_scenes`: "behind the scenes", "bts", "on set", "onset"
    - `dp_interview`: "cinematography", "director of photography", "dp", "cameraman", "lenses"
@@ -130,7 +133,6 @@ Category is assigned after scoring, in priority order:
    - `stunts`: "stunts", "stunt"
    - `sound`: "sound design", "score", "audio"
    - `music`: "soundtrack", "composer", "musical score"
-   - `compositing`: "compositing", "nuke", "colour grade", "color grade"
 3. **Fallback** → `other`
 
 ### Authority channel list (`channels.ts`)
@@ -165,7 +167,7 @@ Run via `pnpm --filter @bts/scraper <command>`:
 
 ### Scheduler
 
-Discovery runs weekly alongside the VFX text scrape. The existing `scheduler.ts` `run` command is extended to call `discover:videos` after `import:vfx`. The `SCRAPER_CRON` env var controls the schedule for all jobs.
+Discovery runs weekly alongside the VFX text scrape. The existing `scheduler.ts` `run` command is extended to call `discover:videos` after `import:vfx`. The `SCRAPER_CRON` env var controls the schedule for all jobs. Each step runs independently — a YouTube or Vimeo API failure during `discover:videos` is caught, logged, and does not halt the run or roll back already-persisted VFX scrape results.
 
 ### API credentials
 
@@ -181,7 +183,7 @@ Both added to `.env.example` and the Docker Compose `scraper` service environmen
 
 ### Modified: film detail page (`apps/web/app/films/[slug]/page.tsx`)
 
-`getProductionWithFullDetail` is extended to also fetch `published` videos for the production, ordered by `category` then `view_count DESC`.
+The page component calls `getProductionVideos(db, productionId)` as a separate query alongside the existing `getProductionWithFullDetail` call — two parallel DB calls, not inlined into the existing query. This keeps the video query isolated and avoids bloating `getProductionWithFullDetail` further. Both results are passed as props to `ProductionDetail`.
 
 ### New component: `VideoGallery` (`apps/web/components/productions/VideoGallery.tsx`)
 
