@@ -92,6 +92,75 @@ export async function getSeriesBySlug(db: SeedDb = defaultDb, seriesSlug: string
 }
 
 /**
+ * Cross-reference: camera crew who worked on productions where the given
+ * series was used in any scene.
+ *
+ * Restricted to category='camera' roles. Grain: one row per (person, role)
+ * pair. Ordered by production_count DESC so the most-frequent users surface
+ * first.
+ */
+export async function getCrewForSeries(db: SeedDb = defaultDb, seriesSlug: string) {
+  return db.execute<{
+    person_slug: string;
+    display_name: string;
+    role_slug: string;
+    role_name: string;
+    role_category: string;
+    production_count: number;
+    scene_count: number;
+  }>(sql`
+    SELECT
+      p.slug AS person_slug, p.display_name,
+      r.slug AS role_slug, r.name AS role_name, r.category AS role_category,
+      COUNT(DISTINCT sc.production_id)::int AS production_count,
+      COUNT(DISTINCT sc.id)::int AS scene_count
+    FROM equipment_series es
+    JOIN equipment_usage eu ON eu.equipment_series_id = es.id
+    JOIN scenes sc ON sc.id = eu.scene_id
+    JOIN crew_assignments ca ON ca.production_id = sc.production_id
+    JOIN people p ON p.id = ca.person_id
+    JOIN roles r ON r.id = ca.role_id
+    WHERE es.slug = ${seriesSlug}
+      AND r.category = 'camera'
+    GROUP BY p.slug, p.display_name, r.slug, r.name, r.category
+    ORDER BY production_count DESC, scene_count DESC, p.display_name
+  `);
+}
+
+/**
+ * Same shape as getCrewForSeries but filtered to a single equipment item.
+ * Useful for the per-item detail page where the question is "who has shot on
+ * this specific lens / body".
+ */
+export async function getCrewForItem(db: SeedDb = defaultDb, itemSlug: string) {
+  return db.execute<{
+    person_slug: string;
+    display_name: string;
+    role_slug: string;
+    role_name: string;
+    role_category: string;
+    production_count: number;
+    scene_count: number;
+  }>(sql`
+    SELECT
+      p.slug AS person_slug, p.display_name,
+      r.slug AS role_slug, r.name AS role_name, r.category AS role_category,
+      COUNT(DISTINCT sc.production_id)::int AS production_count,
+      COUNT(DISTINCT sc.id)::int AS scene_count
+    FROM equipment_items ei
+    JOIN equipment_usage eu ON eu.equipment_item_id = ei.id
+    JOIN scenes sc ON sc.id = eu.scene_id
+    JOIN crew_assignments ca ON ca.production_id = sc.production_id
+    JOIN people p ON p.id = ca.person_id
+    JOIN roles r ON r.id = ca.role_id
+    WHERE ei.slug = ${itemSlug}
+      AND r.category = 'camera'
+    GROUP BY p.slug, p.display_name, r.slug, r.name, r.category
+    ORDER BY production_count DESC, scene_count DESC, p.display_name
+  `);
+}
+
+/**
  * Returns every (manufacturer, series, item) slug triple in the catalog.
  * Items appear once per row. Pure read for sitemap and similar bulk URL
  * enumeration — does not include any aggregates or related data.

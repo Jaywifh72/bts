@@ -59,6 +59,47 @@ export async function getPersonBySlug(db: SeedDb = defaultDb, slug: string) {
   return person ?? null;
 }
 
+/**
+ * Cross-reference: every (manufacturer, series, item) used on a production
+ * the given person crewed on, restricted to camera-department roles where
+ * gear correlation is meaningful.
+ *
+ * Grain: one row per series+item pair. Ordered by production_count DESC then
+ * scene_count DESC so a person's most-used gear surfaces at the top.
+ */
+export async function getEquipmentUsedByPerson(db: SeedDb = defaultDb, personSlug: string) {
+  return db.execute<{
+    manufacturer_slug: string;
+    manufacturer_name: string;
+    series_slug: string;
+    series_name: string;
+    series_category: string;
+    item_slug: string | null;
+    item_name: string | null;
+    production_count: number;
+    scene_count: number;
+  }>(sql`
+    SELECT
+      em.slug AS manufacturer_slug, em.name AS manufacturer_name,
+      es.slug AS series_slug, es.name AS series_name, es.category AS series_category,
+      ei.slug AS item_slug, ei.name AS item_name,
+      COUNT(DISTINCT sc.production_id)::int AS production_count,
+      COUNT(DISTINCT sc.id)::int AS scene_count
+    FROM crew_assignments ca
+    JOIN people p ON p.id = ca.person_id
+    JOIN scenes sc ON sc.production_id = ca.production_id
+    JOIN equipment_usage eu ON eu.scene_id = sc.id
+    JOIN equipment_series es ON es.id = eu.equipment_series_id
+    JOIN equipment_manufacturers em ON em.id = es.manufacturer_id
+    LEFT JOIN equipment_items ei ON ei.id = eu.equipment_item_id
+    JOIN roles r ON r.id = ca.role_id
+    WHERE p.slug = ${personSlug}
+      AND r.category = 'camera'
+    GROUP BY em.slug, em.name, es.slug, es.name, es.category, ei.slug, ei.name
+    ORDER BY production_count DESC, scene_count DESC, em.name, es.name
+  `);
+}
+
 export async function getPersonFilmography(db: SeedDb = defaultDb, slug: string) {
   return db.execute<{
     production_slug: string;
