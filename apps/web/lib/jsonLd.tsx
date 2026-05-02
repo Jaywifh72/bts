@@ -71,7 +71,10 @@ export function buildMovieJsonLd(m: MovieInput): JsonLdObject {
     alternateName: m.originalTitle ?? undefined,
     description: m.synopsis ?? undefined,
     datePublished: m.releaseYear ? String(m.releaseYear) : undefined,
-    image: m.posterUrl ?? `${url}/opengraph-image`,
+    // Falls back to undefined when no poster. Per-detail-page OG image
+    // generation is deferred (see commit message for details); the
+    // site-level og:image set via root layout still applies.
+    image: m.posterUrl ?? undefined,
     director:
       m.directors && m.directors.length > 0
         ? m.directors.map((d) => ({
@@ -99,7 +102,6 @@ export function buildPersonJsonLd(p: PersonInput): JsonLdObject {
     url,
     name: p.name,
     jobTitle: p.primaryRole ?? undefined,
-    image: `${url}/opengraph-image`,
   };
 }
 
