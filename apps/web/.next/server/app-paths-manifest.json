@@ -1,4 +1,4 @@
 {
-  "/admin/login/page": "app/admin/login/page.js",
-  "/admin/(authenticated)/videos/page": "app/admin/(authenticated)/videos/page.js"
+  "/robots.txt/route": "app/robots.txt/route.js",
+  "/sitemap.xml/[[...__metadata_id__]]/route": "app/sitemap.xml/[[...__metadata_id__]]/route.js"
 }

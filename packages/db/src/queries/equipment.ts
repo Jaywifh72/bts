@@ -91,6 +91,28 @@ export async function getSeriesBySlug(db: SeedDb = defaultDb, seriesSlug: string
   return { series, items, usedOn };
 }
 
+/**
+ * Returns every (manufacturer, series, item) slug triple in the catalog.
+ * Items appear once per row. Pure read for sitemap and similar bulk URL
+ * enumeration — does not include any aggregates or related data.
+ */
+export async function listAllGearPaths(db: SeedDb = defaultDb) {
+  return db.execute<{
+    manufacturer_slug: string;
+    series_slug: string;
+    item_slug: string;
+  }>(sql`
+    SELECT
+      em.slug AS manufacturer_slug,
+      es.slug AS series_slug,
+      ei.slug AS item_slug
+    FROM equipment_items ei
+    JOIN equipment_series es ON es.id = ei.series_id
+    JOIN equipment_manufacturers em ON em.id = es.manufacturer_id
+    ORDER BY em.slug, es.slug, ei.slug
+  `);
+}
+
 // ── Items ──────────────────────────────────────────────────────────────────────
 
 export async function listItemsBySeries(db: SeedDb = defaultDb, seriesSlug: string) {
