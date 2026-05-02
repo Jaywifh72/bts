@@ -12,6 +12,13 @@ export const manufacturersData = [
   { slug: 'schneider-kreuznach', name: 'Schneider-Kreuznach', kind: 'manufacturer' as const, country: 'DE' },
   { slug: 'leitz-cine', name: 'Leitz Cine', kind: 'manufacturer' as const, country: 'DE' },
   { slug: 'angenieux', name: 'Angénieux', kind: 'manufacturer' as const, country: 'FR' },
+  { slug: 'imax', name: 'IMAX Corporation', kind: 'manufacturer' as const, country: 'CA', foundedYear: 1967 },
+  { slug: 'red-digital-cinema', name: 'RED Digital Cinema', kind: 'manufacturer' as const, country: 'US', foundedYear: 2005 },
+  { slug: 'sony', name: 'Sony', kind: 'manufacturer' as const, country: 'JP', foundedYear: 1946 },
+  { slug: 'mitchell', name: 'Mitchell Camera Corporation', kind: 'manufacturer' as const, country: 'US', foundedYear: 1920 },
+  { slug: 'vantage', name: 'Vantage Film (Hawk)', kind: 'manufacturer' as const, country: 'DE', foundedYear: 1995 },
+  { slug: 'bausch-lomb', name: 'Bausch & Lomb', kind: 'manufacturer' as const, country: 'US', foundedYear: 1853 },
+  { slug: 'lomo', name: 'LOMO', kind: 'manufacturer' as const, country: 'RU', foundedYear: 1914 },
 ];
 
 export async function seedManufacturers(db: SeedDb) {

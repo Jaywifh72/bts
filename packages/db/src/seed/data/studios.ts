@@ -17,6 +17,23 @@ export const studiosData = [
   { slug: 'focus-features', name: 'Focus Features',         kind: 'distributor' as const, country: 'US' },
   { slug: 'plan-b',         name: 'Plan B Entertainment',   kind: 'production_company' as const, country: 'US' },
   { slug: 'specialty-films', name: 'Specialty Films',       kind: 'production_company' as const, country: 'US' },
+  { slug: 'columbia-pictures', name: 'Columbia Pictures',     kind: 'studio' as const, country: 'US' },
+  { slug: 'paramount',         name: 'Paramount Pictures',     kind: 'studio' as const, country: 'US' },
+  { slug: 'united-artists',    name: 'United Artists',         kind: 'studio' as const, country: 'US' },
+  { slug: 'zoetrope',          name: 'American Zoetrope',      kind: 'production_company' as const, country: 'US' },
+  { slug: 'amblin',            name: 'Amblin Entertainment',   kind: 'production_company' as const, country: 'US' },
+  { slug: 'dreamworks',        name: 'DreamWorks Pictures',    kind: 'studio' as const, country: 'US' },
+  { slug: 'miramax',           name: 'Miramax',                kind: 'studio' as const, country: 'US' },
+  { slug: 'syncopy',           name: 'Syncopy',                kind: 'production_company' as const, country: 'GB' },
+  { slug: 'film4',             name: 'Film4 Productions',      kind: 'production_company' as const, country: 'GB' },
+  { slug: 'weinstein-company', name: 'The Weinstein Company',  kind: 'studio' as const, country: 'US' },
+  { slug: 'sony-pictures-classics', name: 'Sony Pictures Classics', kind: 'distributor' as const, country: 'US' },
+  { slug: 'amazon-studios',    name: 'Amazon MGM Studios',     kind: 'studio' as const, country: 'US' },
+  { slug: 'mk2',               name: 'mk2 Films',              kind: 'production_company' as const, country: 'FR' },
+  { slug: 'neon',              name: 'NEON',                   kind: 'distributor' as const, country: 'US' },
+  { slug: 'topic-studios',     name: 'Topic Studios',          kind: 'production_company' as const, country: 'US' },
+  { slug: 'mubi',              name: 'MUBI',                   kind: 'distributor' as const, country: 'GB' },
+  { slug: 'black-label-media', name: 'Black Label Media',      kind: 'production_company' as const, country: 'US' },
 ];
 
 export async function seedStudios(db: SeedDb) {
