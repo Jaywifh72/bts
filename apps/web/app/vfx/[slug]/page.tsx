@@ -5,6 +5,7 @@ import { db, listVfxHouses, getVfxHouseWithFilmography } from '@bts/db';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Badge } from '@/components/ui/Badge';
 import { VfxFilmography } from '@/components/vfx/VfxFilmography';
+import { JsonLd, buildOrganizationJsonLd } from '@/lib/jsonLd';
 
 interface Props { params: { slug: string } }
 
@@ -27,8 +28,17 @@ export default async function VfxHousePage({ params }: Props) {
     ? Math.round(house.total_shots).toLocaleString()
     : null;
 
+  const jsonLd = buildOrganizationJsonLd({
+    slug: house.slug,
+    name: house.name,
+    website: house.website,
+    country: house.country,
+  });
+
   return (
-    <article>
+    <>
+      <JsonLd data={jsonLd} />
+      <article>
       <header className="mb-8 border-b border-zinc-800 pb-6">
         <p className="text-xs text-zinc-500">
           <Link href="/vfx" className="hover:text-amber-400">VFX Houses</Link>
@@ -80,5 +90,6 @@ export default async function VfxHousePage({ params }: Props) {
         <VfxFilmography rows={filmography} />
       </div>
     </article>
+    </>
   );
 }

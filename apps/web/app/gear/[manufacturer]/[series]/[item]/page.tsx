@@ -5,6 +5,7 @@ import { db, listManufacturers, listSeriesByManufacturer, listItemsBySeries, get
 import { SpecsTable } from '@/components/equipment/SpecsTable';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Badge } from '@/components/ui/Badge';
+import { JsonLd, buildProductJsonLd } from '@/lib/jsonLd';
 
 interface Props { params: { manufacturer: string; series: string; item: string } }
 
@@ -38,8 +39,19 @@ export default async function ItemPage({ params }: Props) {
   if (!data) notFound();
   const { item, usedOn } = data;
 
+  const jsonLd = buildProductJsonLd({
+    manufacturerSlug: params.manufacturer,
+    seriesSlug: params.series,
+    itemSlug: params.item,
+    name: item.name,
+    manufacturerName: item.manufacturer_name,
+    category: item.series_category,
+  });
+
   return (
-    <article>
+    <>
+      <JsonLd data={jsonLd} />
+      <article>
       <header className="mb-8">
         <p className="text-xs text-zinc-500">
           <Link href="/gear" className="hover:text-amber-400">Gear</Link>
@@ -106,5 +118,6 @@ export default async function ItemPage({ params }: Props) {
         </div>
       )}
     </article>
+    </>
   );
 }
