@@ -1,7 +1,8 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
-import { db, listPeople, getPersonBySlug, getPersonFilmography } from '@bts/db';
+import { db, listPeople, getPersonBySlug, getPersonFilmography, getEquipmentUsedByPerson } from '@bts/db';
 import { FilmographyTable } from '@/components/people/FilmographyTable';
+import { EquipmentUsedTable } from '@/components/people/EquipmentUsedTable';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { JsonLd, buildPersonJsonLd } from '@/lib/jsonLd';
 
@@ -27,9 +28,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CrewDetailPage({ params }: Props) {
-  const [person, filmography] = await Promise.all([
+  const [person, filmography, equipment] = await Promise.all([
     getPersonBySlug(db, params.slug),
     getPersonFilmography(db, params.slug),
+    getEquipmentUsedByPerson(db, params.slug),
   ]);
   if (!person) notFound();
 
@@ -71,6 +73,18 @@ export default async function CrewDetailPage({ params }: Props) {
 
         <SectionHeader label="Career" heading="Filmography" />
         <FilmographyTable rows={filmography} />
+
+        {equipment.length > 0 && (
+          <div id="equipment" className="mt-10 scroll-mt-6">
+            <SectionHeader label="Loadout" heading="Equipment used" />
+            <p className="-mt-2 mb-3 max-w-2xl text-xs text-zinc-500">
+              Cameras, lenses, and lighting attributed to scenes on productions
+              this person crewed in a camera-department role. Counts aggregate
+              across all such productions.
+            </p>
+            <EquipmentUsedTable rows={equipment} />
+          </div>
+        )}
       </article>
     </>
   );

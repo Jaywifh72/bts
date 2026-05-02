@@ -1,9 +1,10 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { db, listManufacturers, listSeriesByManufacturer, getSeriesBySlug } from '@bts/db';
+import { db, listManufacturers, listSeriesByManufacturer, getSeriesBySlug, getCrewForSeries } from '@bts/db';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Badge } from '@/components/ui/Badge';
+import { CrewWhoUsedTable } from '@/components/equipment/CrewWhoUsedTable';
 
 interface Props { params: { manufacturer: string; series: string } }
 
@@ -24,7 +25,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function SeriesPage({ params }: Props) {
-  const data = await getSeriesBySlug(db, params.series);
+  const [data, crew] = await Promise.all([
+    getSeriesBySlug(db, params.series),
+    getCrewForSeries(db, params.series),
+  ]);
   if (!data) notFound();
   const { series, items, usedOn } = data;
 
@@ -74,7 +78,7 @@ export default async function SeriesPage({ params }: Props) {
       </div>
 
       {usedOn.length > 0 && (
-        <div>
+        <div className="mb-8">
           <SectionHeader label="Credits" heading="Used on" />
           <ul className="space-y-1">
             {usedOn.map((p) => (
@@ -86,6 +90,17 @@ export default async function SeriesPage({ params }: Props) {
               </li>
             ))}
           </ul>
+        </div>
+      )}
+
+      {crew.length > 0 && (
+        <div id="cinematographers" className="scroll-mt-6">
+          <SectionHeader label="Crew" heading="Cinematographers" />
+          <p className="-mt-2 mb-3 max-w-2xl text-xs text-zinc-500">
+            Camera-department crew on productions where this series was used.
+            Same person may appear once per role they held.
+          </p>
+          <CrewWhoUsedTable rows={crew} />
         </div>
       )}
     </article>

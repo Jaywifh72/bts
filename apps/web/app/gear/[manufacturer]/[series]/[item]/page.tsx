@@ -1,10 +1,11 @@
 import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
-import { db, listManufacturers, listSeriesByManufacturer, listItemsBySeries, getItemBySlug } from '@bts/db';
+import { db, listManufacturers, listSeriesByManufacturer, listItemsBySeries, getItemBySlug, getCrewForItem } from '@bts/db';
 import { SpecsTable } from '@/components/equipment/SpecsTable';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Badge } from '@/components/ui/Badge';
+import { CrewWhoUsedTable } from '@/components/equipment/CrewWhoUsedTable';
 import { JsonLd, buildProductJsonLd } from '@/lib/jsonLd';
 
 interface Props { params: { manufacturer: string; series: string; item: string } }
@@ -35,7 +36,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function ItemPage({ params }: Props) {
-  const data = await getItemBySlug(db, params.item);
+  const [data, crew] = await Promise.all([
+    getItemBySlug(db, params.item),
+    getCrewForItem(db, params.item),
+  ]);
   if (!data) notFound();
   const { item, usedOn } = data;
 
@@ -87,7 +91,7 @@ export default async function ItemPage({ params }: Props) {
       </div>
 
       {usedOn.length > 0 && (
-        <div>
+        <div className="mb-8">
           <SectionHeader label="Credits" heading="Used on" />
           <div className="overflow-x-auto rounded border border-zinc-800">
             <table className="w-full text-sm">
@@ -115,6 +119,17 @@ export default async function ItemPage({ params }: Props) {
               </tbody>
             </table>
           </div>
+        </div>
+      )}
+
+      {crew.length > 0 && (
+        <div id="cinematographers" className="scroll-mt-6">
+          <SectionHeader label="Crew" heading="Cinematographers" />
+          <p className="-mt-2 mb-3 max-w-2xl text-xs text-zinc-500">
+            Camera-department crew on productions where this specific item
+            was used. Same person may appear once per role they held.
+          </p>
+          <CrewWhoUsedTable rows={crew} />
         </div>
       )}
     </article>
