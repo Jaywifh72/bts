@@ -1,5 +1,5 @@
 import {
-  pgTable, bigserial, bigint, text, integer, timestamp, date, boolean, numeric,
+  pgTable, pgEnum, bigserial, bigint, text, integer, timestamp, date, boolean, numeric,
   primaryKey, unique, index, type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -8,6 +8,8 @@ import {
   studioKindEnum,
   productionStudioRoleEnum,
 } from './enums.ts';
+
+export const productionDataTierEnum = pgEnum('production_data_tier', ['curated', 'imported']);
 
 export const studios = pgTable('studios', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
@@ -38,12 +40,27 @@ export const productions = pgTable('productions', {
   tmdbId: integer('tmdb_id').unique(),
   imdbId: text('imdb_id').unique(),
   wikidataId: text('wikidata_id').unique(),
+  // TMDb-sourced metadata (added migration 0012)
+  genres: text('genres').array(),
+  originalLanguage: text('original_language'),
+  productionCountry: text('production_country'),
+  popularity: numeric('popularity', { precision: 8, scale: 2 }),
+  voteAverage: numeric('vote_average', { precision: 3, scale: 1 }),
+  voteCount: integer('vote_count'),
+  posterPath: text('poster_path'),
+  backdropPath: text('backdrop_path'),
+  tmdbCollectionId: integer('tmdb_collection_id'),
+  tmdbCollectionName: text('tmdb_collection_name'),
+  dataTier: productionDataTierEnum('data_tier').notNull().default('imported'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   typeIdx: index('productions_type_idx').on(t.type),
   releaseYearIdx: index('productions_release_year_idx').on(t.releaseYear),
   parentIdx: index('productions_parent_idx').on(t.parentId),
+  dataTierIdx: index('productions_data_tier_idx').on(t.dataTier),
+  popularityIdx: index('productions_popularity_idx').on(t.popularity),
+  voteAverageIdx: index('productions_vote_average_idx').on(t.voteAverage),
 }));
 
 export const productionFormats = pgTable('production_formats', {

@@ -1,4 +1,4 @@
-import { pgTable, bigserial, text, date, timestamp } from 'drizzle-orm/pg-core';
+import { pgTable, bigserial, integer, text, date, timestamp } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 
 export const people = pgTable('people', {
@@ -15,6 +15,10 @@ export const people = pgTable('people', {
   memberSocieties: text('member_societies').array().notNull().default(sql`ARRAY[]::text[]`),
   imdbId: text('imdb_id').unique(),
   wikidataId: text('wikidata_id').unique(),
+  // TMDb-sourced (added migration 0012). The unique index is partial
+  // (WHERE tmdb_person_id IS NOT NULL) so legacy rows with NULL coexist.
+  tmdbPersonId: integer('tmdb_person_id'),
+  profilePath: text('profile_path'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });

@@ -3,24 +3,160 @@ import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 type SeedDb = PostgresJsDatabase<Record<string, never>>;
 import { sql } from 'drizzle-orm';
 
-export async function listProductions(db: SeedDb = defaultDb) {
-  return db.execute<{
-    slug: string;
-    title: string;
-    type: string;
-    release_year: number | null;
-    synopsis: string | null;
-    primary_aspect_ratio: string | null;
-    primary_acquisition_format: string | null;
-  }>(sql`
+export type ProductionListRow = {
+  slug: string;
+  title: string;
+  type: string;
+  release_year: number | null;
+  synopsis: string | null;
+  primary_aspect_ratio: string | null;
+  primary_acquisition_format: string | null;
+  poster_path: string | null;
+  data_tier: 'curated' | 'imported';
+  genres: string[] | null;
+  vote_average: string | null;
+  popularity: string | null;
+};
+
+export type ListProductionsFilters = {
+  /** Filter by data tier ('curated' = hand-seeded, 'imported' = TMDb only). */
+  dataTier?: 'curated' | 'imported' | 'all';
+  /** Filter by release decade boundary, e.g. 2020 → 2020-2029. */
+  decade?: number;
+  /** Genre case-sensitive match against the TMDb genres array. */
+  genre?: string;
+  /** Slug of a specific person; returns only productions they crewed on. */
+  personSlug?: string;
+  /** Sort order. */
+  sort?: 'recent' | 'oldest' | 'title' | 'popularity' | 'rating';
+  limit?: number;
+  offset?: number;
+};
+
+export async function listProductions(
+  db: SeedDb = defaultDb,
+  filters: ListProductionsFilters = {},
+): Promise<ProductionListRow[]> {
+  const sort = filters.sort ?? 'recent';
+  const limit = filters.limit ?? 1000;
+  const offset = filters.offset ?? 0;
+  const dataTier = filters.dataTier ?? 'all';
+
+  const orderClause = (() => {
+    switch (sort) {
+      case 'oldest':
+        return sql`p.release_year ASC NULLS LAST, p.title ASC`;
+      case 'title':
+        return sql`p.title ASC`;
+      case 'popularity':
+        return sql`p.popularity DESC NULLS LAST, p.title ASC`;
+      case 'rating':
+        return sql`p.vote_average DESC NULLS LAST, p.vote_count DESC NULLS LAST`;
+      case 'recent':
+      default:
+        return sql`p.release_year DESC NULLS LAST, p.title ASC`;
+    }
+  })();
+
+  return db.execute<ProductionListRow>(sql`
     SELECT
       p.slug, p.title, p.type, p.release_year, p.synopsis,
       pf.aspect_ratio AS primary_aspect_ratio,
-      pf.acquisition_format AS primary_acquisition_format
+      pf.acquisition_format AS primary_acquisition_format,
+      p.poster_path,
+      p.data_tier,
+      p.genres,
+      p.vote_average::text,
+      p.popularity::text
     FROM productions p
     LEFT JOIN production_formats pf
       ON pf.production_id = p.id AND pf.is_primary = true
-    ORDER BY p.release_year DESC NULLS LAST, p.title ASC
+    WHERE
+      ${dataTier === 'all' ? sql`TRUE` : sql`p.data_tier = ${dataTier}::production_data_tier`}
+      AND ${filters.decade ? sql`p.release_year BETWEEN ${filters.decade} AND ${filters.decade + 9}` : sql`TRUE`}
+      AND ${filters.genre ? sql`${filters.genre} = ANY(p.genres)` : sql`TRUE`}
+      AND ${filters.personSlug ? sql`EXISTS (
+        SELECT 1 FROM crew_assignments ca
+        JOIN people pp ON pp.id = ca.person_id
+        WHERE ca.production_id = p.id AND pp.slug = ${filters.personSlug}
+      )` : sql`TRUE`}
+    ORDER BY ${orderClause}
+    LIMIT ${limit} OFFSET ${offset}
+  `);
+}
+
+export async function countProductions(
+  db: SeedDb = defaultDb,
+  filters: ListProductionsFilters = {},
+): Promise<number> {
+  const dataTier = filters.dataTier ?? 'all';
+  const [row] = await db.execute<{ count: string }>(sql`
+    SELECT COUNT(*)::text AS count FROM productions p
+    WHERE
+      ${dataTier === 'all' ? sql`TRUE` : sql`p.data_tier = ${dataTier}::production_data_tier`}
+      AND ${filters.decade ? sql`p.release_year BETWEEN ${filters.decade} AND ${filters.decade + 9}` : sql`TRUE`}
+      AND ${filters.genre ? sql`${filters.genre} = ANY(p.genres)` : sql`TRUE`}
+      AND ${filters.personSlug ? sql`EXISTS (
+        SELECT 1 FROM crew_assignments ca
+        JOIN people pp ON pp.id = ca.person_id
+        WHERE ca.production_id = p.id AND pp.slug = ${filters.personSlug}
+      )` : sql`TRUE`}
+  `);
+  return Number(row?.count ?? 0);
+}
+
+/**
+ * Distinct genres present in the corpus, ordered by frequency desc. Used to
+ * populate the /films filter dropdown.
+ */
+export async function listGenresInUse(db: SeedDb = defaultDb): Promise<{ genre: string; count: number }[]> {
+  return db.execute<{ genre: string; count: number }>(sql`
+    SELECT g AS genre, COUNT(*)::int AS count
+    FROM productions, UNNEST(genres) g
+    GROUP BY g
+    ORDER BY count DESC, g ASC
+  `);
+}
+
+/**
+ * Distinct decades present in the corpus, returned as the boundary year
+ * (e.g. 1970 for 1970–1979). Used to populate the /films filter dropdown.
+ */
+export async function listDecadesInUse(db: SeedDb = defaultDb): Promise<{ decade: number; count: number }[]> {
+  return db.execute<{ decade: number; count: number }>(sql`
+    SELECT (release_year / 10) * 10 AS decade, COUNT(*)::int AS count
+    FROM productions
+    WHERE release_year IS NOT NULL
+    GROUP BY decade
+    ORDER BY decade DESC
+  `);
+}
+
+/**
+ * Featured productions for the homepage: curated tier first (hand-seeded
+ * with crew/scenes/equipment depth), capped at `limit`. Falls back to
+ * highest-rated imported productions if curated count < limit.
+ */
+export async function listFeaturedProductions(
+  db: SeedDb = defaultDb,
+  limit = 6,
+): Promise<ProductionListRow[]> {
+  return db.execute<ProductionListRow>(sql`
+    SELECT
+      p.slug, p.title, p.type, p.release_year, p.synopsis,
+      pf.aspect_ratio AS primary_aspect_ratio,
+      pf.acquisition_format AS primary_acquisition_format,
+      p.poster_path,
+      p.data_tier,
+      p.genres,
+      p.vote_average::text,
+      p.popularity::text
+    FROM productions p
+    LEFT JOIN production_formats pf
+      ON pf.production_id = p.id AND pf.is_primary = true
+    WHERE p.data_tier = 'curated'
+    ORDER BY p.release_year DESC NULLS LAST, p.title
+    LIMIT ${limit}
   `);
 }
 
@@ -30,8 +166,24 @@ export async function getProductionWithFullDetail(db: SeedDb = defaultDb, slug: 
     id: number; slug: string; title: string; original_title: string | null;
     type: string; release_year: number | null; runtime_minutes: number | null;
     synopsis: string | null; imdb_id: string | null; tmdb_id: number | null;
+    genres: string[] | null;
+    original_language: string | null;
+    production_country: string | null;
+    vote_average: string | null;
+    vote_count: number | null;
+    popularity: string | null;
+    poster_path: string | null;
+    backdrop_path: string | null;
+    tmdb_collection_id: number | null;
+    tmdb_collection_name: string | null;
+    data_tier: 'curated' | 'imported';
   }>(sql`SELECT id, slug, title, original_title, type, release_year, runtime_minutes,
-              synopsis, imdb_id, tmdb_id
+              synopsis, imdb_id, tmdb_id,
+              genres, original_language, production_country,
+              vote_average::text, vote_count, popularity::text,
+              poster_path, backdrop_path,
+              tmdb_collection_id, tmdb_collection_name,
+              data_tier
          FROM productions WHERE slug = ${slug}`);
 
   if (!prod) return null;
@@ -56,10 +208,12 @@ export async function getProductionWithFullDetail(db: SeedDb = defaultDb, slug: 
     db.execute<{
       person_slug: string; display_name: string; role_slug: string; role_name: string;
       role_category: string; credit_order: number | null; credit_name_override: string | null;
+      profile_path: string | null;
     }>(sql`
       SELECT ppl.slug AS person_slug, ppl.display_name, r.slug AS role_slug,
              r.name AS role_name, r.category AS role_category,
-             ca.credit_order, ca.credit_name_override
+             ca.credit_order, ca.credit_name_override,
+             ppl.profile_path
       FROM crew_assignments ca
       JOIN people ppl ON ppl.id = ca.person_id
       JOIN roles r ON r.id = ca.role_id
@@ -109,4 +263,26 @@ export async function getProductionWithFullDetail(db: SeedDb = defaultDb, slug: 
   ]);
 
   return { production: prod, formats, studios, crew, scenes, productionSources };
+}
+
+/**
+ * Returns other productions in the same TMDb collection (e.g. all Dune films).
+ * Excludes the source production itself.
+ */
+export async function getCollectionMembers(
+  db: SeedDb = defaultDb,
+  collectionId: number,
+  excludeProductionId: number,
+) {
+  return db.execute<{
+    slug: string;
+    title: string;
+    release_year: number | null;
+    poster_path: string | null;
+  }>(sql`
+    SELECT slug, title, release_year, poster_path
+    FROM productions
+    WHERE tmdb_collection_id = ${collectionId} AND id != ${excludeProductionId}
+    ORDER BY release_year ASC NULLS LAST, title
+  `);
 }

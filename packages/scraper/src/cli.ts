@@ -4,7 +4,8 @@ import { scrapeBeforesAndAfters } from './scrapers/befores-and-afters.ts';
 import { loadRawBreakdowns } from './import/transform.ts';
 import { upsertBreakdown } from './import/upsert.ts';
 import { discoverVideos, rescorePending } from './discovery/run.ts';
-import { importTmdbMovies } from './tmdb/import.ts';
+import { importTmdbMovies, enrichExistingMovies } from './tmdb/import.ts';
+import { importTmdbCredits } from './tmdb/credits.ts';
 
 const [, , command, ...args] = process.argv;
 const slugFlag = args.find((_, i) => args[i - 1] === '--slug');
@@ -56,6 +57,12 @@ async function main() {
         startPage: numberFlag('start-page'),
       });
       break;
+    case 'tmdb:enrich':
+      await enrichExistingMovies();
+      break;
+    case 'tmdb:credits':
+      await importTmdbCredits({ limit: numberFlag('limit') });
+      break;
     case 'run':
       console.log('run: scrape:artofvfx → scrape:beforesandafters → import:vfx → discover:videos');
       await scrapeArtOfVfx(slugFlag);
@@ -69,7 +76,7 @@ async function main() {
       break;
     default:
       console.error(`Unknown command: ${command}`);
-      console.error('Usage: tsx src/cli.ts <scrape:artofvfx|scrape:beforesandafters|import:vfx|discover:videos|tmdb:import|run> [--slug <slug>] [--pending] [--limit N] [--min-votes N] [--start-page N]');
+      console.error('Usage: tsx src/cli.ts <scrape:artofvfx|scrape:beforesandafters|import:vfx|discover:videos|tmdb:import|tmdb:enrich|tmdb:credits|run> [--slug <slug>] [--pending] [--limit N] [--min-votes N] [--start-page N]');
       process.exit(1);
   }
 }

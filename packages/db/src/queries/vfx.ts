@@ -3,7 +3,16 @@ import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 type SeedDb = PostgresJsDatabase<Record<string, never>>;
 import { sql } from 'drizzle-orm';
 
-export async function listVfxHouses(db: SeedDb = defaultDb) {
+export type VfxHouseListOptions = {
+  /** When true, hides houses with zero credits. Default true. */
+  withCreditsOnly?: boolean;
+};
+
+export async function listVfxHouses(
+  db: SeedDb = defaultDb,
+  opts: VfxHouseListOptions = {},
+) {
+  const withCreditsOnly = opts.withCreditsOnly ?? true;
   return db.execute<{
     slug: string;
     name: string;
@@ -16,7 +25,8 @@ export async function listVfxHouses(db: SeedDb = defaultDb) {
     FROM vfx_houses vh
     LEFT JOIN vfx_credits vc ON vc.vfx_house_id = vh.id
     GROUP BY vh.id
-    ORDER BY vh.name ASC
+    HAVING ${withCreditsOnly ? sql`COUNT(DISTINCT vc.production_id) > 0` : sql`TRUE`}
+    ORDER BY production_count DESC, vh.name ASC
   `);
 }
 

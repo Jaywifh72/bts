@@ -9,7 +9,10 @@ export type SearchCategory =
   | 'manufacturer'
   | 'series'
   | 'item'
-  | 'vfx_house';
+  | 'vfx_house'
+  | 'studio'
+  | 'scene'
+  | 'video';
 
 export type SearchResult = {
   category: SearchCategory;
@@ -151,6 +154,53 @@ export async function search(
         WHERE similarity(name, ${trimmed}) > ${threshold}
         ORDER BY score DESC, name ASC
         LIMIT ${perCategoryLimit}
+      ),
+      -- Studios match. The site doesn't have a /studios/[slug] page yet, so
+      -- we link to the films index filtered by the studio. The href will
+      -- start working once the films page accepts a ?studio= param.
+      studios_match AS (
+        SELECT
+          'studio'::text AS category,
+          slug,
+          name AS display,
+          country AS subtitle,
+          '/films?studio=' || slug AS href,
+          similarity(name, ${trimmed})::real AS score
+        FROM studios
+        WHERE similarity(name, ${trimmed}) > ${threshold}
+        ORDER BY score DESC, name ASC
+        LIMIT ${perCategoryLimit}
+      ),
+      -- Scenes match. Subtitle is the production title for context. Link
+      -- goes to the production detail page; we don't have per-scene URLs.
+      scenes_match AS (
+        SELECT
+          'scene'::text AS category,
+          sc.slug,
+          sc.title AS display,
+          p.title AS subtitle,
+          '/films/' || p.slug || '#scene-' || sc.slug AS href,
+          similarity(sc.title, ${trimmed})::real AS score
+        FROM scenes sc
+        JOIN productions p ON p.id = sc.production_id
+        WHERE similarity(sc.title, ${trimmed}) > ${threshold}
+        ORDER BY score DESC, sc.title ASC
+        LIMIT ${perCategoryLimit}
+      ),
+      -- Videos match (published only). Links to the external source URL.
+      videos_match AS (
+        SELECT
+          'video'::text AS category,
+          v.external_id AS slug,
+          v.title AS display,
+          v.channel_name AS subtitle,
+          v.url AS href,
+          similarity(v.title, ${trimmed})::real AS score
+        FROM production_videos v
+        WHERE v.status = 'published'
+          AND similarity(v.title, ${trimmed}) > ${threshold}
+        ORDER BY score DESC, v.title ASC
+        LIMIT ${perCategoryLimit}
       )
     SELECT * FROM productions_match
     UNION ALL SELECT * FROM people_match
@@ -158,6 +208,9 @@ export async function search(
     UNION ALL SELECT * FROM series_match
     UNION ALL SELECT * FROM items_match
     UNION ALL SELECT * FROM vfx_match
+    UNION ALL SELECT * FROM studios_match
+    UNION ALL SELECT * FROM scenes_match
+    UNION ALL SELECT * FROM videos_match
     ORDER BY score DESC, display ASC
   `);
 }

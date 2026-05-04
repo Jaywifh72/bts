@@ -5,7 +5,16 @@ import { sql } from 'drizzle-orm';
 
 // ── Manufacturers ──────────────────────────────────────────────────────────────
 
-export async function listManufacturers(db: SeedDb = defaultDb) {
+export type ManufacturerListOptions = {
+  /** When true, hides manufacturers that have no series. Default true. */
+  withSeriesOnly?: boolean;
+};
+
+export async function listManufacturers(
+  db: SeedDb = defaultDb,
+  opts: ManufacturerListOptions = {},
+) {
+  const withSeriesOnly = opts.withSeriesOnly ?? true;
   return db.execute<{
     slug: string; name: string; kind: string; country: string | null;
     description: string | null; series_count: number;
@@ -14,7 +23,9 @@ export async function listManufacturers(db: SeedDb = defaultDb) {
            COUNT(es.id)::int AS series_count
     FROM equipment_manufacturers em
     LEFT JOIN equipment_series es ON es.manufacturer_id = em.id
-    GROUP BY em.id ORDER BY em.name ASC
+    GROUP BY em.id
+    HAVING ${withSeriesOnly ? sql`COUNT(es.id) > 0` : sql`TRUE`}
+    ORDER BY em.name ASC
   `);
 }
 

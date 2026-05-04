@@ -18,6 +18,22 @@ const IMAGE_BASE = 'https://image.tmdb.org/t/p/';
 const MIN_SPACING_MS = 100;
 const MAX_CONCURRENT = 5;
 
+export type TmdbGenre = { id: number; name: string };
+export type TmdbCollection = {
+  id: number;
+  name: string;
+  poster_path: string | null;
+  backdrop_path: string | null;
+};
+export type TmdbProductionCompany = {
+  id: number;
+  name: string;
+  logo_path: string | null;
+  origin_country: string;
+};
+export type TmdbProductionCountry = { iso_3166_1: string; name: string };
+export type TmdbSpokenLanguage = { iso_639_1: string; name: string; english_name?: string };
+
 export type TmdbMovie = {
   id: number;
   title: string;
@@ -33,6 +49,35 @@ export type TmdbMovie = {
   imdb_id: string | null;
   vote_count?: number;
   vote_average?: number;
+  popularity?: number;
+  original_language?: string | null;
+  genres?: TmdbGenre[];
+  belongs_to_collection?: TmdbCollection | null;
+  production_companies?: TmdbProductionCompany[];
+  production_countries?: TmdbProductionCountry[];
+  spoken_languages?: TmdbSpokenLanguage[];
+};
+
+export type TmdbCrewMember = {
+  id: number;
+  name: string;
+  job: string;
+  department: string;
+  credit_id: string;
+  profile_path: string | null;
+};
+
+export type TmdbCastMember = {
+  id: number;
+  name: string;
+  character: string;
+  order: number;
+  profile_path: string | null;
+};
+
+export type TmdbCredits = {
+  cast: TmdbCastMember[];
+  crew: TmdbCrewMember[];
 };
 
 export type ImageSize = 'w185' | 'w342' | 'w500' | 'w780' | 'w1280' | 'original';
@@ -42,11 +87,9 @@ let _lastStartedAt = 0;
 const _waitQueue: Array<() => void> = [];
 
 async function acquire(): Promise<void> {
-  // Concurrency gate
   while (_inflight >= MAX_CONCURRENT) {
     await new Promise<void>((resolve) => _waitQueue.push(resolve));
   }
-  // Spacing gate
   const now = Date.now();
   const elapsed = now - _lastStartedAt;
   if (elapsed < MIN_SPACING_MS) {
@@ -85,8 +128,10 @@ async function tmdbFetch<T>(path: string): Promise<T | null> {
 }
 
 /**
- * Fetches a single movie by TMDb id with imdb_id appended in one call.
- * Returns null if the token is unset or the id is unknown.
+ * Fetches a single movie with external_ids appended in one call so we get
+ * imdb_id without a second round trip. Returns null when token is unset or
+ * the id is unknown. The full TMDb response is returned (including genres,
+ * collection, production_companies/countries/languages, popularity).
  */
 export async function fetchMovie(id: number): Promise<TmdbMovie | null> {
   type WithExternals = TmdbMovie & {
@@ -103,29 +148,47 @@ export async function fetchMovie(id: number): Promise<TmdbMovie | null> {
     runtime: raw.runtime ?? null,
     poster_path: raw.poster_path ?? null,
     backdrop_path: raw.backdrop_path ?? null,
-    // imdb_id can come from either the top-level (some endpoints) or external_ids
     imdb_id: raw.imdb_id ?? raw.external_ids?.imdb_id ?? null,
     vote_count: raw.vote_count,
     vote_average: raw.vote_average,
+    popularity: raw.popularity,
+    original_language: raw.original_language ?? null,
+    genres: raw.genres ?? [],
+    belongs_to_collection: raw.belongs_to_collection ?? null,
+    production_companies: raw.production_companies ?? [],
+    production_countries: raw.production_countries ?? [],
+    spoken_languages: raw.spoken_languages ?? [],
   };
 }
 
 /**
- * Fetches the images endpoint for a movie. Returns full image URLs at the
- * standard sizes used across the app — w342 posters and w1280 backdrops.
+ * Fetches cast + crew for a movie. We only consume crew today (cast support
+ * isn't in our schema yet) but return both so future callers can use it.
+ */
+export async function fetchMovieCredits(id: number): Promise<TmdbCredits | null> {
+  return tmdbFetch<TmdbCredits>(`/movie/${id}/credits`);
+}
+
+/**
+ * Fetches the images endpoint. Filters backdrops by aspect ratio so we don't
+ * end up with portrait poster art in the "backdrops" array (a TMDb quirk on
+ * older films like The Godfather).
  */
 export async function fetchMovieImages(
   id: number,
 ): Promise<{ poster: string | null; backdrops: string[] } | null> {
   type ImagesResponse = {
-    backdrops: { file_path: string }[];
+    backdrops: { file_path: string; aspect_ratio: number }[];
     posters: { file_path: string }[];
   };
   const raw = await tmdbFetch<ImagesResponse>(`/movie/${id}/images`);
   if (!raw) return null;
+  const landscapeBackdrops = raw.backdrops
+    .filter((b) => b.aspect_ratio >= 1.6) // Discard square / portrait "backdrops"
+    .slice(0, 8);
   return {
     poster: imageUrl(raw.posters[0]?.file_path ?? null, 'w342'),
-    backdrops: raw.backdrops.slice(0, 8).flatMap((b) => {
+    backdrops: landscapeBackdrops.flatMap((b) => {
       const url = imageUrl(b.file_path, 'w1280');
       return url ? [url] : [];
     }),
@@ -134,9 +197,7 @@ export async function fetchMovieImages(
 
 export type DiscoverOptions = {
   page: number;
-  /** Minimum vote count gate to discard obscure or low-confidence rows. */
   minVoteCount?: number;
-  /** TMDb sort key, e.g. 'vote_average.desc', 'popularity.desc'. */
   sortBy?: string;
 };
 
@@ -165,13 +226,6 @@ export async function discoverMovies(
   };
 }
 
-/**
- * Builds a full CDN URL from a relative path returned by TMDb. Returns null
- * for null input so callers can chain it on optional fields.
- *
- * Image-base hardcoded for simplicity. TMDb publishes a /configuration endpoint
- * but the base URL has been stable for 10+ years.
- */
 export function imageUrl(path: string | null, size: ImageSize): string | null {
   if (!path) return null;
   return `${IMAGE_BASE}${size}${path}`;

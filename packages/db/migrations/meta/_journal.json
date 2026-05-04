@@ -85,6 +85,20 @@
       "when": 1778025600000,
       "tag": "0011_pgtrgm_search",
       "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1778198400000,
+      "tag": "0012_tmdb_richer_fields",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1778201400000,
+      "tag": "0013_extend_search_indexes",
+      "breakpoints": true
     }
   ]
 }
