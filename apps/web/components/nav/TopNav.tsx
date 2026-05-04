@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { SearchBar } from './SearchBar';
 
 const links = [
   { href: '/films', label: 'Films' },
@@ -27,6 +28,9 @@ export function TopNav() {
             </li>
           ))}
         </ul>
+        <div className="ml-auto">
+          <SearchBar />
+        </div>
       </div>
     </nav>
   );
