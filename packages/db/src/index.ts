@@ -7,3 +7,4 @@ export * from './queries/equipment.ts';
 export * from './queries/killer-queries.ts';
 export * from './queries/vfx.ts';
 export * from './queries/videos.ts';
+export * from './queries/search.ts';
