@@ -15,6 +15,7 @@ import { EquipmentUsedTable } from '@/components/people/EquipmentUsedTable';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { JsonLd, buildPersonJsonLd } from '@/lib/jsonLd';
 import { profileUrl } from '@/lib/tmdb-image';
+import { BookmarkButton } from '@/components/ui/BookmarkButton';
 
 interface Props { params: { slug: string } }
 
@@ -74,7 +75,16 @@ export default async function CrewDetailPage({ params }: Props) {
           </div>
           <div className="flex-1">
             <p className="text-xs uppercase tracking-widest text-zinc-500">Crew</p>
-            <h1 className="mt-1 font-serif text-4xl text-zinc-50">{person.display_name}</h1>
+            <div className="mt-1 flex items-baseline gap-3">
+              <h1 className="font-serif text-4xl text-zinc-50">{person.display_name}</h1>
+              <BookmarkButton
+                kind="crew"
+                slug={person.slug}
+                title={person.display_name}
+                subtitle={primaryRole ?? undefined}
+                href={`/crew/${person.slug}`}
+              />
+            </div>
             <div className="mt-2 flex flex-wrap items-center gap-x-2 gap-y-1 text-sm text-zinc-400">
               {primaryRole && <span>{primaryRole}</span>}
               {primaryRole && person.nationality && <span className="text-zinc-600">·</span>}

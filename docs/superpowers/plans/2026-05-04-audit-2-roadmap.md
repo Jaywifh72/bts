@@ -114,12 +114,14 @@ authoritative" claim)
 
 ## Tier 5 — Search & discovery
 
-- [ ] **T5-1:** Search autocomplete in the TopNav input. Debounced 200ms,
-      hits a `/api/search/suggest` route, shows top 8 with category icons.
-- [ ] **T5-2:** `?studio=<slug>` filter on /films (search already links
-      to it; doesn't work yet).
-- [ ] **T5-3:** Saved bookmarks via `localStorage`. No auth needed.
-      Heart icon on each film/crew/gear card.
+- [x] **T5-1:** Search autocomplete in the TopNav input. Debounced 200ms,
+      arrow-key navigation, Esc closes, "See all" footer link. Backed
+      by new `/api/search/suggest` route with 30s edge cache.
+- [x] **T5-2:** `?studio=<slug>` filter on /films plumbed through
+      listProductions / countProductions; preserved in pagination links.
+- [x] **T5-3:** Saved bookmarks via `localStorage`. ★ button on film and
+      crew detail pages; new `/bookmarks` page lists them grouped by
+      kind. Star link in TopNav.
 - [ ] **T5-4:** Keyboard shortcuts: `g f`/`g c`/`g g`/`g v` to jump,
       `?` for help overlay, `j`/`k` for card navigation in lists.
 - [ ] **T5-5:** "Updated this week" feed on the homepage — signals the

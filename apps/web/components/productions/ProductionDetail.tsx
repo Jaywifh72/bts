@@ -10,6 +10,7 @@ import { VfxSection } from './VfxSection';
 import { TechPanel } from './TechPanel';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { SourceCitation } from '@/components/ui/SourceCitation';
+import { BookmarkButton } from '@/components/ui/BookmarkButton';
 import { posterUrl, backdropUrl } from '@/lib/tmdb-image';
 
 type DetailData = NonNullable<Awaited<ReturnType<typeof getProductionWithFullDetail>>>;
@@ -94,7 +95,16 @@ export function ProductionDetail({
               </span>
             )}
           </p>
-          <h1 className="mt-1 font-serif text-4xl text-zinc-50">{production.title}</h1>
+          <div className="mt-1 flex items-baseline gap-3">
+            <h1 className="font-serif text-4xl text-zinc-50">{production.title}</h1>
+            <BookmarkButton
+              kind="film"
+              slug={production.slug}
+              title={production.title}
+              subtitle={production.release_year ? String(production.release_year) : undefined}
+              href={`/films/${production.slug}`}
+            />
+          </div>
           {production.original_title && (
             <p className="mt-1 text-sm text-zinc-500">{production.original_title}</p>
           )}

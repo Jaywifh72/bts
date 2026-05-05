@@ -27,6 +27,8 @@ export type ListProductionsFilters = {
   genre?: string;
   /** Slug of a specific person; returns only productions they crewed on. */
   personSlug?: string;
+  /** Slug of a studio (e.g. 'a24'); returns only productions linked to it. */
+  studioSlug?: string;
   /** Sort order. */
   sort?: 'recent' | 'oldest' | 'title' | 'popularity' | 'rating';
   limit?: number;
@@ -80,6 +82,11 @@ export async function listProductions(
         JOIN people pp ON pp.id = ca.person_id
         WHERE ca.production_id = p.id AND pp.slug = ${filters.personSlug}
       )` : sql`TRUE`}
+      AND ${filters.studioSlug ? sql`EXISTS (
+        SELECT 1 FROM production_studios ps
+        JOIN studios s ON s.id = ps.studio_id
+        WHERE ps.production_id = p.id AND s.slug = ${filters.studioSlug}
+      )` : sql`TRUE`}
     ORDER BY ${orderClause}
     LIMIT ${limit} OFFSET ${offset}
   `);
@@ -100,6 +107,11 @@ export async function countProductions(
         SELECT 1 FROM crew_assignments ca
         JOIN people pp ON pp.id = ca.person_id
         WHERE ca.production_id = p.id AND pp.slug = ${filters.personSlug}
+      )` : sql`TRUE`}
+      AND ${filters.studioSlug ? sql`EXISTS (
+        SELECT 1 FROM production_studios ps
+        JOIN studios s ON s.id = ps.studio_id
+        WHERE ps.production_id = p.id AND s.slug = ${filters.studioSlug}
       )` : sql`TRUE`}
   `);
   return Number(row?.count ?? 0);

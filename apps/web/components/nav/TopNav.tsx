@@ -28,7 +28,14 @@ export function TopNav() {
             </li>
           ))}
         </ul>
-        <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-4">
+          <Link
+            href="/bookmarks"
+            className="text-sm text-zinc-400 hover:text-amber-400 transition-colors"
+            title="Saved bookmarks"
+          >
+            ★
+          </Link>
           <SearchBar />
         </div>
       </div>

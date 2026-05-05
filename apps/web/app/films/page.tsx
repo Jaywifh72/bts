@@ -21,6 +21,7 @@ type Props = {
     tier?: string;
     sort?: string;
     page?: string;
+    studio?: string;
   };
 };
 
@@ -37,6 +38,7 @@ function parseTier(v: string | undefined): 'curated' | 'imported' | 'all' {
 export default async function FilmsPage({ searchParams }: Props) {
   const decade = searchParams.decade ? parseInt(searchParams.decade, 10) : undefined;
   const genre = searchParams.genre || undefined;
+  const studioSlug = searchParams.studio || undefined;
   const tier = parseTier(searchParams.tier);
   const sort = parseSort(searchParams.sort);
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1);
@@ -44,6 +46,7 @@ export default async function FilmsPage({ searchParams }: Props) {
   const filters = {
     decade: Number.isFinite(decade) ? decade : undefined,
     genre,
+    studioSlug,
     dataTier: tier,
     sort,
     limit: PAGE_SIZE,
@@ -63,6 +66,7 @@ export default async function FilmsPage({ searchParams }: Props) {
   const baseParams = new URLSearchParams();
   if (decade) baseParams.set('decade', String(decade));
   if (genre) baseParams.set('genre', genre);
+  if (studioSlug) baseParams.set('studio', studioSlug);
   if (tier !== 'all') baseParams.set('tier', tier);
   if (sort !== 'recent') baseParams.set('sort', sort);
 
@@ -74,6 +78,7 @@ export default async function FilmsPage({ searchParams }: Props) {
         <p className="mt-1 text-sm text-zinc-400">
           {total.toLocaleString()} {total === 1 ? 'production' : 'productions'}
           {tier !== 'all' && ` · ${tier}`}
+          {studioSlug && ` · studio: ${studioSlug}`}
         </p>
       </div>
 
