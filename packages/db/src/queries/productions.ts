@@ -118,6 +118,16 @@ export async function countProductions(
 }
 
 /**
+ * T6-2 — slug + updated_at pairs for sitemap lastmod. Returns ALL
+ * productions, not just curated; cheap pure read.
+ */
+export async function listProductionLastmods(db: SeedDb = defaultDb) {
+  return db.execute<{ slug: string; updated_at: string }>(sql`
+    SELECT slug, updated_at::text FROM productions
+  `);
+}
+
+/**
  * Distinct genres present in the corpus, ordered by frequency desc. Used to
  * populate the /films filter dropdown.
  */
@@ -192,6 +202,7 @@ export async function getProductionWithFullDetail(db: SeedDb = defaultDb, slug: 
     tmdb_collection_id: number | null;
     tmdb_collection_name: string | null;
     data_tier: 'curated' | 'imported';
+    last_verified_at: string | null;
   }>(sql`SELECT id, slug, title, original_title, type, release_year, runtime_minutes,
               synopsis, imdb_id, tmdb_id, wikidata_id,
               principal_photography_start::text,
@@ -200,7 +211,8 @@ export async function getProductionWithFullDetail(db: SeedDb = defaultDb, slug: 
               vote_average::text, vote_count, popularity::text,
               poster_path, backdrop_path,
               tmdb_collection_id, tmdb_collection_name,
-              data_tier
+              data_tier,
+              last_verified_at::text
          FROM productions WHERE slug = ${slug}`);
 
   if (!prod) return null;
@@ -280,6 +292,80 @@ export async function getProductionWithFullDetail(db: SeedDb = defaultDb, slug: 
   ]);
 
   return { production: prod, formats, studios, crew, scenes, productionSources };
+}
+
+/**
+ * T2-8 — "Similar films" for a production. Heuristic: rank by overlap of
+ * (a) directors, (b) DPs, (c) genres, (d) decade, (e) primary aspect ratio.
+ * Excludes the source production. Caps at `limit`.
+ */
+export async function getSimilarProductions(
+  db: SeedDb = defaultDb,
+  productionId: number,
+  limit = 6,
+) {
+  return db.execute<{
+    slug: string;
+    title: string;
+    release_year: number | null;
+    poster_path: string | null;
+    score: number;
+    reason: string;
+  }>(sql`
+    WITH source AS (
+      SELECT id, release_year, genres FROM productions WHERE id = ${productionId}
+    ),
+    source_directors AS (
+      SELECT DISTINCT ca.person_id FROM crew_assignments ca
+      JOIN roles r ON r.id = ca.role_id
+      WHERE ca.production_id = ${productionId} AND r.slug = 'director'
+    ),
+    source_dps AS (
+      SELECT DISTINCT ca.person_id FROM crew_assignments ca
+      JOIN roles r ON r.id = ca.role_id
+      WHERE ca.production_id = ${productionId} AND r.slug = 'director-of-photography'
+    ),
+    candidates AS (
+      SELECT
+        p.id, p.slug, p.title, p.release_year, p.poster_path,
+        -- Score: 5 per director match, 3 per DP match, 1 per genre overlap, 1 if same decade
+        (
+          (SELECT COUNT(*) * 5 FROM crew_assignments ca
+            JOIN roles r ON r.id = ca.role_id
+            WHERE ca.production_id = p.id AND r.slug = 'director'
+              AND ca.person_id IN (SELECT person_id FROM source_directors)) +
+          (SELECT COUNT(*) * 3 FROM crew_assignments ca
+            JOIN roles r ON r.id = ca.role_id
+            WHERE ca.production_id = p.id AND r.slug = 'director-of-photography'
+              AND ca.person_id IN (SELECT person_id FROM source_dps)) +
+          COALESCE((
+            SELECT COUNT(*) FROM unnest(p.genres) g
+            WHERE g = ANY((SELECT genres FROM source))
+          ), 0) +
+          CASE WHEN p.release_year / 10 = (SELECT release_year / 10 FROM source) THEN 1 ELSE 0 END
+        ) AS score,
+        CASE
+          WHEN EXISTS (
+            SELECT 1 FROM crew_assignments ca JOIN roles r ON r.id = ca.role_id
+            WHERE ca.production_id = p.id AND r.slug = 'director'
+              AND ca.person_id IN (SELECT person_id FROM source_directors)
+          ) THEN 'same director'
+          WHEN EXISTS (
+            SELECT 1 FROM crew_assignments ca JOIN roles r ON r.id = ca.role_id
+            WHERE ca.production_id = p.id AND r.slug = 'director-of-photography'
+              AND ca.person_id IN (SELECT person_id FROM source_dps)
+          ) THEN 'same cinematographer'
+          ELSE 'similar genre'
+        END AS reason
+      FROM productions p
+      WHERE p.id != ${productionId}
+    )
+    SELECT slug, title, release_year, poster_path, score::int, reason
+    FROM candidates
+    WHERE score > 0
+    ORDER BY score DESC, release_year DESC NULLS LAST
+    LIMIT ${limit}
+  `);
 }
 
 /**

@@ -25,16 +25,23 @@ type CollectionMember = {
   poster_path: string | null;
 };
 
+type SimilarProduction = CollectionMember & {
+  score: number;
+  reason: string;
+};
+
 export function ProductionDetail({
   data,
   vfx,
   videos,
   collectionMembers,
+  similar,
 }: {
   data: DetailData;
   vfx: VfxData;
   videos: VideosData;
   collectionMembers: readonly CollectionMember[];
+  similar: readonly SimilarProduction[];
 }) {
   const { production, formats, studios, crew, scenes, productionSources } = data;
 
@@ -56,6 +63,17 @@ export function ProductionDetail({
 
   const isMetadataOnly =
     production.data_tier === 'imported' && crew.length === 0 && scenes.length === 0;
+
+  function formatRelativeTime(iso: string): string {
+    const ms = Date.now() - new Date(iso).getTime();
+    const days = Math.floor(ms / 86_400_000);
+    if (days < 1) return 'today';
+    if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`;
+    const months = Math.floor(days / 30);
+    if (months < 12) return `${months} month${months === 1 ? '' : 's'} ago`;
+    const years = Math.floor(days / 365);
+    return `${years} year${years === 1 ? '' : 's'} ago`;
+  }
 
   return (
     <article>
@@ -171,7 +189,23 @@ export function ProductionDetail({
                 Loadout sheet (PDF)
               </Link>
             )}
+            {/* T1-4: minimal correction-suggestion path. mailto: is the
+                lowest-friction starting point; an actual form lands later. */}
+            <a
+              href={`mailto:corrections@studiopro.example.com?subject=Correction: ${encodeURIComponent(production.title)} (${production.slug})&body=${encodeURIComponent(`URL: /films/${production.slug}\n\nWhat needs fixing:\n\nSource (link or citation):\n`)}`}
+              className="text-zinc-500 hover:text-amber-400"
+              title="Email a correction"
+            >
+              Suggest a correction →
+            </a>
           </div>
+
+          {/* T1-3: data freshness signal */}
+          {production.last_verified_at && (
+            <p className="mt-2 text-[10px] uppercase tracking-widest text-zinc-600">
+              Verified {formatRelativeTime(production.last_verified_at)}
+            </p>
+          )}
         </div>
       </header>
 
@@ -272,6 +306,48 @@ export function ProductionDetail({
                   {m.release_year && (
                     <div className="text-xs text-zinc-500">{m.release_year}</div>
                   )}
+                </div>
+              </Link>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* T2-8: similar films */}
+      {similar.length > 0 && (
+        <div className="mt-8 border-t border-zinc-800 pt-6">
+          <SectionHeader label="Related" heading="Similar productions" />
+          <p className="-mt-2 mb-3 max-w-2xl text-xs text-zinc-500">
+            Ranked by overlap of director, cinematographer, genre, and decade.
+          </p>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {similar.map((s) => (
+              <Link
+                key={s.slug}
+                href={`/films/${s.slug}`}
+                className="group flex items-center gap-3 rounded border border-zinc-800 bg-zinc-900 p-3 hover:border-zinc-600 transition-colors"
+              >
+                <div
+                  className="relative h-16 w-11 shrink-0 overflow-hidden rounded bg-zinc-950"
+                  style={{ aspectRatio: '2/3' }}
+                >
+                  {s.poster_path && (
+                    <Image
+                      src={posterUrl(s.poster_path, 'w154') ?? ''}
+                      alt=""
+                      fill
+                      sizes="44px"
+                      className="object-cover"
+                    />
+                  )}
+                </div>
+                <div className="min-w-0 flex-1">
+                  <div className="truncate text-sm text-zinc-100 group-hover:text-amber-400">
+                    {s.title}
+                  </div>
+                  <div className="text-xs text-zinc-500">
+                    {s.release_year ?? '—'} · <span className="text-zinc-600">{s.reason}</span>
+                  </div>
                 </div>
               </Link>
             ))}

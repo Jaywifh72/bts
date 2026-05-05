@@ -7,9 +7,10 @@ import {
   getProductionVfxData,
   getProductionVideos,
   getCollectionMembers,
+  getSimilarProductions,
 } from '@bts/db';
 import { ProductionDetail } from '@/components/productions/ProductionDetail';
-import { JsonLd, buildMovieJsonLd } from '@/lib/jsonLd';
+import { JsonLd, buildMovieJsonLd, buildBreadcrumbJsonLd } from '@/lib/jsonLd';
 import { posterUrl } from '@/lib/tmdb-image';
 
 interface Props {
@@ -43,12 +44,13 @@ export default async function FilmDetailPage({ params }: Props) {
   if (!data) notFound();
 
   const collectionId = data.production.tmdb_collection_id;
-  const [vfx, videos, collectionMembersRaw] = await Promise.all([
+  const [vfx, videos, collectionMembersRaw, similar] = await Promise.all([
     getProductionVfxData(db, data.production.id),
     getProductionVideos(db, data.production.id),
     collectionId
       ? getCollectionMembers(db, collectionId, data.production.id)
       : Promise.resolve(null),
+    getSimilarProductions(db, data.production.id, 6),
   ]);
   const collectionMembers = collectionMembersRaw ?? [];
 
@@ -66,12 +68,23 @@ export default async function FilmDetailPage({ params }: Props) {
     directors,
     posterUrl: posterUrl(data.production.poster_path, 'w500'),
     tmdbId: data.production.tmdb_id,
+    voteAverage: data.production.vote_average ? Number(data.production.vote_average) : null,
+    voteCount: data.production.vote_count,
+    genres: data.production.genres ?? undefined,
+    runtime: data.production.runtime_minutes,
   });
+
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: 'Studio Pro', path: '/' },
+    { name: 'Films', path: '/films' },
+    { name: data.production.title, path: `/films/${data.production.slug}` },
+  ]);
 
   return (
     <>
       <JsonLd data={jsonLd} />
-      <ProductionDetail data={data} vfx={vfx} videos={videos} collectionMembers={collectionMembers} />
+      <JsonLd data={breadcrumbJsonLd} />
+      <ProductionDetail data={data} vfx={vfx} videos={videos} collectionMembers={collectionMembers} similar={similar} />
     </>
   );
 }

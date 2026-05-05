@@ -6,6 +6,7 @@ import {
   listManufacturers,
   listAllGearPaths,
   listVfxHouses,
+  listProductionLastmods,
 } from '@bts/db';
 import { siteUrl } from '@/lib/site';
 
@@ -21,13 +22,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const base = siteUrl();
   const now = new Date();
 
-  const [productions, people, manufacturers, gearPaths, vfxHouses] = await Promise.all([
+  const [productions, people, manufacturers, gearPaths, vfxHouses, lastmods] = await Promise.all([
     listProductions(db),
     listPeople(db),
     listManufacturers(db),
     listAllGearPaths(db),
     listVfxHouses(db),
+    listProductionLastmods(db),
   ]);
+
+  // T6-2: per-production lastmod from updated_at. Falls back to `now` when
+  // a slug isn't in the lastmods map (shouldn't happen but defensive).
+  const lastmodBySlug = new Map(lastmods.map((l) => [l.slug, new Date(l.updated_at)]));
 
   const seriesPaths = new Set<string>();
   for (const g of gearPaths) {
@@ -45,7 +51,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     // Production detail pages
     ...productions.map((p) => ({
       url: `${base}/films/${p.slug}`,
-      lastModified: now,
+      lastModified: lastmodBySlug.get(p.slug) ?? now,
       changeFrequency: 'monthly' as const,
       priority: 0.8,
     })),

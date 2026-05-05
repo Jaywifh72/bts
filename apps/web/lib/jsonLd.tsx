@@ -58,6 +58,12 @@ type MovieInput = {
   directors?: { name: string; slug: string }[];
   posterUrl?: string | null;
   tmdbId?: number | null;
+  /** TMDb vote average (0-10) for AggregateRating. */
+  voteAverage?: number | null;
+  voteCount?: number | null;
+  /** TMDb genre names for the genre field. */
+  genres?: string[];
+  runtime?: number | null;
 };
 
 export function buildMovieJsonLd(m: MovieInput): JsonLdObject {
@@ -84,6 +90,35 @@ export function buildMovieJsonLd(m: MovieInput): JsonLdObject {
           }))
         : undefined,
     sameAs: m.tmdbId ? [`https://www.themoviedb.org/movie/${m.tmdbId}`] : undefined,
+    genre: m.genres && m.genres.length > 0 ? m.genres : undefined,
+    duration: m.runtime ? `PT${m.runtime}M` : undefined, // ISO-8601 duration
+    // T6-3: AggregateRating from TMDb's vote_average. ratingCount required by spec.
+    aggregateRating: m.voteAverage && m.voteCount && m.voteCount > 0 ? {
+      '@type': 'AggregateRating',
+      ratingValue: m.voteAverage,
+      bestRating: 10,
+      worstRating: 0,
+      ratingCount: m.voteCount,
+    } : undefined,
+  };
+}
+
+/**
+ * T6-4 — BreadcrumbList JSON-LD. Pass the trail in order from root to leaf.
+ * Each item: `name` (display) + `path` (absolute or root-relative).
+ */
+export function buildBreadcrumbJsonLd(
+  trail: { name: string; path: string }[],
+): JsonLdObject {
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'BreadcrumbList',
+    itemListElement: trail.map((t, i) => ({
+      '@type': 'ListItem',
+      position: i + 1,
+      name: t.name,
+      item: t.path.startsWith('http') ? t.path : absoluteUrl(t.path),
+    })),
   };
 }
 

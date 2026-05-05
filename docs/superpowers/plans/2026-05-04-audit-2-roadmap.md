@@ -43,12 +43,13 @@ authoritative" claim)
 - [x] **T1-2:** Harden `tmdb:enrich` so it refuses to silently rewrite a
       row's title to a wildly different film. Token-set similarity < 0.4
       now skips the row unless `--force` is passed.
-- [ ] **T1-3:** Add `last_verified_at` timestamp column on productions and
-      surface it on the detail page ("Data verified 14 days ago"). Pros
-      need to know if equipment data is fresh.
-- [ ] **T1-4:** Add a "Suggest a correction" link on every detail page
-      that opens a `mailto:` or a structured form. Even just `mailto:` is
-      better than nothing.
+- [x] **T1-3:** `last_verified_at` column on productions (migration 0014).
+      Backfilled to NOW() for curated rows, NULL for imported. Bumped
+      only by human review (NOT by tmdb:enrich). Surfaced as
+      "Verified N days ago" under the External-links row.
+- [x] **T1-4:** "Suggest a correction →" link on film detail pages.
+      `mailto:` with prefilled subject and body. Replace with a form
+      when the correction queue (T7-4) ships.
 
 ## Tier 2 — Production page depth (the page that matters most)
 
@@ -74,8 +75,10 @@ authoritative" claim)
       signal. Source: Wikidata Query Service.
 - [ ] **T2-7:** Curated "key frames" gallery (3-4 production stills per
       curated film). Manual seeding; small differentiator vs ShotDeck.
-- [ ] **T2-8:** "Similar films" section at the bottom of /films/[slug]
-      computed from genres + format + DP + collection.
+- [x] **T2-8:** "Similar films" section at the bottom of /films/[slug].
+      Heuristic score: 5 × director matches + 3 × DP matches + 1 per
+      genre overlap + 1 if same decade. Each result tagged with reason
+      ("same director" / "same cinematographer" / "similar genre").
 
 ## Tier 3 — Crew page depth
 
@@ -123,8 +126,10 @@ authoritative" claim)
 - [x] **T5-3:** Saved bookmarks via `localStorage`. ★ button on film and
       crew detail pages; new `/bookmarks` page lists them grouped by
       kind. Star link in TopNav.
-- [ ] **T5-4:** Keyboard shortcuts: `g f`/`g c`/`g g`/`g v` to jump,
-      `?` for help overlay, `j`/`k` for card navigation in lists.
+- [x] **T5-4:** Keyboard shortcuts: `g h`/`g f`/`g c`/`g g`/`g v`/`g b`
+      to jump to home/films/crew/gear/vfx/bookmarks, `?` toggles a help
+      overlay (Esc closes). Mounted once in the root layout. j/k card
+      nav not yet implemented (lower priority).
 - [ ] **T5-5:** "Updated this week" feed on the homepage — signals the
       site is alive.
 
@@ -132,10 +137,11 @@ authoritative" claim)
 
 - [ ] **T6-1:** Inline source citations per claim ("Camera: ALEXA 65
       [src: ASC Mar 2024]") rather than only the global sources block.
-- [ ] **T6-2:** `lastmod` in `app/sitemap.ts` from `productions.updated_at`
-      rather than `now()`.
-- [ ] **T6-3:** `Movie.aggregateRating` JSON-LD using TMDb vote_average.
-- [ ] **T6-4:** `BreadcrumbList` JSON-LD on detail pages.
+- [x] **T6-2:** `lastmod` in `app/sitemap.ts` now per-production from
+      `productions.updated_at` (new `listProductionLastmods` query).
+- [x] **T6-3:** `Movie.aggregateRating` JSON-LD using TMDb vote_average +
+      vote_count. Also added `genre` and ISO-8601 `duration` fields.
+- [x] **T6-4:** `BreadcrumbList` JSON-LD on film detail pages.
 - [ ] **T6-5:** Per-page Open Graph image (still blocked by `@vercel/og`
       Windows bug — fix is to vendor the font binary into the project so
       the buggy default-font loader is never invoked, OR build on Linux
@@ -172,17 +178,23 @@ authoritative" claim)
       PDF library; no @vercel/og font issues. Tailwind `print:` utilities
       flip to a light theme for paper. Linked from the film detail page
       under External links.
-- [ ] **T9-2:** **Lens comparison tool** (see T4-3). Pick 2-3 lenses,
-      side-by-side specs + filmography overlap + DP overlap.
-- [ ] **T9-3:** "Shot on Studio Pro" badge / embed widget. Free SEO.
-      Rental houses and DPs link back. Embeddable
-      `<iframe src="//studiopro/films/dune-part-two-2024/badge" />`.
+- [x] **T9-2:** **Lens comparison tool** — already shipped as part of
+      T4-3. The same `/gear/compare` route handles cameras, lenses,
+      lighting, filters.
+- [x] **T9-3:** "Shot on Studio Pro" badge / embed widget. Served as a
+      raw-HTML Route Handler at `/films/<slug>/badge` that bypasses the
+      root layout. 5-minute edge cache. Self-contained inline CSS;
+      X-Frame-Options=ALLOWALL so it can be embedded anywhere.
+      Suggested iframe: 320×120.
 - [ ] **T9-4:** Public read-only API with CC-BY attribution.
       `/api/v1/productions/<slug>` returns the full JSON. Wikipedia
       model — others can build on us, citing us.
-- [ ] **T9-5:** `llms.txt` for AI search engine ingestion. Helps
-      ChatGPT/Perplexity/Gemini cite Studio Pro instead of IMDb when
-      answering technical film questions.
+- [x] **T9-5:** `/llms.txt` Route Handler emits a markdown index
+      following llmstxt.org conventions: site description, dynamic
+      counts, index page links, key reference queries, tools, recent
+      curated productions, and a "How citations work" explainer. 1-hour
+      edge cache. Goal: ChatGPT/Perplexity/Gemini cite Studio Pro for
+      technical film queries.
 - [ ] **T9-6:** Newsletter / weekly digest — "5 new productions added
       this week with full crew and equipment data."
 

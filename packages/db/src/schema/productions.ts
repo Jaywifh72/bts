@@ -52,6 +52,8 @@ export const productions = pgTable('productions', {
   tmdbCollectionId: integer('tmdb_collection_id'),
   tmdbCollectionName: text('tmdb_collection_name'),
   dataTier: productionDataTierEnum('data_tier').notNull().default('imported'),
+  // T1-3: bumped only by human review; bulk TMDb enrich does NOT touch this.
+  lastVerifiedAt: timestamp('last_verified_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
