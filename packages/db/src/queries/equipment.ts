@@ -180,6 +180,9 @@ export async function getItemsForComparison(
   itemSlugs: string[],
 ) {
   if (itemSlugs.length === 0) return [];
+  // Hand-format the postgres array literal — postgres-js's automatic
+  // array binding sends a record type that can't be cast to text[].
+  const slugLiteral = `{${itemSlugs.map((s) => `"${s.replace(/"/g, '\\"')}"`).join(',')}}`;
   return db.execute<{
     slug: string; name: string; model_number: string | null; status: string;
     year_introduced: number | null; year_discontinued: number | null;
@@ -193,8 +196,8 @@ export async function getItemsForComparison(
     FROM equipment_items ei
     JOIN equipment_series es ON es.id = ei.series_id
     JOIN equipment_manufacturers em ON em.id = es.manufacturer_id
-    WHERE ei.slug = ANY(${itemSlugs}::text[])
-    ORDER BY array_position(${itemSlugs}::text[], ei.slug)
+    WHERE ei.slug = ANY(${slugLiteral}::text[])
+    ORDER BY array_position(${slugLiteral}::text[], ei.slug)
   `);
 }
 
@@ -208,6 +211,7 @@ export async function getProductionsUsingAnyItem(
   itemSlugs: string[],
 ) {
   if (itemSlugs.length === 0) return [];
+  const slugLiteral = `{${itemSlugs.map((s) => `"${s.replace(/"/g, '\\"')}"`).join(',')}}`;
   return db.execute<{
     production_slug: string;
     production_title: string;
@@ -222,7 +226,7 @@ export async function getProductionsUsingAnyItem(
     JOIN equipment_items ei ON ei.id = eu.equipment_item_id
     JOIN scenes sc ON sc.id = eu.scene_id
     JOIN productions p ON p.id = sc.production_id
-    WHERE ei.slug = ANY(${itemSlugs}::text[])
+    WHERE ei.slug = ANY(${slugLiteral}::text[])
     GROUP BY p.id, p.slug, p.title, p.release_year, p.poster_path
     ORDER BY array_length(array_agg(DISTINCT ei.slug), 1) DESC,
              p.release_year DESC NULLS LAST,
