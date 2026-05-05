@@ -13,7 +13,9 @@ type Props = {
   searchParams: { q?: string };
 };
 
-const SUGGESTIONS = ['Dune', 'Greig Fraser', 'ALEXA 65', 'A24', 'Cooke S4/i'];
+// Curated suggestions hit interesting cross-cuts in the data: a hand-curated
+// film, a working DP, a flagship camera, a major studio, a famous lens line.
+const SUGGESTIONS = ['Dune', 'Greig Fraser', 'ALEXA 65', 'A24', 'Cooke S4 i'];
 
 export default async function SearchPage({ searchParams }: Props) {
   const q = (searchParams.q ?? '').trim();
@@ -31,7 +33,7 @@ export default async function SearchPage({ searchParams }: Props) {
           <p className="mt-1 text-sm text-zinc-500">
             {results.length === 0
               ? 'No matches.'
-              : `${results.length} match${results.length === 1 ? '' : 'es'} across films, crew, gear, and VFX houses.`}
+              : `${results.length} match${results.length === 1 ? '' : 'es'} across films, crew, gear, scenes, videos, and VFX houses.`}
           </p>
         )}
       </header>
@@ -58,7 +60,7 @@ export default async function SearchPage({ searchParams }: Props) {
 
       {noMatches && (
         <div className="rounded border border-zinc-800 bg-zinc-900/40 p-6 text-sm text-zinc-400">
-          No films, crew, gear, or VFX houses matched <span className="text-zinc-200">"{q}"</span>.
+          No films, crew, gear, scenes, videos, or VFX houses matched <span className="text-zinc-200">"{q}"</span>.
           Try a shorter or different spelling — fuzzy match catches small typos
           but not entirely different terms.
         </div>

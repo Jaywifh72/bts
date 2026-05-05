@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { db, listProductions } from '@bts/db';
+import { db, listFeaturedProductions, countProductions } from '@bts/db';
 import { ProductionCard } from '@/components/productions/ProductionCard';
 
 export const metadata: Metadata = {
@@ -26,32 +26,48 @@ const queries = [
 ] as const;
 
 export default async function HomePage() {
-  const productions = await listProductions(db);
-  const featured = productions.slice(0, 6);
+  const [featured, totalCurated, totalAll] = await Promise.all([
+    listFeaturedProductions(db, 6),
+    countProductions(db, { dataTier: 'curated' }),
+    countProductions(db),
+  ]);
 
   return (
     <>
       {/* Hero */}
       <div className="mb-12 border-b border-zinc-800 pb-8">
         <h1 className="font-serif text-5xl text-zinc-50">Studio Pro</h1>
-        <p className="mt-3 max-w-xl text-zinc-400">
+        <p className="mt-3 max-w-2xl text-zinc-400">
           Behind-the-scenes technical metadata for working film professionals.
           Camera packages, lens choices, lighting rigs — cited and searchable.
         </p>
-        <div className="mt-4 flex gap-4">
-          <Link href="/films" className="text-sm text-amber-400 hover:underline">Browse all films →</Link>
+        <div className="mt-4 flex flex-wrap gap-4">
+          <Link href="/films" className="text-sm text-amber-400 hover:underline">
+            Browse all {totalAll.toLocaleString()} films →
+          </Link>
           <Link href="/gear" className="text-sm text-amber-400 hover:underline">Browse gear →</Link>
           <Link href="/crew" className="text-sm text-amber-400 hover:underline">Browse crew →</Link>
+          <Link href="/vfx" className="text-sm text-amber-400 hover:underline">Browse VFX →</Link>
         </div>
       </div>
 
-      {/* Featured productions */}
+      {/* Featured: curated tier only — hand-seeded with crew/scenes/equipment depth */}
       <div className="mb-12">
         <div className="mb-4 flex items-baseline justify-between">
-          <h2 className="font-serif text-xl text-zinc-50">Recent Additions</h2>
-          <Link href="/films" className="text-xs text-zinc-500 hover:text-amber-400">View all</Link>
+          <div>
+            <h2 className="font-serif text-xl text-zinc-50">Featured Productions</h2>
+            <p className="mt-1 text-xs text-zinc-500">
+              {totalCurated} hand-curated films with full crew, scene-level equipment data, and cited sources.
+            </p>
+          </div>
+          <Link
+            href="/films?tier=curated"
+            className="text-xs text-zinc-500 hover:text-amber-400"
+          >
+            View all curated →
+          </Link>
         </div>
-        <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {featured.map((row) => (
             <ProductionCard
               key={row.slug}
@@ -62,6 +78,8 @@ export default async function HomePage() {
               synopsis={row.synopsis}
               primaryAspectRatio={row.primary_aspect_ratio}
               primaryAcquisitionFormat={row.primary_acquisition_format}
+              posterPath={row.poster_path}
+              dataTier={row.data_tier}
             />
           ))}
         </div>

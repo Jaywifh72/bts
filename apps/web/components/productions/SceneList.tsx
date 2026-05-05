@@ -63,7 +63,11 @@ export function SceneList({ rows }: SceneListProps) {
       <SectionHeader label="Production" heading="Scenes & Equipment" />
       <div className="space-y-4">
         {scenes.map((scene) => (
-          <div key={scene.scene_id} className="rounded border border-zinc-800 bg-zinc-900">
+          <div
+            key={scene.scene_id}
+            id={`scene-${scene.scene_slug}`}
+            className="scroll-mt-6 rounded border border-zinc-800 bg-zinc-900"
+          >
             <div className="border-b border-zinc-800 px-4 py-3">
               <div className="flex flex-wrap items-center gap-2">
                 <h3 className="font-medium text-zinc-100">{scene.scene_title}</h3>

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import { inter, dmSerifDisplay } from '@/lib/fonts';
 import { TopNav } from '@/components/nav/TopNav';
+import { Footer } from '@/components/nav/Footer';
 import { siteUrl } from '@/lib/site';
 
 export const metadata: Metadata = {
@@ -31,9 +32,10 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     <html lang="en" className={`${inter.variable} ${dmSerifDisplay.variable}`}>
       <body className="min-h-screen bg-zinc-950 font-sans text-zinc-50 antialiased">
         <TopNav />
-        <main className="mx-auto max-w-7xl px-6 py-8">
+        <main className="mx-auto max-w-7xl px-6 py-8 min-h-[60vh]">
           {children}
         </main>
+        <Footer />
       </body>
     </html>
   );

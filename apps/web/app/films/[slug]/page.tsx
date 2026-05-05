@@ -6,17 +6,19 @@ import {
   getProductionWithFullDetail,
   getProductionVfxData,
   getProductionVideos,
+  getCollectionMembers,
 } from '@bts/db';
 import { ProductionDetail } from '@/components/productions/ProductionDetail';
-import { fetchTmdbMedia } from '@/lib/tmdb';
 import { JsonLd, buildMovieJsonLd } from '@/lib/jsonLd';
+import { posterUrl } from '@/lib/tmdb-image';
 
 interface Props {
   params: { slug: string };
 }
 
 export async function generateStaticParams() {
-  const rows = await listProductions(db);
+  // Limit to curated tier so we don't pre-generate ~539 dynamic pages.
+  const rows = await listProductions(db, { dataTier: 'curated' });
   return rows.map((r) => ({ slug: r.slug }));
 }
 
@@ -40,11 +42,15 @@ export default async function FilmDetailPage({ params }: Props) {
   const data = await getProductionWithFullDetail(db, params.slug);
   if (!data) notFound();
 
-  const [media, vfx, videos] = await Promise.all([
-    fetchTmdbMedia(data.production.tmdb_id),
+  const collectionId = data.production.tmdb_collection_id;
+  const [vfx, videos, collectionMembersRaw] = await Promise.all([
     getProductionVfxData(db, data.production.id),
     getProductionVideos(db, data.production.id),
+    collectionId
+      ? getCollectionMembers(db, collectionId, data.production.id)
+      : Promise.resolve(null),
   ]);
+  const collectionMembers = collectionMembersRaw ?? [];
 
   // Pull directors out of crew for the JSON-LD director list
   const directors = data.crew
@@ -58,14 +64,14 @@ export default async function FilmDetailPage({ params }: Props) {
     releaseYear: data.production.release_year,
     synopsis: data.production.synopsis,
     directors,
-    posterUrl: media?.poster ?? null,
+    posterUrl: posterUrl(data.production.poster_path, 'w500'),
     tmdbId: data.production.tmdb_id,
   });
 
   return (
     <>
       <JsonLd data={jsonLd} />
-      <ProductionDetail data={data} media={media} vfx={vfx} videos={videos} />
+      <ProductionDetail data={data} vfx={vfx} videos={videos} collectionMembers={collectionMembers} />
     </>
   );
 }

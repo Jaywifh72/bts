@@ -34,6 +34,22 @@ function fmtDuration(seconds: number | null): string {
   return `${m}:${String(s).padStart(2, '0')}`;
 }
 
+/**
+ * Decode the small set of HTML entities YouTube/Vimeo titles include.
+ * (Full HTML decoding would pull in a dep; we only see &amp; &quot; &#39; etc.)
+ */
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, '&')
+    .replace(/&quot;/g, '"')
+    .replace(/&#39;/g, "'")
+    .replace(/&#039;/g, "'")
+    .replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<')
+    .replace(/&gt;/g, '>')
+    .replace(/&nbsp;/g, ' ');
+}
+
 export function VideoReviewRow({ video }: { video: VideoForReview }) {
   const [pending, startTransition] = useTransition();
   const score = parseFloat(video.confidence_score);
@@ -68,7 +84,8 @@ export function VideoReviewRow({ video }: { video: VideoForReview }) {
         pending ? 'opacity-50' : 'hover:border-zinc-700'
       }`}
     >
-      {/* Thumbnail */}
+      {/* Thumbnail. YouTube CDN sometimes blocks hot-linked thumbs without a
+          referrer — `referrerpolicy="no-referrer"` keeps them loading. */}
       <a
         href={video.url}
         target="_blank"
@@ -81,7 +98,8 @@ export function VideoReviewRow({ video }: { video: VideoForReview }) {
           <img
             src={video.thumbnail_url}
             alt=""
-            className="aspect-video w-full rounded object-cover"
+            referrerPolicy="no-referrer"
+            className="aspect-video w-full rounded bg-zinc-800 object-cover"
             loading="lazy"
           />
         ) : (
@@ -99,7 +117,7 @@ export function VideoReviewRow({ video }: { video: VideoForReview }) {
           rel="noopener noreferrer"
           className="block truncate font-medium text-zinc-100 hover:text-amber-400"
         >
-          {video.title}
+          {decodeEntities(video.title)}
         </a>
         <div className="mt-1 flex flex-wrap items-center gap-2 text-xs text-zinc-500">
           <span className="rounded bg-zinc-800 px-1.5 py-0.5 uppercase">

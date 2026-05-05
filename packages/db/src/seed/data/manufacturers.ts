@@ -14,7 +14,9 @@ export const manufacturersData = [
   { slug: 'angenieux', name: 'Angénieux', kind: 'manufacturer' as const, country: 'FR' },
   { slug: 'imax', name: 'IMAX Corporation', kind: 'manufacturer' as const, country: 'CA', foundedYear: 1967 },
   { slug: 'red-digital-cinema', name: 'RED Digital Cinema', kind: 'manufacturer' as const, country: 'US', foundedYear: 2005 },
-  { slug: 'sony', name: 'Sony', kind: 'manufacturer' as const, country: 'JP', foundedYear: 1946 },
+  // 'sony-cinema' is the canonical slug — predates this row but the original
+  // seed used the verbose name 'Sony Cinema Products'. Standardize on 'Sony'.
+  { slug: 'sony-cinema', name: 'Sony', kind: 'manufacturer' as const, country: 'JP', foundedYear: 1946 },
   { slug: 'mitchell', name: 'Mitchell Camera Corporation', kind: 'manufacturer' as const, country: 'US', foundedYear: 1920 },
   { slug: 'vantage', name: 'Vantage Film (Hawk)', kind: 'manufacturer' as const, country: 'DE', foundedYear: 1995 },
   { slug: 'bausch-lomb', name: 'Bausch & Lomb', kind: 'manufacturer' as const, country: 'US', foundedYear: 1853 },

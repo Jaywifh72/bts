@@ -11,6 +11,9 @@ const CATEGORY_META: Record<
   manufacturer: { label: 'Manufacturers', indexHref: '/gear' },
   series: { label: 'Series', indexHref: '/gear' },
   item: { label: 'Items', indexHref: '/gear' },
+  studio: { label: 'Studios', indexHref: null },
+  scene: { label: 'Scenes', indexHref: null },
+  video: { label: 'BTS Videos', indexHref: null },
 };
 
 // Display order — Films first because it's the primary entry point per the
@@ -22,6 +25,9 @@ const ORDER: SearchCategory[] = [
   'manufacturer',
   'series',
   'item',
+  'scene',
+  'video',
+  'studio',
 ];
 
 export function ResultsByCategory({ results }: { results: SearchResult[] }) {

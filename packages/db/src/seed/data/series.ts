@@ -22,8 +22,8 @@ export const seriesData: SeriesSeed[] = [
   { slug: 'imax-film-camera',   manufacturerSlug: 'imax', name: 'IMAX 65mm Film Cameras', category: 'camera_body' },
   // RED / Sony / Mitchell
   { slug: 'red-camera-family',  manufacturerSlug: 'red-digital-cinema', name: 'RED Camera family', category: 'camera_body', yearIntroduced: 2007 },
-  { slug: 'sony-venice-family', manufacturerSlug: 'sony', name: 'Sony VENICE family', category: 'camera_body', yearIntroduced: 2017 },
-  { slug: 'sony-hdw-f900',      manufacturerSlug: 'sony', name: 'Sony HDW-F900 CineAlta', category: 'camera_body', yearIntroduced: 2000 },
+  { slug: 'sony-venice-family', manufacturerSlug: 'sony-cinema', name: 'Sony VENICE family', category: 'camera_body', yearIntroduced: 2017 },
+  { slug: 'sony-hdw-f900',      manufacturerSlug: 'sony-cinema', name: 'Sony HDW-F900 CineAlta', category: 'camera_body', yearIntroduced: 2000 },
   { slug: 'mitchell-bncr',      manufacturerSlug: 'mitchell', name: 'Mitchell BNCR', category: 'camera_body' },
   // Panavision anamorphic / spherical lens lines
   { slug: 'panavision-c-series', manufacturerSlug: 'panavision', name: 'Panavision C-Series Anamorphic', category: 'lens_set' },

@@ -32,6 +32,14 @@ function formatViews(count: number | null): string {
   return `${count} views`;
 }
 
+/** Decode common HTML entities returned by YouTube/Vimeo titles. */
+function decodeEntities(s: string): string {
+  return s
+    .replace(/&amp;/g, '&').replace(/&quot;/g, '"').replace(/&#39;/g, "'")
+    .replace(/&#039;/g, "'").replace(/&apos;/g, "'")
+    .replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&nbsp;/g, ' ');
+}
+
 interface VideoCardProps {
   video: ProductionVideo;
 }
@@ -50,7 +58,9 @@ function VideoCard({ video }: VideoCardProps) {
           // eslint-disable-next-line @next/next/no-img-element
           <img
             src={video.thumbnail_url}
-            alt={video.title}
+            alt={decodeEntities(video.title)}
+            referrerPolicy="no-referrer"
+            loading="lazy"
             className="h-full w-full object-cover"
           />
         ) : (
@@ -63,7 +73,7 @@ function VideoCard({ video }: VideoCardProps) {
       {/* Card body */}
       <div className="flex flex-1 flex-col gap-1.5 p-2">
         <p className="line-clamp-2 text-xs font-medium leading-snug text-zinc-200">
-          {video.title}
+          {decodeEntities(video.title)}
         </p>
         <span className="inline-block self-start rounded bg-zinc-950 px-1.5 py-0.5 text-[10px] text-amber-500 border border-zinc-800">
           {CATEGORY_LABELS[video.category] ?? video.category}
