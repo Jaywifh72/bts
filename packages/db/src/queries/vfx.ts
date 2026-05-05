@@ -61,9 +61,10 @@ export async function getVfxHouseWithFilmography(db: SeedDb = defaultDb, slug: s
       release_year: number | null;
       role: string;
       shot_count: number | null;
+      poster_path: string | null;
     }>(sql`
       SELECT p.slug AS production_slug, p.title AS production_title,
-             p.release_year, vc.role, vc.shot_count
+             p.release_year, vc.role, vc.shot_count, p.poster_path
       FROM vfx_credits vc
       JOIN productions p ON p.id = vc.production_id
       WHERE vc.vfx_house_id = ${house.id}
