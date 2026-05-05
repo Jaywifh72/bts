@@ -11,6 +11,8 @@ interface FilmographyRow {
   role_name: string;
   role_category: string;
   credit_name_override: string | null;
+  /** T3-4 — credit-specific notes (e.g. "additional photography only"). */
+  notes?: string | null;
   primary_aspect_ratio: string | null;
   primary_acquisition_format: string | null;
   poster_path?: string | null;
@@ -60,6 +62,9 @@ export function FilmographyTable({ rows }: { rows: FilmographyRow[] }) {
                   {row.credit_name_override
                     ? `${row.role_name} (as ${row.credit_name_override})`
                     : row.role_name}
+                  {row.notes && (
+                    <span className="ml-2 text-xs text-zinc-600">— {row.notes}</span>
+                  )}
                 </td>
                 <td className="px-3 py-2">
                   {row.primary_aspect_ratio && row.primary_acquisition_format

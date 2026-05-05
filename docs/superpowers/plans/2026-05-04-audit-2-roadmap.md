@@ -60,10 +60,14 @@ authoritative" claim)
       have data.
 - [x] **T2-2:** Display `principal_photography_start` / `_end` and
       shooting locations (deduped from scenes). Inside TechPanel.
-- [ ] **T2-3:** New schema: `post_houses` table + `production_post_houses`
-      join (DI lab, color grading house, sound mix facility). Companies:
-      Company 3, FotoKem, EFILM, Picture Shop, Goldcrest, Harbor, etc.
-      No competitor models this — it would be a unique-to-us field.
+- [x] **T2-3:** Schema (migration 0015): post_houses + production_post_houses
+      with kind enum (di_lab/color/sound_mix/finishing/mastering/other) and
+      role enum. Seeded 13 industry-standard houses (Company 3, FotoKem,
+      EFILM, Picture Shop, Goldcrest, Harbor, Molinare, Technicolor,
+      Skywalker Sound, Formosa Group, Sony Post, IMAX DMR, Dolby Labs).
+      "Lab & finishing" section on film detail page when populated.
+      Drizzle schema + listPostHouses / getProductionPostHouses queries.
+      No competitor models this surface.
 - [ ] **T2-4:** Surface release dates by region from TMDb's
       `/movie/{id}/release_dates` endpoint.
 - [x] **T2-5:** Wikidata cross-link: store `wikidata_id` on productions
@@ -91,18 +95,24 @@ authoritative" claim)
 - [ ] **T3-2:** "Career stats" panel on every crew page: total credits,
       decades active, most-used aspect ratio, most-used DP/director
       collaborator (depends on T1-3 metadata).
-- [ ] **T3-3:** "Known for" highlight (3-4 highest-rated productions)
-      surfaced visually at the top of the filmography table.
-- [ ] **T3-4:** Surface `crew_assignments.notes` when present
-      (e.g. "additional photography", "reshoots only").
+- [x] **T3-3:** "Known for" highlight section above the filmography
+      table — top 4 productions by vote_average where vote_count >= 50
+      so obscure outliers don't drown out broadly-loved films. Each
+      card: poster, year, role, ★ rating.
+- [x] **T3-4:** Surface `crew_assignments.notes` when present in the
+      Filmography table ("Director of Photography — additional
+      photography only").
 - [ ] **T3-5:** Awards section on crew pages (depends on T2-6 wikidata
       pipeline).
 
 ## Tier 4 — Gear page depth
 
-- [ ] **T4-1:** Manufacturer logos. Public-domain or fair-use
-      brand marks for ARRI, Cooke, Panavision, Zeiss, Leitz, etc.
-      Hosted in `/public/manufacturers/`.
+- [x] **T4-1:** Manufacturer brand identity. Logos require licensing per
+      brand so we use brand-color tiles + monogram (ARRI = red, Cooke =
+      gold, Panavision = blue, RED = red, Zeiss = blue, IMAX = teal,
+      Vantage = red). Wired into ManufacturerCard. Pros recognize the
+      palette; this is enough visual identity to make brands distinguishable
+      in a grid. Real logos can replace the tiles per-brand later.
 - [ ] **T4-2:** Lens depth comparable to Cinelenses. Add coverage
       circle, image circle, breathing characteristics, close focus
       distance, housing model to lens specs.
@@ -130,8 +140,9 @@ authoritative" claim)
       to jump to home/films/crew/gear/vfx/bookmarks, `?` toggles a help
       overlay (Esc closes). Mounted once in the root layout. j/k card
       nav not yet implemented (lower priority).
-- [ ] **T5-5:** "Updated this week" feed on the homepage — signals the
-      site is alive.
+- [x] **T5-5:** "Recently updated" feed on the homepage — 4 most-recent
+      curated productions by `last_verified_at`. Compact-variant
+      ProductionCard layout below the Featured row.
 
 ## Tier 6 — Trust & SEO
 
@@ -186,9 +197,12 @@ authoritative" claim)
       root layout. 5-minute edge cache. Self-contained inline CSS;
       X-Frame-Options=ALLOWALL so it can be embedded anywhere.
       Suggested iframe: 320×120.
-- [ ] **T9-4:** Public read-only API with CC-BY attribution.
-      `/api/v1/productions/<slug>` returns the full JSON. Wikipedia
-      model — others can build on us, citing us.
+- [x] **T9-4:** Public read-only API with CC-BY attribution. Two
+      routes shipped: `/api/v1` (self-describing root index) and
+      `/api/v1/productions/<slug>` (full payload: production, formats,
+      studios, crew, scenes, sources, vfx, videos, post_houses).
+      Snake_case keys, CORS=*, 5-min edge cache, OPTIONS preflight,
+      attribution + license in `_meta`.
 - [x] **T9-5:** `/llms.txt` Route Handler emits a markdown index
       following llmstxt.org conventions: site description, dynamic
       counts, index page links, key reference queries, tools, recent

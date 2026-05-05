@@ -9,12 +9,13 @@ import {
   getPersonFilmography,
   getEquipmentUsedByPerson,
   getCollaboratorsForPerson,
+  getKnownForByPerson,
 } from '@bts/db';
 import { FilmographyTable } from '@/components/people/FilmographyTable';
 import { EquipmentUsedTable } from '@/components/people/EquipmentUsedTable';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { JsonLd, buildPersonJsonLd } from '@/lib/jsonLd';
-import { profileUrl } from '@/lib/tmdb-image';
+import { profileUrl, posterUrl } from '@/lib/tmdb-image';
 import { BookmarkButton } from '@/components/ui/BookmarkButton';
 
 interface Props { params: { slug: string } }
@@ -40,11 +41,12 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 }
 
 export default async function CrewDetailPage({ params }: Props) {
-  const [person, filmography, equipment, collaborators] = await Promise.all([
+  const [person, filmography, equipment, collaborators, knownFor] = await Promise.all([
     getPersonBySlug(db, params.slug),
     getPersonFilmography(db, params.slug),
     getEquipmentUsedByPerson(db, params.slug),
     getCollaboratorsForPerson(db, params.slug, 12),
+    getKnownForByPerson(db, params.slug, 4),
   ]);
   if (!person) notFound();
 
@@ -139,6 +141,48 @@ export default async function CrewDetailPage({ params }: Props) {
             )}
           </div>
         </header>
+
+        {/* T3-3 — Known for highlight (top-rated productions) */}
+        {knownFor.length > 0 && (
+          <div className="mb-8">
+            <SectionHeader label="Highlights" heading="Known for" />
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+              {knownFor.map((k) => {
+                const poster = posterUrl(k.poster_path, 'w185');
+                return (
+                  <Link
+                    key={k.slug}
+                    href={`/films/${k.slug}`}
+                    className="group flex gap-3 rounded border border-zinc-800 bg-zinc-900 p-3 hover:border-zinc-600 transition-colors"
+                  >
+                    <div
+                      className="relative shrink-0 overflow-hidden rounded bg-zinc-950"
+                      style={{ width: 56, aspectRatio: '2/3' }}
+                    >
+                      {poster && (
+                        <Image src={poster} alt="" fill sizes="56px" className="object-cover" />
+                      )}
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <div className="line-clamp-2 text-sm font-medium text-zinc-100 group-hover:text-amber-400">
+                        {k.title}
+                      </div>
+                      <div className="mt-0.5 text-xs text-zinc-500">
+                        {k.release_year ?? '—'}
+                      </div>
+                      <div className="mt-1 text-xs text-zinc-500">{k.role_name}</div>
+                      {k.vote_average && (
+                        <div className="mt-1 text-xs text-amber-400">
+                          ★ {Number(k.vote_average).toFixed(1)}
+                        </div>
+                      )}
+                    </div>
+                  </Link>
+                );
+              })}
+            </div>
+          </div>
+        )}
 
         <SectionHeader label="Career" heading="Filmography" />
         <FilmographyTable rows={filmography} />

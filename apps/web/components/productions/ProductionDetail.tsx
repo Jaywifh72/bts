@@ -30,18 +30,28 @@ type SimilarProduction = CollectionMember & {
   reason: string;
 };
 
+type PostHouse = {
+  slug: string;
+  name: string;
+  kind: string;
+  role: string;
+  notes: string | null;
+};
+
 export function ProductionDetail({
   data,
   vfx,
   videos,
   collectionMembers,
   similar,
+  postHouses,
 }: {
   data: DetailData;
   vfx: VfxData;
   videos: VideosData;
   collectionMembers: readonly CollectionMember[];
   similar: readonly SimilarProduction[];
+  postHouses: readonly PostHouse[];
 }) {
   const { production, formats, studios, crew, scenes, productionSources } = data;
 
@@ -274,6 +284,24 @@ export function ProductionDetail({
       ))}
 
       <VfxSection credits={vfx.credits} techniques={vfx.techniques} />
+
+      {/* T2-3 — post-production houses (DI / color / sound mix). Empty
+          for most films today; visible on curated rows where we know it. */}
+      {postHouses.length > 0 && (
+        <div className="mt-6">
+          <SectionHeader label="Post-production" heading="Lab & finishing" />
+          <ul className="space-y-1 text-sm">
+            {postHouses.map((p) => (
+              <li key={`${p.slug}:${p.role}`} className="flex items-center gap-3">
+                <span className="text-zinc-200">{p.name}</span>
+                <span className="text-xs text-zinc-500">{p.role.replace(/_/g, ' ')}</span>
+                {p.notes && <span className="text-xs text-zinc-600">— {p.notes}</span>}
+              </li>
+            ))}
+          </ul>
+        </div>
+      )}
+
       <VideoGallery videos={videos} />
       <SceneList rows={scenes} />
 

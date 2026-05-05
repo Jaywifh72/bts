@@ -128,6 +128,33 @@ export async function listProductionLastmods(db: SeedDb = defaultDb) {
 }
 
 /**
+ * T5-5 — most recently human-verified curated productions. Powers the
+ * homepage "Updated this week" feed; signals the site is alive.
+ */
+export async function listRecentlyUpdatedProductions(
+  db: SeedDb = defaultDb,
+  limit = 4,
+) {
+  return db.execute<ProductionListRow>(sql`
+    SELECT
+      p.slug, p.title, p.type, p.release_year, p.synopsis,
+      pf.aspect_ratio AS primary_aspect_ratio,
+      pf.acquisition_format AS primary_acquisition_format,
+      p.poster_path,
+      p.data_tier,
+      p.genres,
+      p.vote_average::text,
+      p.popularity::text
+    FROM productions p
+    LEFT JOIN production_formats pf
+      ON pf.production_id = p.id AND pf.is_primary = true
+    WHERE p.data_tier = 'curated' AND p.last_verified_at IS NOT NULL
+    ORDER BY p.last_verified_at DESC, p.title
+    LIMIT ${limit}
+  `);
+}
+
+/**
  * Distinct genres present in the corpus, ordered by frequency desc. Used to
  * populate the /films filter dropdown.
  */

@@ -8,6 +8,7 @@ import {
   getProductionVideos,
   getCollectionMembers,
   getSimilarProductions,
+  getProductionPostHouses,
 } from '@bts/db';
 import { ProductionDetail } from '@/components/productions/ProductionDetail';
 import { JsonLd, buildMovieJsonLd, buildBreadcrumbJsonLd } from '@/lib/jsonLd';
@@ -44,13 +45,14 @@ export default async function FilmDetailPage({ params }: Props) {
   if (!data) notFound();
 
   const collectionId = data.production.tmdb_collection_id;
-  const [vfx, videos, collectionMembersRaw, similar] = await Promise.all([
+  const [vfx, videos, collectionMembersRaw, similar, postHouses] = await Promise.all([
     getProductionVfxData(db, data.production.id),
     getProductionVideos(db, data.production.id),
     collectionId
       ? getCollectionMembers(db, collectionId, data.production.id)
       : Promise.resolve(null),
     getSimilarProductions(db, data.production.id, 6),
+    getProductionPostHouses(db, data.production.id),
   ]);
   const collectionMembers = collectionMembersRaw ?? [];
 
@@ -84,7 +86,7 @@ export default async function FilmDetailPage({ params }: Props) {
     <>
       <JsonLd data={jsonLd} />
       <JsonLd data={breadcrumbJsonLd} />
-      <ProductionDetail data={data} vfx={vfx} videos={videos} collectionMembers={collectionMembers} similar={similar} />
+      <ProductionDetail data={data} vfx={vfx} videos={videos} collectionMembers={collectionMembers} similar={similar} postHouses={postHouses} />
     </>
   );
 }

@@ -8,3 +8,4 @@ export * from './scenes.ts';
 export * from './sources.ts';
 export * from './vfx.ts';
 export * from './videos.ts';
+export * from './post-houses.ts';

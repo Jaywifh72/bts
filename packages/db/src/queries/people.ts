@@ -204,6 +204,8 @@ export async function getPersonFilmography(db: SeedDb = defaultDb, slug: string)
     role_name: string;
     role_category: string;
     credit_name_override: string | null;
+    /** T3-4 — surfaced when present (e.g. "additional photography only") */
+    notes: string | null;
     primary_aspect_ratio: string | null;
     primary_acquisition_format: string | null;
     poster_path: string | null;
@@ -212,6 +214,7 @@ export async function getPersonFilmography(db: SeedDb = defaultDb, slug: string)
            p.release_year, p.type AS production_type,
            r.name AS role_name, r.category AS role_category,
            ca.credit_name_override,
+           ca.notes,
            pf.aspect_ratio AS primary_aspect_ratio,
            pf.acquisition_format AS primary_acquisition_format,
            p.poster_path
@@ -222,6 +225,42 @@ export async function getPersonFilmography(db: SeedDb = defaultDb, slug: string)
     LEFT JOIN production_formats pf ON pf.production_id = p.id AND pf.is_primary = true
     WHERE ppl.slug = ${slug}
     ORDER BY p.release_year DESC NULLS LAST, p.title ASC
+  `);
+}
+
+/**
+ * T3-3 — "Known for" highlight. Returns the highest-rated productions
+ * the person crewed on, gated by vote_count >= 50 to filter obscure
+ * outliers, capped at `limit`. Distinct on production_id since a person
+ * can have multiple roles on the same film.
+ */
+export async function getKnownForByPerson(
+  db: SeedDb = defaultDb,
+  personSlug: string,
+  limit = 4,
+) {
+  return db.execute<{
+    slug: string;
+    title: string;
+    release_year: number | null;
+    poster_path: string | null;
+    role_name: string;
+    vote_average: string | null;
+  }>(sql`
+    SELECT
+      p.slug, p.title, p.release_year, p.poster_path,
+      (array_agg(r.name ORDER BY ca.credit_order NULLS LAST))[1] AS role_name,
+      p.vote_average::text
+    FROM crew_assignments ca
+    JOIN people ppl ON ppl.id = ca.person_id
+    JOIN productions p ON p.id = ca.production_id
+    JOIN roles r ON r.id = ca.role_id
+    WHERE ppl.slug = ${personSlug}
+      AND p.vote_average IS NOT NULL
+      AND COALESCE(p.vote_count, 0) >= 50
+    GROUP BY p.id
+    ORDER BY p.vote_average DESC NULLS LAST, p.vote_count DESC NULLS LAST
+    LIMIT ${limit}
   `);
 }
 

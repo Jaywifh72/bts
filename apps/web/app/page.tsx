@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { db, listFeaturedProductions, countProductions } from '@bts/db';
+import { db, listFeaturedProductions, countProductions, listRecentlyUpdatedProductions } from '@bts/db';
 import { ProductionCard } from '@/components/productions/ProductionCard';
 
 export const metadata: Metadata = {
@@ -26,10 +26,11 @@ const queries = [
 ] as const;
 
 export default async function HomePage() {
-  const [featured, totalCurated, totalAll] = await Promise.all([
+  const [featured, totalCurated, totalAll, recentlyUpdated] = await Promise.all([
     listFeaturedProductions(db, 6),
     countProductions(db, { dataTier: 'curated' }),
     countProductions(db),
+    listRecentlyUpdatedProductions(db, 4),
   ]);
 
   return (
@@ -84,6 +85,35 @@ export default async function HomePage() {
           ))}
         </div>
       </div>
+
+      {/* T5-5 — Updated this week feed (signals the site is alive) */}
+      {recentlyUpdated.length > 0 && (
+        <div className="mb-12">
+          <div className="mb-4 flex items-baseline justify-between">
+            <h2 className="font-serif text-xl text-zinc-50">Recently updated</h2>
+            <Link href="/films?tier=curated&sort=recent" className="text-xs text-zinc-500 hover:text-amber-400">
+              All curated →
+            </Link>
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+            {recentlyUpdated.map((row) => (
+              <ProductionCard
+                key={row.slug}
+                slug={row.slug}
+                title={row.title}
+                type={row.type}
+                releaseYear={row.release_year}
+                synopsis={row.synopsis}
+                primaryAspectRatio={row.primary_aspect_ratio}
+                primaryAcquisitionFormat={row.primary_acquisition_format}
+                posterPath={row.poster_path}
+                dataTier={row.data_tier}
+                variant="compact"
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Killer queries */}
       <div>
