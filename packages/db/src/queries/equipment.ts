@@ -172,6 +172,66 @@ export async function getCrewForItem(db: SeedDb = defaultDb, itemSlug: string) {
 }
 
 /**
+ * T4-3 — fetches multiple equipment items by slug for the comparison tool.
+ * Returned in the order of `itemSlugs` so the UI doesn't have to re-sort.
+ */
+export async function getItemsForComparison(
+  db: SeedDb = defaultDb,
+  itemSlugs: string[],
+) {
+  if (itemSlugs.length === 0) return [];
+  return db.execute<{
+    slug: string; name: string; model_number: string | null; status: string;
+    year_introduced: number | null; year_discontinued: number | null;
+    specs: unknown; series_slug: string; series_name: string;
+    series_category: string; manufacturer_slug: string; manufacturer_name: string;
+  }>(sql`
+    SELECT ei.slug, ei.name, ei.model_number, ei.status,
+           ei.year_introduced, ei.year_discontinued, ei.specs,
+           es.slug AS series_slug, es.name AS series_name, es.category AS series_category,
+           em.slug AS manufacturer_slug, em.name AS manufacturer_name
+    FROM equipment_items ei
+    JOIN equipment_series es ON es.id = ei.series_id
+    JOIN equipment_manufacturers em ON em.id = es.manufacturer_id
+    WHERE ei.slug = ANY(${itemSlugs}::text[])
+    ORDER BY array_position(${itemSlugs}::text[], ei.slug)
+  `);
+}
+
+/**
+ * Productions that used at least one of the given items, ranked by how
+ * many of the items they used. Used by the comparison tool's
+ * "shown together on" section.
+ */
+export async function getProductionsUsingAnyItem(
+  db: SeedDb = defaultDb,
+  itemSlugs: string[],
+) {
+  if (itemSlugs.length === 0) return [];
+  return db.execute<{
+    production_slug: string;
+    production_title: string;
+    release_year: number | null;
+    poster_path: string | null;
+    matched_item_slugs: string[];
+  }>(sql`
+    SELECT p.slug AS production_slug, p.title AS production_title,
+           p.release_year, p.poster_path,
+           array_agg(DISTINCT ei.slug) AS matched_item_slugs
+    FROM equipment_usage eu
+    JOIN equipment_items ei ON ei.id = eu.equipment_item_id
+    JOIN scenes sc ON sc.id = eu.scene_id
+    JOIN productions p ON p.id = sc.production_id
+    WHERE ei.slug = ANY(${itemSlugs}::text[])
+    GROUP BY p.id, p.slug, p.title, p.release_year, p.poster_path
+    ORDER BY array_length(array_agg(DISTINCT ei.slug), 1) DESC,
+             p.release_year DESC NULLS LAST,
+             p.title
+    LIMIT 30
+  `);
+}
+
+/**
  * Returns every (manufacturer, series, item) slug triple in the catalog.
  * Items appear once per row. Pure read for sitemap and similar bulk URL
  * enumeration — does not include any aggregates or related data.

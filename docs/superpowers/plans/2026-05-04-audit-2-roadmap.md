@@ -103,9 +103,10 @@ authoritative" claim)
 - [ ] **T4-2:** Lens depth comparable to Cinelenses. Add coverage
       circle, image circle, breathing characteristics, close focus
       distance, housing model to lens specs.
-- [ ] **T4-3:** Camera-vs-camera and lens-vs-lens comparison tool.
-      `/gear/compare?items=arri-alexa-65,red-v-raptor` style. Side-by-side
-      spec table + filmography overlap. **Unique differentiator.**
+- [x] **T4-3:** Camera-vs-camera and lens-vs-lens comparison tool.
+      `/gear/compare?items=slug1,slug2,slug3` (up to 4). Side-by-side
+      spec table with stable spec order + filmography overlap section
+      ranked by how many of the compared items appear together.
 - [ ] **T4-4:** "Shot on this format" pages —
       `/format/imax-1.43`, `/format/65mm-large-format`, etc.
 - [ ] **T4-5:** Rental house entities (Panavision Rentals, Otto Nemenz,
@@ -157,17 +158,20 @@ authoritative" claim)
       tables, filter bars all need attention.
 - [ ] **T8-2:** Skip-to-content link, prefers-reduced-motion respect,
       focus-visible styles, ARIA on filter dropdowns.
-- [ ] **T8-3:** Print stylesheet — pros print loadout sheets to take on
-      set.
+- [x] **T8-3:** Print stylesheet — implemented as `print:` Tailwind
+      utilities on the loadout page (T9-1). Light theme on paper.
 - [ ] **T8-4:** High-contrast option (separate stylesheet keyed off
       `prefers-contrast`).
 
 ## Tier 9 — Competitive differentiators (own the niche)
 
-- [ ] **T9-1:** **Loadout sheet PDF export.** Single-button "give me a
-      printable PDF of every camera + lens used on Dune Part Two with
-      credits and sources." This is the most pro-workflow-aligned
-      feature we could ship. Stack: `@react-pdf/renderer` server-side.
+- [x] **T9-1:** **Loadout sheet PDF export.** `/films/[slug]/loadout`
+      renders a single-page printable HTML loadout (format, crew by
+      department, equipment by category with scene counts, sources with
+      confidence ratings). Print → Save as PDF in browser. No server
+      PDF library; no @vercel/og font issues. Tailwind `print:` utilities
+      flip to a light theme for paper. Linked from the film detail page
+      under External links.
 - [ ] **T9-2:** **Lens comparison tool** (see T4-3). Pick 2-3 lenses,
       side-by-side specs + filmography overlap + DP overlap.
 - [ ] **T9-3:** "Shot on Studio Pro" badge / embed widget. Free SEO.

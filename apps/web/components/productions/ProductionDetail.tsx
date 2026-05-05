@@ -141,8 +141,8 @@ export function ProductionDetail({
             </div>
           )}
 
-          {/* External links */}
-          <div className="mt-3 flex gap-3 text-xs text-zinc-500">
+          {/* External links + tools */}
+          <div className="mt-3 flex flex-wrap gap-3 text-xs text-zinc-500">
             {production.imdb_id && (
               <a
                 href={`https://www.imdb.com/title/${production.imdb_id}`}
@@ -162,6 +162,14 @@ export function ProductionDetail({
               >
                 TMDb ↗
               </a>
+            )}
+            {scenes.length > 0 && (
+              <Link
+                href={`/films/${production.slug}/loadout`}
+                className="rounded border border-amber-700 px-2 py-0.5 text-amber-400 hover:bg-amber-900/30"
+              >
+                Loadout sheet (PDF)
+              </Link>
             )}
           </div>
         </div>
