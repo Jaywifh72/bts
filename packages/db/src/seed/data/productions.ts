@@ -56,7 +56,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'the-brutalist-2024', title: 'The Brutalist', type: 'feature', releaseYear: 2024,
-    tmdbId: 857050,
+    tmdbId: 549509,
     studios: [{ slug: 'a24', role: 'production_company' }, { slug: 'focus-features', role: 'distributor' }],
     formats: [
       { aspectRatio: '1.66:1', acquisitionFormat: 'VistaVision 8-perf 35mm', colorSpace: 'DCI-P3', frameRate: 24, isPrimary: true, label: 'Theatrical' },
@@ -72,7 +72,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'killers-of-the-flower-moon-2023', title: 'Killers of the Flower Moon', type: 'feature', releaseYear: 2023,
-    tmdbId: 804150,
+    tmdbId: 466420,
     studios: [
       { slug: 'apple-tv-plus', role: 'distributor' },
       { slug: 'plan-b', role: 'production_company' },
@@ -167,7 +167,7 @@ export const productionsData: ProductionSeed[] = [
   // ===== Classic Era =====
   {
     slug: 'lawrence-of-arabia-1962', title: 'Lawrence of Arabia', type: 'feature', releaseYear: 1962,
-    imdbId: 'tt0056172', tmdbId: 256,
+    imdbId: 'tt0056172', tmdbId: 947,
     studios: [
       { slug: 'columbia-pictures', role: 'distributor' },
     ],
@@ -189,7 +189,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'barry-lyndon-1975', title: 'Barry Lyndon', type: 'feature', releaseYear: 1975,
-    imdbId: 'tt0072684', tmdbId: 16294,
+    imdbId: 'tt0072684', tmdbId: 3175,
     studios: [
       { slug: 'warner-bros', role: 'distributor' },
     ],
@@ -212,7 +212,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'days-of-heaven-1978', title: 'Days of Heaven', type: 'feature', releaseYear: 1978,
-    imdbId: 'tt0077405', tmdbId: 12311,
+    imdbId: 'tt0077405', tmdbId: 16642,
     studios: [
       { slug: 'paramount', role: 'distributor' },
     ],
@@ -250,7 +250,7 @@ export const productionsData: ProductionSeed[] = [
   // ===== 2000s =====
   {
     slug: 'collateral-2004', title: 'Collateral', type: 'feature', releaseYear: 2004,
-    imdbId: 'tt0408134', tmdbId: 950,
+    imdbId: 'tt0408134', tmdbId: 1538,
     studios: [
       { slug: 'paramount', role: 'distributor' },
       { slug: 'dreamworks', role: 'production_company' },
@@ -264,7 +264,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'no-country-for-old-men-2007', title: 'No Country for Old Men', type: 'feature', releaseYear: 2007,
-    imdbId: 'tt0477348', tmdbId: 6966,
+    imdbId: 'tt0477348', tmdbId: 6977,
     studios: [
       { slug: 'miramax', role: 'production_company' },
       { slug: 'lionsgate', role: 'distributor' },
@@ -276,7 +276,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'there-will-be-blood-2007', title: 'There Will Be Blood', type: 'feature', releaseYear: 2007,
-    imdbId: 'tt0469494', tmdbId: 4944,
+    imdbId: 'tt0469494', tmdbId: 7345,
     studios: [
       { slug: 'paramount', role: 'distributor' },
       { slug: 'miramax', role: 'production_company' },
@@ -363,7 +363,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'son-of-saul-2015', title: 'Son of Saul', type: 'feature', releaseYear: 2015,
-    imdbId: 'tt3808342', tmdbId: 309809,
+    imdbId: 'tt3808342', tmdbId: 336050,
     studios: [
       { slug: 'sony-pictures-classics', role: 'distributor' },
     ],
@@ -407,7 +407,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'cold-war-2018', title: 'Cold War', type: 'feature', releaseYear: 2018,
-    imdbId: 'tt6543652', tmdbId: 541726,
+    imdbId: 'tt6543652', tmdbId: 440298,
     studios: [
       { slug: 'amazon-studios', role: 'distributor' },
       { slug: 'mk2', role: 'production_company' },
@@ -419,7 +419,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'first-man-2018', title: 'First Man', type: 'feature', releaseYear: 2018,
-    imdbId: 'tt3501590', tmdbId: 337167,
+    imdbId: 'tt3501590', tmdbId: 369972,
     studios: [
       { slug: 'universal', role: 'distributor' },
     ],
@@ -434,7 +434,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'the-favourite-2018', title: 'The Favourite', type: 'feature', releaseYear: 2018,
-    imdbId: 'tt5765446', tmdbId: 546885,
+    imdbId: 'tt5765446', tmdbId: 375262,
     studios: [
       { slug: 'searchlight', role: 'distributor' },
       { slug: 'film4', role: 'production_company' },
@@ -468,7 +468,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'portrait-of-a-lady-on-fire-2019', title: 'Portrait of a Lady on Fire', type: 'feature', releaseYear: 2019,
-    imdbId: 'tt8613070', tmdbId: 601666,
+    imdbId: 'tt8613070', tmdbId: 531428,
     studios: [
       { slug: 'neon', role: 'distributor' },
       { slug: 'mk2', role: 'production_company' },
@@ -515,7 +515,7 @@ export const productionsData: ProductionSeed[] = [
   // ===== 2020–2024 =====
   {
     slug: 'mank-2020', title: 'Mank', type: 'feature', releaseYear: 2020,
-    imdbId: 'tt10616338', tmdbId: 694919,
+    imdbId: 'tt10616338', tmdbId: 614560,
     studios: [
       { slug: 'netflix', role: 'distributor' },
     ],
@@ -526,7 +526,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'the-power-of-the-dog-2021', title: 'The Power of the Dog', type: 'feature', releaseYear: 2021,
-    imdbId: 'tt10294840', tmdbId: 748783,
+    imdbId: 'tt10294840', tmdbId: 600583,
     studios: [
       { slug: 'netflix', role: 'distributor' },
     ],
@@ -537,7 +537,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'nightmare-alley-2021', title: 'Nightmare Alley', type: 'feature', releaseYear: 2021,
-    imdbId: 'tt7740496', tmdbId: 683461,
+    imdbId: 'tt7740496', tmdbId: 597208,
     studios: [
       { slug: 'searchlight', role: 'distributor' },
     ],
@@ -548,7 +548,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'spencer-2021', title: 'Spencer', type: 'feature', releaseYear: 2021,
-    imdbId: 'tt12536294', tmdbId: 833251,
+    imdbId: 'tt12536294', tmdbId: 716612,
     studios: [
       { slug: 'neon', role: 'distributor' },
       { slug: 'topic-studios', role: 'production_company' },
@@ -560,7 +560,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'babylon-2022', title: 'Babylon', type: 'feature', releaseYear: 2022,
-    imdbId: 'tt10640346', tmdbId: 661374,
+    imdbId: 'tt10640346', tmdbId: 615777,
     studios: [
       { slug: 'paramount', role: 'distributor' },
     ],
@@ -571,7 +571,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'elvis-2022', title: 'Elvis', type: 'feature', releaseYear: 2022,
-    imdbId: 'tt3704428', tmdbId: 717930,
+    imdbId: 'tt3704428', tmdbId: 614934,
     studios: [
       { slug: 'warner-bros', role: 'distributor' },
     ],
@@ -584,7 +584,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'tar-2022', title: 'Tár', type: 'feature', releaseYear: 2022,
-    imdbId: 'tt14444726', tmdbId: 1078869,
+    imdbId: 'tt14444726', tmdbId: 817758,
     studios: [
       { slug: 'universal', role: 'distributor' },
       { slug: 'focus-features', role: 'production_company' },
@@ -598,7 +598,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'all-quiet-on-the-western-front-2022', title: 'All Quiet on the Western Front', type: 'feature', releaseYear: 2022,
-    imdbId: 'tt1016150', tmdbId: 76600,
+    imdbId: 'tt1016150', tmdbId: 49046,
     studios: [
       { slug: 'netflix', role: 'distributor' },
     ],
@@ -633,7 +633,7 @@ export const productionsData: ProductionSeed[] = [
   },
   {
     slug: 'conclave-2024', title: 'Conclave', type: 'feature', releaseYear: 2024,
-    imdbId: 'tt20215234', tmdbId: 974453,
+    imdbId: 'tt20215234', tmdbId: 974576,
     studios: [
       { slug: 'focus-features', role: 'distributor' },
       { slug: 'black-label-media', role: 'production_company' },

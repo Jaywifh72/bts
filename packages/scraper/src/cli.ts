@@ -58,7 +58,7 @@ async function main() {
       });
       break;
     case 'tmdb:enrich':
-      await enrichExistingMovies();
+      await enrichExistingMovies({ force: args.includes('--force') });
       break;
     case 'tmdb:credits':
       await importTmdbCredits({ limit: numberFlag('limit') });

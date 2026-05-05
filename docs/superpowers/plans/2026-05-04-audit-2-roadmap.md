@@ -37,13 +37,12 @@ VFX houses, which no competitor offers.
 ## Tier 1 — Trust & data integrity (blockers for any "is this site
 authoritative" claim)
 
-- [ ] **T1-1:** Patch `packages/db/src/seed/data/productions.ts` with the
+- [x] **T1-1:** Patch `packages/db/src/seed/data/productions.ts` with the
       correct `tmdb_id` for the 22 curated films we just repaired in the
       DB. Without this, a clean re-seed re-introduces the corruption.
-      The mapping is in the commit message of `e5bf654` and the live DB.
-- [ ] **T1-2:** Harden `tmdb:enrich` so it refuses to silently rewrite a
-      row's title to a wildly different film. Compare proposed vs current
-      title (Levenshtein > 0.5 × length) — log + skip unless `--force`.
+- [x] **T1-2:** Harden `tmdb:enrich` so it refuses to silently rewrite a
+      row's title to a wildly different film. Token-set similarity < 0.4
+      now skips the row unless `--force` is passed.
 - [ ] **T1-3:** Add `last_verified_at` timestamp column on productions and
       surface it on the detail page ("Data verified 14 days ago"). Pros
       need to know if equipment data is fresh.

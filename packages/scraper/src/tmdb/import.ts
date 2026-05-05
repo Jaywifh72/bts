@@ -139,11 +139,39 @@ async function upsertMovie(movie: TmdbMovie): Promise<'inserted' | 'updated' | '
 }
 
 /**
- * Re-enriches existing productions with the new TMDb-sourced fields. Useful
- * after schema additions: walks every row that has a tmdb_id but is missing
- * the richer fields, and re-fetches.
+ * Levenshtein-style similarity ratio in [0, 1]. Used by enrich's safety
+ * guard to detect when a stored title is wildly different from what TMDb
+ * returns for the same tmdb_id (which means the row's tmdb_id is wrong).
+ *
+ * Returns 1.0 for identical strings (case- and punctuation-insensitive).
  */
-export async function enrichExistingMovies(): Promise<ImportStats> {
+function titleSimilarity(a: string, b: string): number {
+  const norm = (s: string) => s.toLowerCase().replace(/[^a-z0-9]/g, '');
+  const x = norm(a);
+  const y = norm(b);
+  if (!x || !y) return 0;
+  if (x === y) return 1;
+  // Cheap shortcut: shorter is contained in longer => high similarity
+  if (x.includes(y) || y.includes(x)) return 0.9;
+  // Token-set overlap (cheap; full edit distance would be overkill)
+  const setA = new Set(a.toLowerCase().split(/\W+/).filter(Boolean));
+  const setB = new Set(b.toLowerCase().split(/\W+/).filter(Boolean));
+  if (setA.size === 0 || setB.size === 0) return 0;
+  let inter = 0;
+  for (const t of setA) if (setB.has(t)) inter++;
+  return inter / Math.max(setA.size, setB.size);
+}
+
+/**
+ * Re-enriches existing productions with the new TMDb-sourced fields.
+ *
+ * Safety guard: if the title TMDb returns for the stored tmdb_id is
+ * wildly different from the row's current title (similarity < 0.4), the
+ * row is SKIPPED unless `--force` is passed. This prevents a typo in a
+ * seed `tmdbId` from silently overwriting hand-curated data with an
+ * unrelated movie (the bug that corrupted 22 curated rows in 2026-05-04).
+ */
+export async function enrichExistingMovies(opts: { force?: boolean } = {}): Promise<ImportStats> {
   const stats: ImportStats = { attempted: 0, inserted: 0, updated: 0, skipped: 0 };
 
   if (!process.env.TMDB_READ_ACCESS_TOKEN) {
@@ -151,21 +179,27 @@ export async function enrichExistingMovies(): Promise<ImportStats> {
     return stats;
   }
 
-  // Find rows that are missing the new fields (poster_path is the cheapest
-  // proxy — it was added in 0012 and isn't backfilled by anything else).
   const targets = await db.execute<{ tmdb_id: number; title: string }>(sql`
     SELECT tmdb_id, title FROM productions
     WHERE tmdb_id IS NOT NULL AND poster_path IS NULL
     ORDER BY tmdb_id
   `);
 
-  console.log(`tmdb:enrich — ${targets.length} rows to enrich`);
+  console.log(`tmdb:enrich — ${targets.length} rows to enrich (force=${!!opts.force})`);
 
   for (const row of targets) {
     stats.attempted++;
     try {
       const full = await fetchMovie(row.tmdb_id);
       if (!full) {
+        stats.skipped++;
+        continue;
+      }
+      const sim = titleSimilarity(row.title, full.title);
+      if (sim < 0.4 && !opts.force) {
+        console.warn(
+          `  ! tmdb_id=${row.tmdb_id} stored title "${row.title}" doesn't match TMDb "${full.title}" (sim=${sim.toFixed(2)}); skipping. Pass --force to override.`,
+        );
         stats.skipped++;
         continue;
       }
