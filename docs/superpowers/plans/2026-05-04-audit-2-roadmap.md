@@ -15,6 +15,52 @@
 
 ---
 
+## ▶ Recommended next batch
+
+> **Update this section at the end of every session.** It's the entrypoint
+> for "continue enhancing based on the plan" — a fresh session should read
+> this first to know where to pick up, then work through the items in order.
+> Skip an item only if a hard dependency isn't met yet (call it out).
+>
+> **Last updated:** 2026-05-05 (after Tier 2-3 / 3-3 / 3-4 / 4-1 / 5-5 / 9-4
+> shipped — 29 of 47 items now complete).
+
+The next high-leverage unchecked items, in dependency order:
+
+1. **T7-1** — bulk approve / reject in `/admin/videos`. With ~460 pending
+   videos still waiting for review, this is the highest ROI per LOC.
+2. **T2-4** — TMDb release dates by region (`/movie/{id}/release_dates`).
+   Small ingest job; no schema change needed (store on productions).
+3. **T2-7** — curated key-frames gallery (3-4 production stills per curated
+   film). Needs a `production_keyframes` table + admin UI to upload URLs.
+4. **T3-2** — "Career stats" panel on every crew page (total credits,
+   decades active, most-used aspect ratio, top collaborator). Pure query +
+   UI; no new schema.
+5. **T6-1** — inline source citations per claim ("Camera: ALEXA 65 [src:
+   ASC Mar 2024]") rather than only the global sources block at the top.
+6. **T4-2** — deeper lens specs (coverage circle, image circle, breathing,
+   close focus, housing model). Schema additions + curated data; competes
+   directly with Cinelenses on depth.
+7. **T4-4** — "Shot on this format" pages (`/format/imax-1.43`,
+   `/format/65mm-large-format`). Pure query + new pages; no schema change.
+8. **T8-1 + T8-2** — mobile responsive audit + accessibility pass
+   (skip-to-content, focus-visible, ARIA on filter dropdowns,
+   prefers-reduced-motion). Cross-cutting; one focused session.
+9. **T9-6** — newsletter / weekly digest (5 new productions added with
+   curated data). Could be just an RSS feed first; mailer integration
+   later.
+
+Big-but-deferred items (each warrants its own focused session):
+
+- **T2-6 / T3-5** — Wikidata-sourced awards. Needs a `production_awards`
+  schema and a Wikidata Query Service client. Powerful but its own day.
+- **T6-5** — per-page OG images. Still blocked by the `@vercel/og`
+  Windows bug; fix is to vendor the font binary or build on Linux CI.
+- **T7-2 / T7-3 / T7-4** — admin scene editor + editor identity +
+  correction queue. The full editorial workflow needs auth (sub-project 6).
+
+---
+
 ## Defensive niche we should own
 
 Studio Pro's defensible position is the *intersection* of three things no
