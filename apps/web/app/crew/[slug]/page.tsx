@@ -89,7 +89,7 @@ export default async function CrewDetailPage({ params }: Props) {
             {person.biography && (
               <p className="mt-3 max-w-2xl text-sm text-zinc-400">{person.biography}</p>
             )}
-            <div className="mt-2 flex gap-3 text-xs text-zinc-500">
+            <div className="mt-2 flex flex-wrap gap-3 text-xs text-zinc-500">
               {person.imdb_id && (
                 <a
                   href={`https://www.imdb.com/name/${person.imdb_id}`}
@@ -110,7 +110,23 @@ export default async function CrewDetailPage({ params }: Props) {
                   TMDb ↗
                 </a>
               )}
+              {person.wikidata_id && (
+                <a
+                  href={`https://www.wikidata.org/wiki/${person.wikidata_id}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="hover:text-amber-400"
+                >
+                  Wikidata ↗
+                </a>
+              )}
             </div>
+            {person.aliases && person.aliases.length > 0 && (
+              <div className="mt-1 text-xs text-zinc-600">
+                Also known as: {person.aliases.slice(0, 3).join(', ')}
+                {person.aliases.length > 3 && ` (+${person.aliases.length - 3} more)`}
+              </div>
+            )}
           </div>
         </header>
 

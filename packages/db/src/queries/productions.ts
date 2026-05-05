@@ -166,6 +166,9 @@ export async function getProductionWithFullDetail(db: SeedDb = defaultDb, slug: 
     id: number; slug: string; title: string; original_title: string | null;
     type: string; release_year: number | null; runtime_minutes: number | null;
     synopsis: string | null; imdb_id: string | null; tmdb_id: number | null;
+    wikidata_id: string | null;
+    principal_photography_start: string | null;
+    principal_photography_end: string | null;
     genres: string[] | null;
     original_language: string | null;
     production_country: string | null;
@@ -178,7 +181,9 @@ export async function getProductionWithFullDetail(db: SeedDb = defaultDb, slug: 
     tmdb_collection_name: string | null;
     data_tier: 'curated' | 'imported';
   }>(sql`SELECT id, slug, title, original_title, type, release_year, runtime_minutes,
-              synopsis, imdb_id, tmdb_id,
+              synopsis, imdb_id, tmdb_id, wikidata_id,
+              principal_photography_start::text,
+              principal_photography_end::text,
               genres, original_language, production_country,
               vote_average::text, vote_count, popularity::text,
               poster_path, backdrop_path,

@@ -52,20 +52,23 @@ authoritative" claim)
 
 ## Tier 2 — Production page depth (the page that matters most)
 
-- [ ] **T2-1:** Quick-scan tech panel at top of `/films/[slug]`: Director,
-      DP, Composer, Editor, primary camera + lens combo, primary aspect
-      ratio + acquisition format. Above the long department list.
-- [ ] **T2-2:** Display `principal_photography_start` / `_end` and
-      shooting locations (aggregated from scenes). Schema has them.
+- [x] **T2-1:** Quick-scan tech panel at top of `/films/[slug]`: Director,
+      DP, Editor, Composer, Production Design, Costume, primary camera (most-
+      frequent across scenes), primary lens, primary aspect ratio + format,
+      photography window, locations. Hides itself when none of the rows
+      have data.
+- [x] **T2-2:** Display `principal_photography_start` / `_end` and
+      shooting locations (deduped from scenes). Inside TechPanel.
 - [ ] **T2-3:** New schema: `post_houses` table + `production_post_houses`
       join (DI lab, color grading house, sound mix facility). Companies:
       Company 3, FotoKem, EFILM, Picture Shop, Goldcrest, Harbor, etc.
       No competitor models this — it would be a unique-to-us field.
 - [ ] **T2-4:** Surface release dates by region from TMDb's
       `/movie/{id}/release_dates` endpoint.
-- [ ] **T2-5:** Wikidata cross-link: store `wikidata_id` on productions
-      and people (schema already has the column for productions; add to
-      people). Unlocks awards/exhibition/soundtrack data later.
+- [x] **T2-5:** Wikidata cross-link: store `wikidata_id` on productions
+      and people (schema already has the column for both). The `tmdb:persons`
+      enrich job pulls it from TMDb's external_ids endpoint when present.
+      Surfaced as a link on the crew detail page next to IMDb and TMDb.
 - [ ] **T2-6:** Awards section on production pages — Cinematography
       Oscar nominee/winner is the single biggest "this film mattered"
       signal. Source: Wikidata Query Service.
@@ -76,9 +79,12 @@ authoritative" claim)
 
 ## Tier 3 — Crew page depth
 
-- [ ] **T3-1:** Bring in TMDb person biographies via
-      `/person/{id}?append_to_response=external_ids`. ~11k API calls,
-      one-shot. Also captures imdb_id, also_known_as, place_of_birth.
+- [x] **T3-1:** Bring in TMDb person biographies via
+      `/person/{id}?append_to_response=external_ids`. CLI: `pnpm tsx
+      packages/scraper/src/cli.ts tmdb:persons`. Captures bio, birthday,
+      deathday, place_of_birth (used as country fallback), also_known_as
+      (merged into aliases), imdb_id, wikidata_id, profile_path. Idempotent
+      (`COALESCE` everywhere); pass `--refresh` to re-pull.
 - [ ] **T3-2:** "Career stats" panel on every crew page: total credits,
       decades active, most-used aspect ratio, most-used DP/director
       collaborator (depends on T1-3 metadata).

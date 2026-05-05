@@ -230,3 +230,48 @@ export function imageUrl(path: string | null, size: ImageSize): string | null {
   if (!path) return null;
   return `${IMAGE_BASE}${size}${path}`;
 }
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Person endpoints (T3-1, T2-5)
+// ─────────────────────────────────────────────────────────────────────────────
+
+export type TmdbPerson = {
+  id: number;
+  name: string;
+  biography: string | null;
+  birthday: string | null;          // 'YYYY-MM-DD'
+  deathday: string | null;
+  place_of_birth: string | null;
+  also_known_as: string[];
+  imdb_id: string | null;
+  /** Wikidata Q-number, e.g. "Q7325". Often null. */
+  wikidata_id?: string | null;
+  profile_path: string | null;
+  known_for_department: string | null;
+};
+
+/**
+ * Fetches /person/{id} with external_ids appended so we get imdb_id and
+ * (when available) wikidata_id without a second round trip. Returns null
+ * for unknown ids or when the API token is unset.
+ */
+export async function fetchPerson(id: number): Promise<TmdbPerson | null> {
+  type Resp = TmdbPerson & {
+    external_ids?: { imdb_id: string | null; wikidata_id: string | null };
+  };
+  const raw = await tmdbFetch<Resp>(`/person/${id}?append_to_response=external_ids`);
+  if (!raw) return null;
+  return {
+    id: raw.id,
+    name: raw.name,
+    biography: raw.biography ?? null,
+    birthday: raw.birthday ?? null,
+    deathday: raw.deathday ?? null,
+    place_of_birth: raw.place_of_birth ?? null,
+    also_known_as: raw.also_known_as ?? [],
+    imdb_id: raw.imdb_id ?? raw.external_ids?.imdb_id ?? null,
+    wikidata_id: raw.external_ids?.wikidata_id ?? null,
+    profile_path: raw.profile_path ?? null,
+    known_for_department: raw.known_for_department ?? null,
+  };
+}

@@ -127,21 +127,29 @@ export async function getPersonBySlug(db: SeedDb = defaultDb, slug: string) {
     slug: string;
     display_name: string;
     birth_year: number | null;
+    birth_date: string | null;
     death_year: number | null;
+    death_date: string | null;
     nationality: string | null;
     biography: string | null;
     imdb_id: string | null;
+    wikidata_id: string | null;
     profile_path: string | null;
     tmdb_person_id: number | null;
+    aliases: string[];
   }>(sql`
     SELECT id, slug, display_name,
            EXTRACT(YEAR FROM birth_date)::int AS birth_year,
+           birth_date::text,
            EXTRACT(YEAR FROM death_date)::int AS death_year,
+           death_date::text,
            country AS nationality,
            bio AS biography,
            imdb_id,
+           wikidata_id,
            profile_path,
-           tmdb_person_id
+           tmdb_person_id,
+           aliases
     FROM people
     WHERE slug = ${slug}
   `);

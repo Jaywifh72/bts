@@ -7,6 +7,7 @@ import { FormatBadge } from './FormatBadge';
 import { MediaGallery } from './MediaGallery';
 import { SceneList } from './SceneList';
 import { VfxSection } from './VfxSection';
+import { TechPanel } from './TechPanel';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { SourceCitation } from '@/components/ui/SourceCitation';
 import { posterUrl, backdropUrl } from '@/lib/tmdb-image';
@@ -166,6 +167,24 @@ export function ProductionDetail({
           and BTS sources for this production haven&apos;t been hand-curated yet.
         </div>
       )}
+
+      {/* T2-1: At-a-glance tech panel above the long department list */}
+      <TechPanel
+        crew={crew}
+        formats={formats}
+        scenes={scenes}
+        shootingWindow={{
+          start: production.principal_photography_start,
+          end: production.principal_photography_end,
+        }}
+        locations={Array.from(
+          new Set(
+            scenes
+              .map((s) => s.location)
+              .filter((l): l is string => Boolean(l)),
+          ),
+        )}
+      />
 
       <MediaGallery backdropPaths={[]} />
 
