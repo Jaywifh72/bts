@@ -339,8 +339,8 @@ export async function getSimilarProductions(
             WHERE ca.production_id = p.id AND r.slug = 'director-of-photography'
               AND ca.person_id IN (SELECT person_id FROM source_dps)) +
           COALESCE((
-            SELECT COUNT(*) FROM unnest(p.genres) g
-            WHERE g = ANY((SELECT genres FROM source))
+            SELECT COUNT(*)::int FROM unnest(p.genres) g
+            WHERE g = ANY(SELECT unnest(genres) FROM source)
           ), 0) +
           CASE WHEN p.release_year / 10 = (SELECT release_year / 10 FROM source) THEN 1 ELSE 0 END
         ) AS score,
