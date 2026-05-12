@@ -1,4 +1,5 @@
 import 'dotenv/config';
+import { pathToFileURL } from 'node:url';
 import { db as defaultDb, sql as defaultSql } from '../db.ts';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { seedManufacturers } from './data/manufacturers.ts';
@@ -51,10 +52,15 @@ export async function runSeed(db: SeedDb = defaultDb): Promise<void> {
 }
 
 // CLI entry: only when this file is invoked directly via `tsx src/seed/run.ts`.
-// On Windows, process.argv[1] uses backslashes (C:\...) while import.meta.url
-// uses forward slashes (file:///C:/...). Normalise both sides for comparison.
+// pathToFileURL handles both platforms correctly:
+//   • Windows: process.argv[1] = "C:\\..." → "file:///C:/..."
+//   • Linux:   process.argv[1] = "/home/..." → "file:///home/..."
+// The earlier `file:///${path.replace(/\\/g, '/')}` produced "file:////home/..."
+// (four slashes) on Linux, which never matched import.meta.url's three. That
+// silently disabled the CLI entry in CI, which is why GitHub Actions saw the
+// seed step finish in 1s with no rows inserted.
 const invokedPath = process.argv[1];
-const _argv1AsUrl = invokedPath ? `file:///${invokedPath.replace(/\\/g, '/')}` : null;
+const _argv1AsUrl = invokedPath ? pathToFileURL(invokedPath).href : null;
 if (import.meta.url === _argv1AsUrl) {
   runSeed(defaultDb)
     .then(() => defaultSql.end())
