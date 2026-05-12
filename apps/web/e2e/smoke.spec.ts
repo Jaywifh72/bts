@@ -65,4 +65,18 @@ test.describe('Smoke pack — top-level routes', () => {
     const r = await request.get('/robots.txt');
     expect(r.status()).toBe(200);
   });
+
+  test('/api/lookbook/search returns clean 503 when SIGLIP_ENCODER_URL unset', async ({ request }) => {
+    // The route is pre-wired but the encoder isn't deployed yet (see
+    // docs/runbooks/siglip2-inference.md). The 503 fallback should be
+    // documented and machine-readable, not a 500 crash.
+    const r = await request.post('/api/lookbook/search', {
+      data: { url: 'https://example.com/img.jpg' },
+      headers: { 'Content-Type': 'application/json' },
+    });
+    expect(r.status()).toBe(503);
+    const body = await r.json();
+    expect(body.error).toBe('lookbook_unavailable');
+    expect(body.message).toContain('SIGLIP_ENCODER_URL');
+  });
 });

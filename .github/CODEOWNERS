@@ -1,0 +1,24 @@
+# CODEOWNERS — auto-request review on PRs touching specific paths.
+#
+# Solo developer right now, so everything routes to @Jaywifh72. As the
+# team grows, split this by area (db / web / scraper / infra).
+#
+# Syntax: <path-pattern> <@user-or-team>...
+# Order matters — the LAST matching pattern wins.
+
+# Default — everything not covered below
+*                                       @Jaywifh72
+
+# Database — schema + migrations are the highest-risk surface
+/packages/db/migrations/                @Jaywifh72
+/packages/db/src/schema/                @Jaywifh72
+
+# CI configuration
+/.github/workflows/                     @Jaywifh72
+/.github/dependabot.yml                 @Jaywifh72
+
+# Security + audit posture
+/SECURITY.md                            @Jaywifh72
+
+# Production runbooks
+/docs/runbooks/                         @Jaywifh72
