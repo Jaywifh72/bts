@@ -30,11 +30,12 @@ test.describe('Smoke pack — top-level routes', () => {
     await expect(page.locator('input[type="search"], input[name="q"]').first()).toBeVisible();
   });
 
-  test('a deep-dive film page (Top Gun: Maverick) renders editorial sections', async ({ page }) => {
-    await page.goto('/films/top-gun-maverick-2022');
-    await expect(page.getByRole('heading', { name: 'Top Gun: Maverick' })).toBeVisible();
-    // Awards section confirms the seeded data renders
-    await expect(page.getByText(/Awards/i).first()).toBeVisible();
+  test('a canonical film page (Dune: Part Two) renders editorial sections', async ({ page }) => {
+    // dune-part-two-2024 is in the canonical runSeed (see packages/db/src/seed/
+    // data/productions.ts) — uses it as the smoke anchor so CI doesn't depend
+    // on locally-augmented dev data.
+    await page.goto('/films/dune-part-two-2024');
+    await expect(page.getByRole('heading', { name: /Dune: Part Two/i })).toBeVisible();
   });
 
   test('a missing film renders the not-found page', async ({ page }) => {

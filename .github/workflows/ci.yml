@@ -138,24 +138,34 @@ jobs:
       - name: Install Playwright chromium
         run: pnpm --filter @bts/web exec playwright install --with-deps chromium
 
-      - name: Start dev server
+      # Production build instead of `next dev`: dev mode lazy-compiles each
+      # route on first hit (5-30s per route in CI), which races Playwright's
+      # 5s default timeout. `next build` pre-renders every page via
+      # generateStaticParams against the seeded DB; `next start` then serves
+      # them instantly.
+      - name: Build for production
+        env:
+          DATABASE_URL: postgres://bts:bts@localhost:5432/bts_dev
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+        run: pnpm --filter @bts/web build
+
+      - name: Start production server
         env:
           DATABASE_URL: postgres://bts:bts@localhost:5432/bts_dev
           NEXT_PUBLIC_SITE_URL: http://localhost:3000
         run: |
-          pnpm --filter @bts/web dev > /tmp/dev.log 2>&1 &
-          echo $! > /tmp/dev.pid
-          # Wait up to 90s for the server to respond. Next.js dev compile can
-          # take 30-60s in CI; aborting earlier produces false negatives.
-          for i in $(seq 1 90); do
+          pnpm --filter @bts/web start > /tmp/server.log 2>&1 &
+          echo $! > /tmp/server.pid
+          # next start is fast (~1-3s) but allow margin for module-load.
+          for i in $(seq 1 30); do
             if curl -sSf -o /dev/null http://localhost:3000/; then
-              echo "Dev server ready after ${i}s"
+              echo "Server ready after ${i}s"
               exit 0
             fi
             sleep 1
           done
-          echo "Dev server failed to start within 90s. Log:"
-          cat /tmp/dev.log
+          echo "Server failed to start within 30s. Log:"
+          cat /tmp/server.log
           exit 1
 
       - name: Run smoke pack
@@ -163,11 +173,11 @@ jobs:
           E2E_BASE_URL: http://localhost:3000
         run: pnpm --filter @bts/web e2e
 
-      - name: Stop dev server
+      - name: Stop production server
         if: always()
         run: |
-          if [ -f /tmp/dev.pid ]; then
-            kill "$(cat /tmp/dev.pid)" || true
+          if [ -f /tmp/server.pid ]; then
+            kill "$(cat /tmp/server.pid)" || true
           fi
 
       - name: Upload Playwright artifacts on failure
