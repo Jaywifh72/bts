@@ -19,24 +19,54 @@ export function Footer() {
             </p>
           </div>
           <div className="flex flex-col gap-1">
-            <p className="text-[10px] uppercase tracking-widest text-zinc-600">Browse</p>
+            <p className="text-[10px] uppercase tracking-widest text-zinc-600">Sections</p>
             <Link href="/films?tier=curated" className="hover:text-zinc-300">Curated films</Link>
             <Link href="/films" className="hover:text-zinc-300">All films</Link>
             <Link href="/crew" className="hover:text-zinc-300">Crew</Link>
             <Link href="/gear" className="hover:text-zinc-300">Gear</Link>
             <Link href="/vfx" className="hover:text-zinc-300">VFX houses</Link>
+            <Link href="/stunts" className="hover:text-zinc-300">Stunts</Link>
+            <Link href="/sound" className="hover:text-zinc-300">Sound</Link>
+            <Link href="/editing" className="hover:text-zinc-300">Editing</Link>
+            <Link href="/music" className="hover:text-zinc-300">Music</Link>
+            <Link href="/production-design" className="hover:text-zinc-300">Production design</Link>
+            <Link href="/costume-hair-makeup" className="hover:text-zinc-300">Costume / Hair / Makeup</Link>
           </div>
           <div className="flex flex-col gap-1">
-            <p className="text-[10px] uppercase tracking-widest text-zinc-600">Reference</p>
-            <Link href="/queries/alexa65-sphero" className="hover:text-zinc-300">ALEXA 65 + Sphero</Link>
-            <Link href="/queries/dune-part-two-lenses" className="hover:text-zinc-300">Dune Part Two lenses</Link>
-            <Link href="/queries/magic-hour-2023" className="hover:text-zinc-300">Magic-hour, 2023</Link>
+            <p className="text-[10px] uppercase tracking-widest text-zinc-600">Cross-cuts</p>
+            <Link href="/ask" className="hover:text-zinc-300">Ask anything</Link>
+            <Link href="/queries" className="hover:text-zinc-300">Killer queries</Link>
+            <Link href="/references" className="hover:text-zinc-300">References graph</Link>
+            <Link href="/awards" className="hover:text-zinc-300">Awards</Link>
+            <Link href="/locations" className="hover:text-zinc-300">Locations atlas</Link>
+            <Link href="/decades" className="hover:text-zinc-300">By decade</Link>
+            <Link href="/format" className="hover:text-zinc-300">By format</Link>
+            <Link href="/shots" className="hover:text-zinc-300">Shots (palette)</Link>
+          </div>
+          <div className="flex flex-col gap-1">
+            <p className="text-[10px] uppercase tracking-widest text-zinc-600">For working pros</p>
+            <Link href="/tools" className="hover:text-zinc-300">Tools</Link>
+            <Link href="/for-dps" className="hover:text-zinc-300">For DPs</Link>
+            <Link href="/for-colorists" className="hover:text-zinc-300">For Colorists</Link>
+            <Link href="/for-coordinators" className="hover:text-zinc-300">For Stunt Coordinators</Link>
+            <Link href="/for-gaffers" className="hover:text-zinc-300">For Gaffers</Link>
           </div>
           <div className="flex flex-col gap-1">
             <p className="text-[10px] uppercase tracking-widest text-zinc-600">About</p>
             <Link href="/about" className="hover:text-zinc-300">About this site</Link>
+            <Link href="/methodology" className="hover:text-zinc-300">Methodology</Link>
             <Link href="/about#sources" className="hover:text-zinc-300">Data sources</Link>
-            <Link href="/about#methodology" className="hover:text-zinc-300">Methodology</Link>
+          </div>
+          <div className="flex flex-col gap-1">
+            <p className="text-[10px] uppercase tracking-widest text-zinc-600">Follow</p>
+            <a
+              href="/digest.xml"
+              className="hover:text-zinc-300"
+              title="Atom feed of newly curated productions"
+            >
+              Weekly digest (RSS)
+            </a>
+            <Link href="/api/v1" className="hover:text-zinc-300">Public API</Link>
           </div>
         </div>
         <div className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-900 pt-4 text-[11px] text-zinc-600">

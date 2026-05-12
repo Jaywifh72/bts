@@ -5,10 +5,20 @@ import { Badge } from '@/components/ui/Badge';
 interface VfxCredit {
   vfx_house_slug: string;
   vfx_house_name: string;
+  vfx_house_kind?: string | null;
   role: string;
   shot_count: number | null;
   notes: string | null;
 }
+
+const KIND_LABELS: Record<string, string> = {
+  full_service: 'Full-service',
+  boutique: 'Boutique',
+  in_house: 'In-house',
+  rendering: 'Rendering',
+  previsualization: 'Previs',
+  other: '',
+};
 
 interface VfxTechnique {
   slug: string;
@@ -50,6 +60,11 @@ export function VfxSection({ credits, techniques }: VfxSectionProps) {
                 <Link href={`/vfx/${c.vfx_house_slug}`} className="flex-1 text-zinc-200 hover:text-amber-400">
                   {c.vfx_house_name}
                 </Link>
+                {c.vfx_house_kind && KIND_LABELS[c.vfx_house_kind] && (
+                  <span className="text-xs text-zinc-500" title="Studio operating model">
+                    {KIND_LABELS[c.vfx_house_kind]}
+                  </span>
+                )}
                 <span className="text-xs text-zinc-500">
                   {c.shot_count != null ? `${c.shot_count.toLocaleString()} shots` : '—'}
                 </span>

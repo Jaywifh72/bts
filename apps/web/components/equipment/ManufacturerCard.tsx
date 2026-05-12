@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { getBrand } from '@/lib/manufacturer-brand';
+import { BrandLogo } from '@/components/ui/BrandLogo';
 
 interface ManufacturerCardProps {
   slug: string;
@@ -7,6 +7,7 @@ interface ManufacturerCardProps {
   kind: string;
   country: string | null;
   description: string | null;
+  website: string | null;
   seriesCount: number;
 }
 
@@ -16,22 +17,19 @@ export function ManufacturerCard({
   kind,
   country,
   description,
+  website,
   seriesCount,
 }: ManufacturerCardProps) {
-  const brand = getBrand(slug);
   return (
     <Link
       href={`/gear/${slug}`}
-      className="group flex gap-3 rounded border border-zinc-800 bg-zinc-900 p-3 hover:border-zinc-600 transition-colors"
+      className="group flex gap-4 rounded border border-zinc-800 bg-zinc-900 p-4 hover:border-zinc-600 transition-colors"
     >
-      {/* Brand monogram tile (T4-1) */}
-      <div
-        className="flex h-12 w-12 shrink-0 items-center justify-center rounded font-mono text-xs font-bold tracking-tight text-white shadow-inner"
-        style={{ backgroundColor: brand.accent }}
-        aria-hidden
-      >
-        {brand.monogram}
-      </div>
+      {/* Brand logo — hot-linked through Google's favicon service so
+          we don't redistribute brand assets. Falls back to the
+          typographic <BrandMark> when the website is missing or the
+          favicon request fails. */}
+      <BrandLogo slug={slug} website={website} name={name} size="md" className="shrink-0" />
       <div className="min-w-0 flex-1">
         <div className="flex items-start justify-between gap-2">
           <h2 className="font-serif text-base text-zinc-50">{name}</h2>

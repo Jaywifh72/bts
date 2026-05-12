@@ -153,9 +153,13 @@ export function SearchBar() {
         placeholder="Search…"
         aria-label="Search productions, crew, gear, VFX"
         aria-autocomplete="list"
-        aria-controls="search-suggest"
-        aria-expanded={open}
-        className="w-44 rounded border border-zinc-800 bg-zinc-900 py-1 pl-3 pr-9 text-sm text-zinc-200 placeholder:text-zinc-500 focus:border-amber-500 focus:outline-none focus:w-72 transition-all"
+        // Only reference the listbox when it's actually in the DOM —
+        // otherwise screen readers report a dangling controls relation.
+        aria-controls={open && suggestions.length > 0 ? 'search-suggest' : undefined}
+        aria-expanded={open && suggestions.length > 0}
+        // On small viewports the focus-expand to w-72 overflows; only
+        // apply the expansion at sm+ widths.
+        className="w-44 rounded border border-zinc-800 bg-zinc-900 py-1 pl-3 pr-9 text-sm text-zinc-200 placeholder:text-zinc-500 focus:border-amber-500 focus:outline-none sm:focus:w-72 transition-all"
       />
       <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-zinc-700 bg-zinc-800 px-1 font-mono text-[10px] text-zinc-500">
         /

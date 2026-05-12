@@ -15,12 +15,44 @@ interface ProductionCardProps {
   dataTier?: 'curated' | 'imported';
   /** When true, render the small thumbnail layout used in the films index. */
   variant?: 'default' | 'compact';
+  /** Phase 30 — per-film editorial-depth signals. Each truthy flag
+      renders a small badge on the card so listing-page readers can
+      spot the deeply-curated entries at a glance. */
+  depth?: {
+    has_stunt_sequences?: boolean;
+    has_stunt_doubling?: boolean;
+    has_color_pipeline?: boolean;
+    has_lighting_setups?: boolean;
+    has_locations?: boolean;
+    has_post_houses?: boolean;
+  };
 }
+
+const DEPTH_BADGES: Array<{
+  flag: keyof NonNullable<ProductionCardProps['depth']>;
+  label: string;
+  className: string;
+  title: string;
+}> = [
+  { flag: 'has_stunt_sequences', label: 'STUNTS',    className: 'bg-red-950/40 text-red-300 border-red-900/60',
+    title: 'Has curated stunt-sequence breakdown' },
+  { flag: 'has_stunt_doubling',  label: 'DOUBLINGS', className: 'bg-red-950/30 text-red-200 border-red-900/50',
+    title: 'Has documented stunt-doubling credits' },
+  { flag: 'has_color_pipeline',  label: 'COLOUR',    className: 'bg-purple-950/40 text-purple-300 border-purple-900/60',
+    title: 'Has curated colour pipeline (camera log → ODT)' },
+  { flag: 'has_lighting_setups', label: 'LIGHTING',  className: 'bg-amber-950/40 text-amber-300 border-amber-900/60',
+    title: 'Has per-scene lighting setups with cinematographer notes' },
+  { flag: 'has_locations',       label: 'LOCATIONS', className: 'bg-blue-950/40 text-blue-300 border-blue-900/60',
+    title: 'Has geocoded shooting locations' },
+  { flag: 'has_post_houses',     label: 'POST',      className: 'bg-zinc-800 text-zinc-300 border-zinc-700',
+    title: 'Has linked post-production facilities (DI / sound)' },
+];
 
 export function ProductionCard({
   slug, title, type, releaseYear, synopsis,
   primaryAspectRatio, primaryAcquisitionFormat,
   posterPath, dataTier, variant = 'default',
+  depth,
 }: ProductionCardProps) {
   const poster = posterUrl(posterPath, 'w185');
 
@@ -76,6 +108,19 @@ export function ProductionCard({
               aspect_ratio: primaryAspectRatio,
               acquisition_format: primaryAcquisitionFormat,
             }} />
+          </div>
+        )}
+        {depth && DEPTH_BADGES.some((b) => depth[b.flag]) && (
+          <div className="mt-2 flex flex-wrap gap-1">
+            {DEPTH_BADGES.filter((b) => depth[b.flag]).map((b) => (
+              <span
+                key={b.flag}
+                title={b.title}
+                className={`rounded border px-1 py-px font-mono text-[9px] tracking-wide ${b.className}`}
+              >
+                {b.label}
+              </span>
+            ))}
           </div>
         )}
       </div>

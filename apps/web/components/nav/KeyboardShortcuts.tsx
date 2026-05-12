@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 
 /**
@@ -25,6 +25,40 @@ const ROUTE_FOR_KEY: Record<string, string> = {
 export function KeyboardShortcuts() {
   const router = useRouter();
   const [helpOpen, setHelpOpen] = useState(false);
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+  const previouslyFocused = useRef<HTMLElement | null>(null);
+
+  // a11y — focus management: move focus into the dialog on open, trap
+  // Tab cycles inside it, restore focus on close. WCAG 2.1 Success
+  // Criterion 2.4.3.
+  useEffect(() => {
+    if (!helpOpen) return;
+    previouslyFocused.current = document.activeElement as HTMLElement | null;
+    closeButtonRef.current?.focus();
+
+    function trap(e: KeyboardEvent) {
+      if (e.key !== 'Tab' || !dialogRef.current) return;
+      const focusables = dialogRef.current.querySelectorAll<HTMLElement>(
+        'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])',
+      );
+      if (focusables.length === 0) return;
+      const first = focusables[0]!;
+      const last = focusables[focusables.length - 1]!;
+      if (e.shiftKey && document.activeElement === first) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && document.activeElement === last) {
+        e.preventDefault();
+        first.focus();
+      }
+    }
+    window.addEventListener('keydown', trap);
+    return () => {
+      window.removeEventListener('keydown', trap);
+      previouslyFocused.current?.focus();
+    };
+  }, [helpOpen]);
 
   useEffect(() => {
     let pendingG = false;
@@ -88,16 +122,18 @@ export function KeyboardShortcuts() {
       onClick={() => setHelpOpen(false)}
     >
       <div
+        ref={dialogRef}
         className="mt-24 w-full max-w-md rounded border border-zinc-700 bg-zinc-900 p-5 shadow-2xl"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
           <h2 className="font-serif text-lg text-zinc-100">Keyboard shortcuts</h2>
           <button
+            ref={closeButtonRef}
             type="button"
             onClick={() => setHelpOpen(false)}
-            className="text-xs text-zinc-500 hover:text-zinc-300"
-            aria-label="Close"
+            className="text-xs text-zinc-500 hover:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-400 rounded px-1"
+            aria-label="Close keyboard shortcuts dialog"
           >
             Esc
           </button>

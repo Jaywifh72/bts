@@ -24,17 +24,17 @@ export default async function DunePartTwoLensesPage() {
         </p>
       </div>
       <KillerQueryTable
-        rows={rows as unknown as Record<string, unknown>[]}
+        rows={rows}
         columns={[
           {
             key: 'series_name',
             header: 'Lens Series',
             render: (row) => (
               <Link
-                href={`/gear/arri-rental/${row['series_slug'] as string}`}
+                href={`/gear/${row.manufacturer_slug}/${row.series_slug}`}
                 className="text-zinc-200 hover:text-amber-400"
               >
-                {row['series_name'] as string}
+                {row.series_name}
               </Link>
             ),
           },
@@ -42,13 +42,13 @@ export default async function DunePartTwoLensesPage() {
             key: 'item_name',
             header: 'Item',
             render: (row) =>
-              row['item_slug']
+              row.item_slug
                 ? (
                   <Link
-                    href={`/gear/arri-rental/${row['series_slug'] as string}/${row['item_slug'] as string}`}
+                    href={`/gear/${row.manufacturer_slug}/${row.series_slug}/${row.item_slug}`}
                     className="text-zinc-400 hover:text-amber-400"
                   >
-                    {row['item_name'] as string}
+                    {row.item_name}
                   </Link>
                 )
                 : <span className="text-zinc-600">—</span>,

@@ -1,18 +1,27 @@
 import type { ReactNode } from 'react';
 
-export interface Column {
-  key: string;
+/**
+ * Generic over the row shape so call-sites don't need `as unknown as
+ * Record<string, unknown>[]` casts. Most consumers pass the result of a
+ * `db.execute<RowShape>(...)` call directly.
+ */
+export interface Column<TRow extends object = Record<string, unknown>> {
+  key: keyof TRow & string;
   header: string;
-  render: (row: Record<string, unknown>) => ReactNode;
+  render: (row: TRow) => ReactNode;
 }
 
-export interface KillerQueryTableProps {
-  columns: Column[];
-  rows: Record<string, unknown>[];
+export interface KillerQueryTableProps<TRow extends object = Record<string, unknown>> {
+  columns: Column<TRow>[];
+  rows: readonly TRow[];
   emptyMessage?: string;
 }
 
-export function KillerQueryTable({ columns, rows, emptyMessage = 'No results.' }: KillerQueryTableProps) {
+export function KillerQueryTable<TRow extends object>({
+  columns,
+  rows,
+  emptyMessage = 'No results.',
+}: KillerQueryTableProps<TRow>) {
   if (rows.length === 0) {
     return <p className="text-sm text-zinc-500">{emptyMessage}</p>;
   }

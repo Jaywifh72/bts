@@ -3,8 +3,13 @@ import Link from 'next/link';
 import { db, listPeople, countPeople, listCrewCategoriesInUse } from '@bts/db';
 import { PersonCard } from '@/components/people/PersonCard';
 import { CrewFilters } from '@/components/people/CrewFilters';
+import { Pagination } from '@/components/ui/Pagination';
 
 export const metadata: Metadata = { title: 'Crew' };
+
+// QA — revalidate hourly. People rows are slow-moving; search/filter
+// permutations cache well.
+export const revalidate = 3600;
 
 const PAGE_SIZE = 60;
 
@@ -75,39 +80,17 @@ export default async function CrewPage({ searchParams }: Props) {
         </div>
       )}
 
-      {totalPages > 1 && (
-        <nav className="mt-8 flex items-center justify-between text-sm text-zinc-400">
-          <div>
-            Page {page} of {totalPages}
-          </div>
-          <div className="flex gap-2">
-            {page > 1 && (
-              <Link
-                href={(() => {
-                  const p = new URLSearchParams(baseParams);
-                  if (page - 1 > 1) p.set('page', String(page - 1));
-                  return `/crew${p.toString() ? `?${p.toString()}` : ''}`;
-                })()}
-                className="rounded border border-zinc-700 px-3 py-1 hover:bg-zinc-800"
-              >
-                ← Prev
-              </Link>
-            )}
-            {page < totalPages && (
-              <Link
-                href={(() => {
-                  const p = new URLSearchParams(baseParams);
-                  p.set('page', String(page + 1));
-                  return `/crew?${p.toString()}`;
-                })()}
-                className="rounded border border-zinc-700 px-3 py-1 hover:bg-zinc-800"
-              >
-                Next →
-              </Link>
-            )}
-          </div>
-        </nav>
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        ariaLabel="Crew pagination"
+        buildHref={(p) => {
+          const params = new URLSearchParams(baseParams);
+          if (p > 1) params.set('page', String(p));
+          else params.delete('page');
+          return `/crew${params.toString() ? `?${params.toString()}` : ''}`;
+        }}
+      />
     </>
   );
 }

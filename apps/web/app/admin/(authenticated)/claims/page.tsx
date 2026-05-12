@@ -1,0 +1,169 @@
+import type { Metadata } from 'next';
+import Link from 'next/link';
+import {
+  db,
+  listClaimsForReview,
+  countClaimsForReview,
+  type ClaimStatus,
+  type ClaimType,
+} from '@bts/db';
+import { ClaimReviewRow } from '@/components/admin/ClaimReviewRow';
+import { Pagination } from '@/components/ui/Pagination';
+
+export const metadata: Metadata = {
+  title: 'Claims Review',
+  robots: { index: false, follow: false },
+};
+
+const PAGE_SIZE = 50;
+
+const STATUSES: (ClaimStatus | 'all')[] = [
+  'needs_source',
+  'candidate',
+  'sourced',
+  'reviewed',
+  'verified',
+  'disputed',
+  'deprecated',
+  'rejected',
+  'all',
+];
+
+const CLAIM_TYPES: (ClaimType | 'all')[] = [
+  'all',
+  'production_camera',
+  'production_lens',
+  'production_filter',
+  'production_format',
+  'production_lighting',
+  'production_color_pipeline',
+  'production_post_house',
+  'production_vfx_house',
+  'production_vfx_sequence',
+  'scene_camera',
+  'scene_lens',
+  'scene_lighting',
+  'scene_vfx',
+  'scene_location',
+  'gear_spec',
+  'person_credit',
+  'video_evidence',
+  'general_bts_fact',
+];
+
+type Props = {
+  searchParams: {
+    status?: string;
+    claimType?: string;
+    page?: string;
+  };
+};
+
+function parseStatus(value: string | undefined): ClaimStatus | 'all' {
+  if (value && (STATUSES as string[]).includes(value)) return value as ClaimStatus | 'all';
+  return 'needs_source';
+}
+
+function parseClaimType(value: string | undefined): ClaimType | 'all' {
+  if (value && (CLAIM_TYPES as string[]).includes(value)) return value as ClaimType | 'all';
+  return 'all';
+}
+
+function buildHref(params: URLSearchParams, next: Record<string, string | number | null>): string {
+  const merged = new URLSearchParams(params);
+  for (const [key, value] of Object.entries(next)) {
+    if (value === null || value === '' || value === 'all') merged.delete(key);
+    else merged.set(key, String(value));
+  }
+  const qs = merged.toString();
+  return qs ? `/admin/claims?${qs}` : '/admin/claims';
+}
+
+function label(value: string): string {
+  return value.replace(/_/g, ' ');
+}
+
+export default async function AdminClaimsPage({ searchParams }: Props) {
+  const status = parseStatus(searchParams.status);
+  const claimType = parseClaimType(searchParams.claimType);
+  const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1);
+
+  const [claims, total] = await Promise.all([
+    listClaimsForReview(db, {
+      status,
+      claimType,
+      limit: PAGE_SIZE,
+      offset: (page - 1) * PAGE_SIZE,
+    }),
+    countClaimsForReview(db, { status, claimType }),
+  ]);
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+
+  const baseParams = new URLSearchParams();
+  if (status !== 'needs_source') baseParams.set('status', status);
+  if (claimType !== 'all') baseParams.set('claimType', claimType);
+
+  return (
+    <div>
+      <header className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
+        <h1 className="font-serif text-2xl">Claims Review</h1>
+        <div className="text-sm text-zinc-500">
+          {total.toLocaleString()} {status === 'all' ? '' : label(status)} claim{total === 1 ? '' : 's'}
+        </div>
+      </header>
+
+      <nav
+        aria-label="Filter claims by status"
+        className="mb-3 flex flex-wrap gap-2 border border-zinc-800 bg-zinc-900/40 p-2 text-xs"
+      >
+        {STATUSES.map((s) => (
+          <Link
+            key={s}
+            href={buildHref(baseParams, { status: s, page: null })}
+            className={`rounded px-2 py-1 ${
+              status === s ? 'bg-amber-600 text-zinc-950' : 'text-zinc-400 hover:bg-zinc-800'
+            }`}
+          >
+            {label(s)}
+          </Link>
+        ))}
+      </nav>
+
+      <nav
+        aria-label="Filter claims by type"
+        className="mb-6 flex flex-wrap gap-2 border border-zinc-800 bg-zinc-900/40 p-2 text-xs"
+      >
+        {CLAIM_TYPES.map((type) => (
+          <Link
+            key={type}
+            href={buildHref(baseParams, { claimType: type, page: null })}
+            className={`rounded px-2 py-1 ${
+              claimType === type ? 'bg-zinc-200 text-zinc-950' : 'text-zinc-400 hover:bg-zinc-800'
+            }`}
+          >
+            {label(type)}
+          </Link>
+        ))}
+      </nav>
+
+      {claims.length === 0 ? (
+        <div className="border border-zinc-800 bg-zinc-900/40 p-8 text-center text-zinc-500">
+          No claims match these filters.
+        </div>
+      ) : (
+        <ul className="space-y-3">
+          {claims.map((claim) => (
+            <ClaimReviewRow key={claim.id} claim={claim} />
+          ))}
+        </ul>
+      )}
+
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        ariaLabel="Claims pagination"
+        buildHref={(p) => buildHref(baseParams, { page: p })}
+      />
+    </div>
+  );
+}

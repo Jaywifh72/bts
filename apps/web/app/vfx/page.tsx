@@ -4,6 +4,9 @@ import { VfxHouseCard } from '@/components/vfx/VfxHouseCard';
 
 export const metadata: Metadata = { title: 'VFX Houses' };
 
+// QA — VFX house roster is slow-moving; daily revalidate is right.
+export const revalidate = 86400;
+
 export default async function VfxPage() {
   const rows = await listVfxHouses(db);
 
@@ -24,6 +27,7 @@ export default async function VfxPage() {
               slug={row.slug}
               name={row.name}
               country={row.country}
+              website={row.website}
               productionCount={row.production_count}
             />
           ))}

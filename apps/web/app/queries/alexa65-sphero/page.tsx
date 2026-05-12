@@ -23,14 +23,14 @@ export default async function Alexa65SpheroPage() {
       </div>
       <SectionHeader label={`${rows.length} result${rows.length !== 1 ? 's' : ''}`} heading="" />
       <KillerQueryTable
-        rows={rows as unknown as Record<string, unknown>[]}
+        rows={rows}
         columns={[
           {
             key: 'title',
             header: 'Production',
             render: (row) => (
-              <Link href={`/films/${row['slug'] as string}`} className="text-zinc-200 hover:text-amber-400">
-                {row['title'] as string}
+              <Link href={`/films/${row.slug}`} className="text-zinc-200 hover:text-amber-400">
+                {row.title}
               </Link>
             ),
           },
@@ -38,15 +38,15 @@ export default async function Alexa65SpheroPage() {
             key: 'release_year',
             header: 'Year',
             render: (row) => (
-              <span className="tabular-nums text-zinc-400">{String(row['release_year'] ?? '—')}</span>
+              <span className="tabular-nums text-zinc-400">{String(row.release_year ?? '—')}</span>
             ),
           },
           {
             key: 'dp_name',
             header: 'Director of Photography',
             render: (row) => (
-              <Link href={`/crew/${row['dp_slug'] as string}`} className="text-zinc-200 hover:text-amber-400">
-                {row['dp_name'] as string}
+              <Link href={`/crew/${row.dp_slug}`} className="text-zinc-200 hover:text-amber-400">
+                {row.dp_name}
               </Link>
             ),
           },

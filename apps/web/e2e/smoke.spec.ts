@@ -1,0 +1,62 @@
+import { test, expect } from '@playwright/test';
+
+test.describe('Smoke pack — top-level routes', () => {
+  test('homepage renders with hero + nav', async ({ page }) => {
+    await page.goto('/');
+    await expect(page.locator('h1')).toContainText('Studio Pro');
+    await expect(page.locator('nav[aria-label="Primary"]')).toBeVisible();
+  });
+
+  test('films index renders cards', async ({ page }) => {
+    await page.goto('/films');
+    await expect(page.locator('h1')).toBeVisible();
+    // At least one film card should render
+    await expect(page.locator('a[href^="/films/"]').first()).toBeVisible();
+  });
+
+  test('crew index renders rows', async ({ page }) => {
+    await page.goto('/crew');
+    await expect(page.locator('h1')).toBeVisible();
+    await expect(page.locator('a[href^="/crew/"]').first()).toBeVisible();
+  });
+
+  test('gear index renders manufacturer cards', async ({ page }) => {
+    await page.goto('/gear');
+    await expect(page.locator('h1')).toBeVisible();
+  });
+
+  test('search page renders input', async ({ page }) => {
+    await page.goto('/search');
+    await expect(page.locator('input[type="search"], input[name="q"]').first()).toBeVisible();
+  });
+
+  test('a deep-dive film page (Top Gun: Maverick) renders editorial sections', async ({ page }) => {
+    await page.goto('/films/top-gun-maverick-2022');
+    await expect(page.getByRole('heading', { name: 'Top Gun: Maverick' })).toBeVisible();
+    // Awards section confirms the seeded data renders
+    await expect(page.getByText(/Awards/i).first()).toBeVisible();
+  });
+
+  test('a missing film returns 404 not-found', async ({ page }) => {
+    const r = await page.goto('/films/this-film-definitely-does-not-exist-9999');
+    expect(r?.status()).toBe(404);
+  });
+
+  test('public API discovery endpoint returns JSON', async ({ request }) => {
+    const r = await request.get('/api/v1');
+    expect(r.status()).toBe(200);
+    const body = await r.json();
+    expect(body).toHaveProperty('endpoints');
+  });
+
+  test('llms.txt is served as text/markdown', async ({ request }) => {
+    const r = await request.get('/llms.txt');
+    expect(r.status()).toBe(200);
+    expect(r.headers()['content-type']).toContain('markdown');
+  });
+
+  test('robots.txt is served', async ({ request }) => {
+    const r = await request.get('/robots.txt');
+    expect(r.status()).toBe(200);
+  });
+});

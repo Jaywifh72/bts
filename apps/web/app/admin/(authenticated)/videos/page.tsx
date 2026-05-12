@@ -9,7 +9,8 @@ import {
   type VideoCategory,
 } from '@bts/db';
 import { VideoReviewFilters } from '@/components/admin/VideoReviewFilters';
-import { VideoReviewRow } from '@/components/admin/VideoReviewRow';
+import { VideoReviewList } from '@/components/admin/VideoReviewList';
+import { Pagination } from '@/components/ui/Pagination';
 
 export const metadata: Metadata = {
   title: 'Video Review',
@@ -94,38 +95,15 @@ export default async function AdminVideosPage({ searchParams }: Props) {
           No videos match these filters.
         </div>
       ) : (
-        <div className="space-y-2">
-          {videos.map((v) => (
-            <VideoReviewRow key={v.id} video={v} />
-          ))}
-        </div>
+        <VideoReviewList videos={videos} />
       )}
 
-      {totalPages > 1 && (
-        <nav className="mt-6 flex items-center justify-between text-sm text-zinc-400">
-          <div>
-            Page {page} of {totalPages}
-          </div>
-          <div className="flex gap-2">
-            {page > 1 && (
-              <Link
-                href={buildPageHref(baseParams, page - 1)}
-                className="rounded border border-zinc-700 px-3 py-1 hover:bg-zinc-800"
-              >
-                ← Prev
-              </Link>
-            )}
-            {page < totalPages && (
-              <Link
-                href={buildPageHref(baseParams, page + 1)}
-                className="rounded border border-zinc-700 px-3 py-1 hover:bg-zinc-800"
-              >
-                Next →
-              </Link>
-            )}
-          </div>
-        </nav>
-      )}
+      <Pagination
+        page={page}
+        totalPages={totalPages}
+        ariaLabel="Video review pagination"
+        buildHref={(p) => buildPageHref(baseParams, p)}
+      />
     </div>
   );
 }

@@ -10,15 +10,27 @@ import {
   getEquipmentUsedByPerson,
   getCollaboratorsForPerson,
   getKnownForByPerson,
+  getAwardsForPerson,
+  getStuntContextForPerson,
+  getStuntLineage,
+  getDoublingHistoryForPerson,
+  getDoublingHistoryForActor,
+  getStuntPersonReel,
 } from '@bts/db';
 import { FilmographyTable } from '@/components/people/FilmographyTable';
 import { EquipmentUsedTable } from '@/components/people/EquipmentUsedTable';
+import { CareerStats } from '@/components/people/CareerStats';
+import { PersonAvatar } from '@/components/people/PersonAvatar';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { JsonLd, buildPersonJsonLd } from '@/lib/jsonLd';
 import { profileUrl, posterUrl } from '@/lib/tmdb-image';
+import { pickPrimaryRole } from '@/lib/primary-role';
 import { BookmarkButton } from '@/components/ui/BookmarkButton';
 
 interface Props { params: { slug: string } }
+
+// QA — crew detail pages change slowly; daily revalidation is plenty.
+export const revalidate = 86400;
 
 export async function generateStaticParams() {
   // Don't pre-render 11k crew pages — let Next render on-demand for the long
@@ -29,6 +41,8 @@ export async function generateStaticParams() {
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const person = await getPersonBySlug(db, params.slug);
   if (!person) return {};
+  // E-39 — oEmbed autodiscovery (matches the films/[slug] pattern).
+  const pageUrl = `/crew/${person.slug}`;
   return {
     title: person.display_name,
     description: person.biography ?? undefined,
@@ -37,28 +51,91 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       description: person.biography ?? undefined,
       type: 'profile',
     },
+    twitter: {
+      card: 'summary_large_image',
+      title: person.display_name,
+      description: person.biography ?? undefined,
+    },
+    alternates: {
+      canonical: pageUrl,
+      types: {
+        'application/json+oembed': `/oembed?url=${encodeURIComponent(pageUrl)}`,
+      },
+    },
   };
 }
 
 export default async function CrewDetailPage({ params }: Props) {
-  const [person, filmography, equipment, collaborators, knownFor] = await Promise.all([
+  const [person, filmography, equipment, collaborators, knownFor, awards] = await Promise.all([
     getPersonBySlug(db, params.slug),
     getPersonFilmography(db, params.slug),
     getEquipmentUsedByPerson(db, params.slug),
     getCollaboratorsForPerson(db, params.slug, 12),
     getKnownForByPerson(db, params.slug, 4),
+    getAwardsForPerson(db, params.slug),
   ]);
   if (!person) notFound();
 
-  const primaryRole = filmography[0]?.role_name ?? null;
-  const photo = profileUrl(person.profile_path, 'w185');
-  const initials = person.display_name
-    .split(/\s+/).map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
+  // Resolve stunt-section relations for the stunt block. Only triggers
+  // a roundtrip when at least one of the slug arrays is populated.
+  const hasStuntData =
+    (person.stunt_disciplines?.length ?? 0) > 0 ||
+    (person.doubles_for?.length ?? 0) > 0 ||
+    (person.training_school_slugs?.length ?? 0) > 0 ||
+    person.stunt_company_slug != null ||
+    person.performer_union != null ||
+    person.height_cm != null ||
+    person.weight_kg != null;
+  // Phase-8 doubling history runs for every crew page (not gated
+  // on hasStuntData) since the *actor* side of a doubling — the
+  // person being doubled — won't have stunt fields populated but
+  // still benefits from showing "doubled by X on these films".
+  const [stuntContext, stuntLineage, doublingAsDoubler, doublingAsDoubled, stuntReel] =
+    await Promise.all([
+      hasStuntData
+        ? getStuntContextForPerson(
+            db,
+            person.doubles_for ?? [],
+            person.training_school_slugs ?? [],
+            person.stunt_company_slug ?? null,
+          )
+        : Promise.resolve(null),
+      hasStuntData
+        ? getStuntLineage(db, person.slug, person.mentor_person_slugs ?? [])
+        : Promise.resolve(null),
+      getDoublingHistoryForPerson(db, person.slug),
+      getDoublingHistoryForActor(db, person.slug),
+      // Phase 21 — pull stunt-related videos + keyframes from every
+      // production this person has stunt credits on. Self-empties
+      // for non-stunt people, so calling unconditionally is safe.
+      getStuntPersonReel(db, person.slug),
+    ]);
+
+  const primaryRole = pickPrimaryRole(filmography);
 
   const jsonLd = buildPersonJsonLd({
     slug: person.slug,
     name: person.display_name,
     primaryRole,
+    // E-41 — schema.org expansion.
+    birthYear: person.birth_year,
+    deathYear: person.death_year,
+    nationality: person.nationality,
+    imdbId: person.imdb_id,
+    tmdbPersonId: person.tmdb_person_id,
+    wikidataId: person.wikidata_id,
+    alumniOf: person.film_schools ?? undefined,
+    memberOf: person.member_societies ?? undefined,
+    awards: awards.map((a) => ({
+      name: `${
+        a.award_org === 'academy_awards' ? 'Academy Award' :
+        a.award_org === 'bafta' ? 'BAFTA' :
+        a.award_org === 'asc_award' ? 'ASC Award' :
+        a.award_org
+      } — ${a.category}`,
+      year: a.year,
+      isWinner: a.is_winner,
+    })),
   });
 
   return (
@@ -66,15 +143,12 @@ export default async function CrewDetailPage({ params }: Props) {
       <JsonLd data={jsonLd} />
       <article>
         <header className="mb-8 flex gap-5">
-          <div className="relative h-24 w-24 shrink-0 overflow-hidden rounded-full bg-zinc-800">
-            {photo ? (
-              <Image src={photo} alt="" fill sizes="96px" className="object-cover" />
-            ) : (
-              <div className="flex h-full items-center justify-center text-2xl font-medium text-zinc-500">
-                {initials || '?'}
-              </div>
-            )}
-          </div>
+          <PersonAvatar
+            slug={person.slug}
+            displayName={person.display_name}
+            profilePath={person.profile_path}
+            size="xl"
+          />
           <div className="flex-1">
             <p className="text-xs uppercase tracking-widest text-zinc-500">Crew</p>
             <div className="mt-1 flex items-baseline gap-3">
@@ -139,8 +213,512 @@ export default async function CrewDetailPage({ params }: Props) {
                 {person.aliases.length > 3 && ` (+${person.aliases.length - 3} more)`}
               </div>
             )}
+            {/* E-25 — alumni-of from Wikidata P69. */}
+            {person.film_schools && person.film_schools.length > 0 && (
+              <div className="mt-1 text-xs text-zinc-600">
+                Educated at: {person.film_schools.slice(0, 3).join('; ')}
+                {person.film_schools.length > 3 && ` (+${person.film_schools.length - 3} more)`}
+              </div>
+            )}
+            {person.member_societies && person.member_societies.length > 0 && (
+              <div className="mt-1 text-xs text-zinc-600">
+                Member of: {person.member_societies.join(', ')}
+              </div>
+            )}
           </div>
         </header>
+
+        {/* Stunt section — surfaces phase-2 fields (disciplines, union,
+            doubles-for, training, primary company affiliation). Only
+            renders when at least one stunt field is populated. */}
+        {hasStuntData && (
+          <section className="mb-8 rounded border border-red-900/40 bg-red-950/10 p-5">
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-red-400/80">Stunts</p>
+              <Link href="/stunts/people" className="text-[10px] uppercase tracking-wide text-zinc-500 hover:text-amber-400">
+                All performers →
+              </Link>
+            </div>
+
+            {/* Vitals row — union + height + weight where curated */}
+            {(person.performer_union || person.height_cm != null || person.weight_kg != null) && (
+              <div className="mb-4 flex flex-wrap gap-x-6 gap-y-2 text-sm">
+                {person.performer_union && (
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wide text-zinc-500">Union</span>
+                    <span className="ml-2 text-zinc-200">{person.performer_union}</span>
+                  </div>
+                )}
+                {person.height_cm != null && (
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wide text-zinc-500">Height</span>
+                    <span className="ml-2 font-mono text-zinc-200">
+                      {person.height_cm} cm
+                      <span className="ml-1 text-zinc-500">
+                        ({Math.floor(person.height_cm / 30.48)}&apos;{Math.round((person.height_cm / 2.54) % 12)}&quot;)
+                      </span>
+                    </span>
+                  </div>
+                )}
+                {person.weight_kg != null && (
+                  <div>
+                    <span className="text-[10px] uppercase tracking-wide text-zinc-500">Weight</span>
+                    <span className="ml-2 font-mono text-zinc-200">
+                      {Number(person.weight_kg).toFixed(0)} kg
+                      <span className="ml-1 text-zinc-500">
+                        ({Math.round(Number(person.weight_kg) * 2.20462)} lb)
+                      </span>
+                    </span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Disciplines */}
+            {(person.stunt_disciplines?.length ?? 0) > 0 && (
+              <div className="mb-4">
+                <p className="mb-2 text-[10px] uppercase tracking-wide text-zinc-500">Disciplines</p>
+                <div className="flex flex-wrap gap-1.5">
+                  {person.stunt_disciplines.map((d: string) => (
+                    <span
+                      key={d}
+                      className="rounded border border-red-900/40 bg-red-950/30 px-2 py-0.5 text-xs text-red-200/90"
+                    >
+                      {d.replace(/_/g, ' ')}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Doubles-for + primary company + training schools — three-column */}
+            <div className="grid gap-4 sm:grid-cols-3">
+              {(person.doubles_for?.length ?? 0) > 0 && (
+                <div>
+                  <p className="mb-1.5 text-[10px] uppercase tracking-wide text-zinc-500">Doubles for</p>
+                  <ul className="space-y-1 text-sm">
+                    {person.doubles_for.map((slug: string) => {
+                      const known = stuntContext?.doubles.find((d) => d.slug === slug);
+                      return (
+                        <li key={slug}>
+                          {known ? (
+                            <Link
+                              href={`/crew/${known.slug}`}
+                              className="text-zinc-200 hover:text-amber-400"
+                            >
+                              {known.display_name}
+                            </Link>
+                          ) : (
+                            <span className="text-zinc-300 capitalize">{slug.replace(/-/g, ' ')}</span>
+                          )}
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              )}
+
+              {stuntContext?.company && (
+                <div>
+                  <p className="mb-1.5 text-[10px] uppercase tracking-wide text-zinc-500">Primary affiliation</p>
+                  <Link
+                    href={`/stunts/companies/${stuntContext.company.slug}`}
+                    className="text-sm text-zinc-200 hover:text-amber-400"
+                  >
+                    {stuntContext.company.name}
+                  </Link>
+                </div>
+              )}
+
+              {(stuntContext?.schools.length ?? 0) > 0 && (
+                <div>
+                  <p className="mb-1.5 text-[10px] uppercase tracking-wide text-zinc-500">Training</p>
+                  <ul className="space-y-1 text-sm">
+                    {stuntContext!.schools.map((s) => (
+                      <li key={s.slug}>
+                        <Link
+                          href={`/stunts/schools/${s.slug}`}
+                          className="text-zinc-200 hover:text-amber-400"
+                        >
+                          {s.name}
+                        </Link>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </div>
+
+            {/* Phase-4 lineage — mentors (forward) and protégés
+                (inverse). Self-hides when both are empty so we never
+                render an awkward "no lineage" panel for performers
+                outside the documented chains. */}
+            {((stuntLineage?.mentors.length ?? 0) > 0 ||
+              (stuntLineage?.protégés.length ?? 0) > 0) && (
+              <div className="mt-5 border-t border-red-900/30 pt-4">
+                <div className="mb-2 flex items-baseline justify-between gap-2">
+                  <p className="text-[10px] uppercase tracking-[0.2em] text-red-400/80">Lineage</p>
+                  <Link
+                    href="/stunts/lineage"
+                    className="text-[10px] uppercase tracking-wide text-zinc-500 hover:text-amber-400"
+                  >
+                    Full graph →
+                  </Link>
+                </div>
+                <p className="mb-3 max-w-2xl text-xs text-zinc-500">
+                  Stunt coordination is overwhelmingly an apprentice
+                  craft — picked up on second-unit floors, not in
+                  schools. The line of working coordinators that
+                  brought this performer up, and the next generation
+                  they brought up themselves.
+                </p>
+
+                <div className="grid gap-5 sm:grid-cols-2">
+                  {(stuntLineage?.mentors.length ?? 0) > 0 && (
+                    <div>
+                      <p className="mb-2 text-[10px] uppercase tracking-wide text-zinc-500">
+                        Mentors
+                      </p>
+                      <ul className="space-y-2">
+                        {stuntLineage!.mentors.map((m) => (
+                            <li key={m.slug}>
+                              <Link
+                                href={`/crew/${m.slug}`}
+                                className="group flex items-center gap-3 rounded p-1 hover:bg-red-950/20"
+                              >
+                                <PersonAvatar
+                                  slug={m.slug}
+                                  displayName={m.display_name}
+                                  profilePath={m.profile_path}
+                                  size="sm"
+                                />
+                                <span className="min-w-0">
+                                  <span className="block truncate text-sm text-zinc-100 group-hover:text-amber-400">
+                                    {m.display_name}
+                                  </span>
+                                  {m.primary_role && (
+                                    <span className="block text-[10px] uppercase tracking-wide text-zinc-500">
+                                      {m.primary_role}
+                                    </span>
+                                  )}
+                                </span>
+                              </Link>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {(stuntLineage?.protégés.length ?? 0) > 0 && (
+                    <div>
+                      <p className="mb-2 text-[10px] uppercase tracking-wide text-zinc-500">
+                        Protégés
+                      </p>
+                      <ul className="space-y-2">
+                        {stuntLineage!.protégés.map((p) => (
+                            <li key={p.slug}>
+                              <Link
+                                href={`/crew/${p.slug}`}
+                                className="group flex items-center gap-3 rounded p-1 hover:bg-red-950/20"
+                              >
+                                <PersonAvatar
+                                  slug={p.slug}
+                                  displayName={p.display_name}
+                                  profilePath={p.profile_path}
+                                  size="sm"
+                                />
+                                <span className="min-w-0">
+                                  <span className="block truncate text-sm text-zinc-100 group-hover:text-amber-400">
+                                    {p.display_name}
+                                  </span>
+                                  {p.primary_role && (
+                                    <span className="block text-[10px] uppercase tracking-wide text-zinc-500">
+                                      {p.primary_role}
+                                    </span>
+                                  )}
+                                </span>
+                              </Link>
+                            </li>
+                          ))}
+                      </ul>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* Phase-8 doubling history — productions where this person
+            served as someone's stunt double. */}
+        {doublingAsDoubler.length > 0 && (
+          <section className="mb-8 rounded border border-red-900/40 bg-red-950/10 p-5">
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-red-400/80">
+                Doubling history
+              </p>
+              <span className="text-[10px] uppercase tracking-wide text-zinc-500">
+                {doublingAsDoubler.length} {doublingAsDoubler.length === 1 ? 'credit' : 'credits'}
+              </span>
+            </div>
+            <p className="mb-4 max-w-2xl text-xs text-zinc-500">
+              Productions where {person.display_name.split(' ')[0]} served as
+              the credited stunt double for a named actor. The kind
+              tag distinguishes a primary lead-actor double from
+              fight-/driver-/aerial-specific work.
+            </p>
+            <ul className="space-y-2">
+              {doublingAsDoubler.map((d) => (
+                <li
+                  key={d.id}
+                  className="rounded border border-zinc-800 bg-zinc-900/60 p-3"
+                >
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="font-mono text-[10px] text-zinc-500">
+                      {d.release_year ?? '—'}
+                    </span>
+                    <Link
+                      href={`/films/${d.production_slug}`}
+                      className="font-serif text-sm text-zinc-100 hover:text-amber-400"
+                    >
+                      {d.production_title}
+                    </Link>
+                    <span className="rounded border border-red-900/40 bg-red-950/30 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-red-200/90">
+                      {d.kind.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-xs text-zinc-400">
+                    Doubled{' '}
+                    <Link
+                      href={`/crew/${d.doubled_slug}`}
+                      className="text-zinc-200 hover:text-amber-400"
+                    >
+                      {d.doubled_name}
+                    </Link>
+                    {d.character_name && <span className="text-zinc-500"> as {d.character_name}</span>}
+                  </div>
+                  {d.notes && (
+                    <p className="mt-1 text-xs leading-relaxed text-zinc-500">{d.notes}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* Phase-8 — inverse: when an actor's crew page is viewed,
+            surface the stuntpeople who've doubled them. */}
+        {doublingAsDoubled.length > 0 && (
+          <section className="mb-8 rounded border border-red-900/40 bg-red-950/10 p-5">
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-red-400/80">
+                Doubled by
+              </p>
+              <span className="text-[10px] uppercase tracking-wide text-zinc-500">
+                {doublingAsDoubled.length} {doublingAsDoubled.length === 1 ? 'credit' : 'credits'}
+              </span>
+            </div>
+            <p className="mb-4 max-w-2xl text-xs text-zinc-500">
+              Stuntpeople who have served as {person.display_name.split(' ')[0]}'s
+              double on screen, with the production and the kind of doubling work.
+            </p>
+            <ul className="space-y-2">
+              {doublingAsDoubled.map((d) => (
+                <li
+                  key={d.id}
+                  className="rounded border border-zinc-800 bg-zinc-900/60 p-3"
+                >
+                  <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <span className="font-mono text-[10px] text-zinc-500">
+                      {d.release_year ?? '—'}
+                    </span>
+                    <Link
+                      href={`/films/${d.production_slug}`}
+                      className="font-serif text-sm text-zinc-100 hover:text-amber-400"
+                    >
+                      {d.production_title}
+                    </Link>
+                    <span className="rounded border border-red-900/40 bg-red-950/30 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-red-200/90">
+                      {d.kind.replace(/_/g, ' ')}
+                    </span>
+                  </div>
+                  <div className="mt-1 text-xs text-zinc-400">
+                    Doubled by{' '}
+                    <Link
+                      href={`/crew/${d.doubler_slug}`}
+                      className="text-zinc-200 hover:text-amber-400"
+                    >
+                      {d.doubler_name}
+                    </Link>
+                    {d.character_name && <span className="text-zinc-500"> · {d.character_name}</span>}
+                  </div>
+                  {d.notes && (
+                    <p className="mt-1 text-xs leading-relaxed text-zinc-500">{d.notes}</p>
+                  )}
+                </li>
+              ))}
+            </ul>
+          </section>
+        )}
+
+        {/* Phase 21 — Selected work reel: stunt-related videos +
+            keyframes from every production this person has stunt
+            credits on. Self-hides when nothing is available so
+            non-stunt people aren't penalised. */}
+        {(stuntReel.videos.length > 0 || stuntReel.keyframes.length > 0) && (
+          <section className="mb-8 rounded border border-red-900/40 bg-red-950/10 p-5">
+            <div className="mb-3 flex items-baseline justify-between gap-2">
+              <p className="text-[10px] uppercase tracking-[0.2em] text-red-400/80">
+                Selected work
+              </p>
+              <span className="text-[10px] uppercase tracking-wide text-zinc-500">
+                {stuntReel.videos.length} video{stuntReel.videos.length === 1 ? '' : 's'}
+                {stuntReel.keyframes.length > 0 &&
+                  ` · ${stuntReel.keyframes.length} image${stuntReel.keyframes.length === 1 ? '' : 's'}`}
+              </span>
+            </div>
+            <p className="mb-4 max-w-2xl text-xs text-zinc-500">
+              Stunt-categorised videos and curated key frames from
+              productions where {person.display_name.split(' ')[0]} has a
+              stunt credit. Pulled across {' '}
+              <span className="font-mono text-zinc-400">crew_assignments</span>,{' '}
+              <span className="font-mono text-zinc-400">stunt_sequence_credits</span>, and{' '}
+              <span className="font-mono text-zinc-400">stunt_doubling_credits</span> — the
+              same data that drives this person&apos;s filmography rows above.
+            </p>
+
+            {stuntReel.videos.length > 0 && (
+              <div className="mb-4">
+                <p className="mb-2 text-[10px] uppercase tracking-wide text-zinc-500">
+                  Videos
+                </p>
+                <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                  {stuntReel.videos.map((v) => (
+                    <li
+                      key={v.id}
+                      className="overflow-hidden rounded border border-zinc-800 bg-zinc-900/60 hover:border-red-900/50 transition-colors"
+                    >
+                      <a href={v.url} target="_blank" rel="noopener noreferrer" className="block">
+                        <div className="relative aspect-video w-full bg-zinc-950">
+                          {v.thumbnail_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={v.thumbnail_url}
+                              alt={v.title}
+                              referrerPolicy="no-referrer"
+                              loading="lazy"
+                              className="h-full w-full object-cover"
+                            />
+                          ) : null}
+                        </div>
+                        <div className="p-2">
+                          <p className="line-clamp-2 text-xs leading-snug text-zinc-200">
+                            {v.title}
+                          </p>
+                          <div className="mt-1 flex items-baseline justify-between gap-2 text-[10px] uppercase tracking-wide text-zinc-500">
+                            <span className="truncate">{v.production_title}</span>
+                            <span
+                              className={`shrink-0 rounded px-1 ${
+                                v.category === 'stunts'
+                                  ? 'bg-red-950/40 text-red-300'
+                                  : 'bg-zinc-800 text-amber-400'
+                              }`}
+                            >
+                              {v.category.replace(/_/g, ' ')}
+                            </span>
+                          </div>
+                        </div>
+                      </a>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {stuntReel.keyframes.length > 0 && (
+              <div>
+                <p className="mb-2 text-[10px] uppercase tracking-wide text-zinc-500">
+                  Key frames
+                </p>
+                <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+                  {stuntReel.keyframes.map((k) => (
+                    <li key={k.id}>
+                      <Link
+                        href={`/films/${k.production_slug}`}
+                        className="group block overflow-hidden rounded border border-zinc-800 hover:border-red-900/50"
+                      >
+                        <div className="relative aspect-[16/9] w-full bg-zinc-950">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={k.image_url}
+                            alt={k.caption ?? `Frame from ${k.production_title}`}
+                            referrerPolicy="no-referrer"
+                            loading="lazy"
+                            className="h-full w-full object-cover"
+                          />
+                        </div>
+                        <div className="border-t border-zinc-800 bg-zinc-900/60 px-2 py-1.5">
+                          <p className="truncate text-[10px] uppercase tracking-wide text-zinc-500 group-hover:text-amber-400">
+                            {k.production_title}
+                          </p>
+                          {k.caption && (
+                            <p className="mt-0.5 line-clamp-1 text-[11px] text-zinc-400">
+                              {k.caption}
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
+        )}
+
+        {/* T3-2 — Career stats panel. Computed from filmography + collaborators. */}
+        <CareerStats filmography={filmography} collaborators={collaborators} />
+
+        {/* T3-5 — awards this person has won or been nominated for, joined
+            back to the production they're for. Self-hides when none. */}
+        {awards.length > 0 && (
+          <div className="mb-8">
+            <SectionHeader
+              label="Recognition"
+              heading={`Awards (${awards.filter((a) => a.is_winner).length} won, ${awards.length} total)`}
+            />
+            <ul className="mt-2 space-y-1.5 text-sm">
+              {awards.map((a) => (
+                <li key={a.id} className="flex flex-wrap items-baseline gap-x-2">
+                  <span
+                    className={`font-mono text-xs ${a.is_winner ? 'text-amber-400' : 'text-zinc-500'}`}
+                    title={a.is_winner ? 'Won' : 'Nominated'}
+                  >
+                    {a.is_winner ? 'WON' : 'NOM'}
+                  </span>
+                  <span className="text-zinc-300">
+                    {a.award_org === 'academy_awards' ? 'Academy Award' :
+                     a.award_org === 'bafta' ? 'BAFTA' :
+                     a.award_org === 'asc_award' ? 'ASC Award' :
+                     a.award_org === 'eca' ? 'Emerging Cinematographer Award' :
+                     a.award_org}
+                  </span>
+                  <span className="text-zinc-500">·</span>
+                  <span className="text-zinc-200">{a.category}</span>
+                  <span className="text-zinc-500">·</span>
+                  <span className="font-mono text-xs text-zinc-500">{a.year}</span>
+                  <span className="text-zinc-600">→</span>
+                  <Link
+                    href={`/films/${a.production_slug}`}
+                    className="text-zinc-300 hover:text-amber-400"
+                  >
+                    {a.production_title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
 
         {/* T3-3 — Known for highlight (top-rated productions) */}
         {knownFor.length > 0 && (
@@ -206,36 +784,28 @@ export default async function CrewDetailPage({ params }: Props) {
               People who have worked on the most productions alongside {person.display_name}.
             </p>
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {collaborators.map((c) => {
-                const cPhoto = profileUrl(c.profile_path, 'w185');
-                const cInitials = c.display_name
-                  .split(/\s+/).map((w) => w[0]).filter(Boolean).slice(0, 2).join('').toUpperCase();
-                return (
-                  <Link
-                    key={c.slug}
-                    href={`/crew/${c.slug}`}
-                    className="group flex items-center gap-3 rounded border border-zinc-800 bg-zinc-900 p-3 hover:border-zinc-600 transition-colors"
-                  >
-                    <div className="relative h-10 w-10 shrink-0 overflow-hidden rounded-full bg-zinc-800">
-                      {cPhoto ? (
-                        <Image src={cPhoto} alt="" fill sizes="40px" className="object-cover" />
-                      ) : (
-                        <div className="flex h-full items-center justify-center text-xs font-medium text-zinc-500">
-                          {cInitials || '?'}
-                        </div>
-                      )}
+              {collaborators.map((c) => (
+                <Link
+                  key={c.slug}
+                  href={`/crew/${c.slug}`}
+                  className="group flex items-center gap-3 rounded border border-zinc-800 bg-zinc-900 p-3 hover:border-zinc-600 transition-colors"
+                >
+                  <PersonAvatar
+                    slug={c.slug}
+                    displayName={c.display_name}
+                    profilePath={c.profile_path}
+                    size="sm"
+                  />
+                  <div className="min-w-0 flex-1">
+                    <div className="truncate text-sm text-zinc-100 group-hover:text-amber-400">
+                      {c.display_name}
                     </div>
-                    <div className="min-w-0 flex-1">
-                      <div className="truncate text-sm text-zinc-100 group-hover:text-amber-400">
-                        {c.display_name}
-                      </div>
-                      <div className="text-xs text-zinc-500">
-                        {c.primary_role ?? '—'} · {c.shared_productions} shared
-                      </div>
+                    <div className="text-xs text-zinc-500">
+                      {c.primary_role ?? '—'} · {c.shared_productions} shared
                     </div>
-                  </Link>
-                );
-              })}
+                  </div>
+                </Link>
+              ))}
             </div>
           </div>
         )}

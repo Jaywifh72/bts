@@ -1,11 +1,24 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { db, listFeaturedProductions, countProductions, listRecentlyUpdatedProductions } from '@bts/db';
+import {
+  db,
+  listFeaturedProductions,
+  countProductions,
+  listRecentlyUpdatedProductions,
+  getShotOfTheDay,
+  getEditorialDepthStats,
+} from '@bts/db';
 import { ProductionCard } from '@/components/productions/ProductionCard';
+import { ShotOfTheDayCard } from '@/components/productions/ShotOfTheDayCard';
 
 export const metadata: Metadata = {
   title: 'Studio Pro — Cinematic Technical Reference',
 };
+
+// QA — revalidate hourly. The depth-stats subqueries change at most a
+// few times per day, the shot-of-the-day rotates daily, so hourly is a
+// safe upper bound for cache freshness.
+export const revalidate = 3600;
 
 const queries = [
   {
@@ -26,29 +39,225 @@ const queries = [
 ] as const;
 
 export default async function HomePage() {
-  const [featured, totalCurated, totalAll, recentlyUpdated] = await Promise.all([
+  // E-49 — pin shot-of-the-day to today's UTC date so the value rotates
+  // at midnight UTC for everyone.
+  const todayKey = new Date().toISOString().slice(0, 10);
+  const [featured, totalCurated, totalAll, recentlyUpdated, shotOfTheDay, depthStats] = await Promise.all([
     listFeaturedProductions(db, 6),
     countProductions(db, { dataTier: 'curated' }),
     countProductions(db),
     listRecentlyUpdatedProductions(db, 4),
+    getShotOfTheDay(db, todayKey),
+    getEditorialDepthStats(db),
   ]);
 
   return (
     <>
-      {/* Hero */}
-      <div className="mb-12 border-b border-zinc-800 pb-8">
-        <h1 className="font-serif text-5xl text-zinc-50">Studio Pro</h1>
-        <p className="mt-3 max-w-2xl text-zinc-400">
-          Behind-the-scenes technical metadata for working film professionals.
-          Camera packages, lens choices, lighting rigs — cited and searchable.
+      {/* Hero — leads with the moat. */}
+      <div className="mb-12 border-b border-zinc-800 pb-10">
+        <p className="text-[11px] uppercase tracking-[0.25em] text-amber-500/80">
+          Reference shelf for working camera-department professionals
         </p>
-        <div className="mt-4 flex flex-wrap gap-4">
-          <Link href="/films" className="text-sm text-amber-400 hover:underline">
-            Browse all {totalAll.toLocaleString()} films →
+        <h1 className="mt-2 font-serif text-5xl leading-none text-zinc-50">
+          Studio Pro
+        </h1>
+        <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-300">
+          A working reference for cinematic technical craft —
+          <span className="text-zinc-100"> what was shot, on what, by whom,
+          and what proves it.</span> Every claim cited and confidence-graded.
+          Every URL canonical and back-cited. Pro-grade tools you'll bookmark.
+        </p>
+
+        {/* Ask anything — promoted from /ask. */}
+        <form action="/ask" method="get" className="mt-6 flex max-w-2xl gap-2">
+          <input
+            name="q"
+            type="search"
+            placeholder="Ask: e.g. 'Lubezki anamorphic at golden hour before 2015'"
+            className="flex-1 rounded border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-zinc-100 placeholder:text-zinc-500 focus:border-amber-500 focus:outline-none"
+            aria-label="Ask anything"
+          />
+          <button
+            type="submit"
+            className="rounded bg-amber-600 px-4 py-2 text-sm font-medium text-zinc-950 hover:bg-amber-500"
+          >
+            Ask →
+          </button>
+        </form>
+        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-zinc-500">
+          <span>Try:</span>
+          <Link href="/ask?q=Roger+Deakins+photochemical+finishing" className="hover:text-amber-400">
+            Deakins photochemical workflow
           </Link>
-          <Link href="/gear" className="text-sm text-amber-400 hover:underline">Browse gear →</Link>
-          <Link href="/crew" className="text-sm text-amber-400 hover:underline">Browse crew →</Link>
-          <Link href="/vfx" className="text-sm text-amber-400 hover:underline">Browse VFX →</Link>
+          <Link href="/ask?q=ALEXA+65+anamorphic+features" className="hover:text-amber-400">
+            ALEXA 65 anamorphic
+          </Link>
+          <Link href="/ask?q=magic+hour+exterior+lighting+2023" className="hover:text-amber-400">
+            magic-hour 2023
+          </Link>
+        </div>
+      </div>
+
+      {/* "Why this is different" — the moat made legible. */}
+      <div className="mb-12 grid gap-3 sm:grid-cols-3">
+        <Link
+          href="/about#confidence"
+          className="group rounded border border-zinc-800 bg-zinc-900/40 p-4 hover:border-amber-700/60 transition-colors"
+        >
+          <p className="text-[10px] uppercase tracking-[0.2em] text-amber-500/80">
+            Cited &amp; graded
+          </p>
+          <h3 className="mt-1 font-serif text-base text-zinc-100 group-hover:text-amber-400">
+            Every claim has provenance
+          </h3>
+          <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
+            Primary, secondary, manufacturer, speculative — confidence rated
+            per source. No mystery facts.
+          </p>
+        </Link>
+        <Link
+          href="/references"
+          className="group rounded border border-zinc-800 bg-zinc-900/40 p-4 hover:border-amber-700/60 transition-colors"
+        >
+          <p className="text-[10px] uppercase tracking-[0.2em] text-amber-500/80">
+            Reference graph
+          </p>
+          <h3 className="mt-1 font-serif text-base text-zinc-100 group-hover:text-amber-400">
+            One URL, back-cited everywhere
+          </h3>
+          <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
+            Every source URL is canonical. Click a citation to see every film,
+            crew member, sequence, and bulletin that depends on it.
+          </p>
+        </Link>
+        <Link
+          href="/tools"
+          className="group rounded border border-zinc-800 bg-zinc-900/40 p-4 hover:border-amber-700/60 transition-colors"
+        >
+          <p className="text-[10px] uppercase tracking-[0.2em] text-amber-500/80">
+            Pro-grade tools
+          </p>
+          <h3 className="mt-1 font-serif text-base text-zinc-100 group-hover:text-amber-400">
+            CDL, ACES, frame-lines, loadout
+          </h3>
+          <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
+            Working calculators that read against the curated archive.
+            Bookmark-and-share, not vapor.
+          </p>
+        </Link>
+      </div>
+
+      {/* E-49 — daily-rotating shot of the day. Self-hides when no
+          keyframes are seeded, and (via the client component) also
+          self-hides if the image source 404s. */}
+      {shotOfTheDay && (
+        <ShotOfTheDayCard shot={shotOfTheDay} todayKey={todayKey} />
+      )}
+
+      {/* Phase 29 — editorial-depth tile grid. Surfaces every
+          curated technical-reference neighbourhood with its headline
+          stat so a first-time visitor can tell at a glance what the
+          archive is deep on. */}
+      <div className="mb-12">
+        <div className="mb-4 flex items-baseline justify-between">
+          <div>
+            <h2 className="font-serif text-xl text-zinc-50">Technical reference depth</h2>
+            <p className="mt-1 text-xs text-zinc-500">
+              Where Studio Pro goes beyond TMDb metadata — hand-curated editorial
+              across the working departments.
+            </p>
+          </div>
+        </div>
+        <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+          <Link
+            href="/stunts"
+            className="group flex flex-col gap-2 rounded border border-red-900/40 bg-red-950/10 p-4 hover:border-red-700/60 transition-colors"
+          >
+            <p className="text-[10px] uppercase tracking-[0.2em] text-red-400/80">Stunts</p>
+            <h3 className="font-serif text-base text-zinc-100 group-hover:text-amber-400">
+              The most under-documented department, catalogued
+            </h3>
+            <p className="text-xs leading-relaxed text-zinc-400">
+              {depthStats.stunt_companies} companies · {depthStats.stunt_sequences} sequences
+              · {depthStats.stunt_rigging} rigging entries · {depthStats.safety_bulletins} indexed
+              SAG-AFTRA bulletins · {depthStats.stunt_doubling} doubling credits.
+            </p>
+          </Link>
+
+          <Link
+            href="/vfx"
+            className="group flex flex-col gap-2 rounded border border-purple-900/40 bg-purple-950/10 p-4 hover:border-purple-700/60 transition-colors"
+          >
+            <p className="text-[10px] uppercase tracking-[0.2em] text-purple-400/80">VFX</p>
+            <h3 className="font-serif text-base text-zinc-100 group-hover:text-amber-400">
+              Studios + breakdowns + colour-science chains
+            </h3>
+            <p className="text-xs leading-relaxed text-zinc-400">
+              {depthStats.vfx_houses} VFX houses with editorial tagline + summary +
+              cited references; {depthStats.color_pipelines} per-production colour pipelines from
+              camera-log to deliverable.
+            </p>
+          </Link>
+
+          <Link
+            href="/gear"
+            className="group flex flex-col gap-2 rounded border border-amber-900/40 bg-amber-950/10 p-4 hover:border-amber-700/60 transition-colors"
+          >
+            <p className="text-[10px] uppercase tracking-[0.2em] text-amber-400/80">Gear</p>
+            <h3 className="font-serif text-base text-zinc-100 group-hover:text-amber-400">
+              Camera + lens + lighting + grip
+            </h3>
+            <p className="text-xs leading-relaxed text-zinc-400">
+              {depthStats.lighting_setups} per-scene lighting setups with cinematographer
+              motivation; {depthStats.post_links} post-production assignments tying films
+              to their DI labs and sound houses.
+            </p>
+          </Link>
+
+          <Link
+            href="/films"
+            className="group flex flex-col gap-2 rounded border border-blue-900/40 bg-blue-950/10 p-4 hover:border-blue-700/60 transition-colors"
+          >
+            <p className="text-[10px] uppercase tracking-[0.2em] text-blue-400/80">Productions</p>
+            <h3 className="font-serif text-base text-zinc-100 group-hover:text-amber-400">
+              Locations, scenes, and a curated tier
+            </h3>
+            <p className="text-xs leading-relaxed text-zinc-400">
+              {depthStats.locations} geocoded shooting locations with sun-position
+              metadata · {totalCurated} hand-curated films with full crew + scene-level
+              equipment usage.
+            </p>
+          </Link>
+
+          <Link
+            href="/references"
+            className="group flex flex-col gap-2 rounded border border-zinc-800 bg-zinc-900/40 p-4 hover:border-zinc-700 transition-colors"
+          >
+            <p className="text-[10px] uppercase tracking-[0.2em] text-zinc-500">References</p>
+            <h3 className="font-serif text-base text-zinc-100 group-hover:text-amber-400">
+              Cross-cited sources across the archive
+            </h3>
+            <p className="text-xs leading-relaxed text-zinc-400">
+              {depthStats.cited_references} URLs cited on more than one entity — Variety,
+              fxguide, SAG-AFTRA, Wikipedia. Click any source to see every film,
+              person, sequence, or bulletin that depends on it.
+            </p>
+          </Link>
+
+          <Link
+            href="/stunts/people"
+            className="group flex flex-col gap-2 rounded border border-emerald-900/40 bg-emerald-950/10 p-4 hover:border-emerald-700/60 transition-colors"
+          >
+            <p className="text-[10px] uppercase tracking-[0.2em] text-emerald-400/80">People</p>
+            <h3 className="font-serif text-base text-zinc-100 group-hover:text-amber-400">
+              Stunt performers + coordinators
+            </h3>
+            <p className="text-xs leading-relaxed text-zinc-400">
+              {depthStats.stunt_people} performers with documented disciplines, doubling
+              history, training credentials, and primary company affiliation —
+              the working roster of modern action coordination.
+            </p>
+          </Link>
         </div>
       </div>
 

@@ -6,6 +6,8 @@ import {
   getProductionVideos,
   getProductionPostHouses,
 } from '@bts/db';
+import type { ProductionApiResponse } from '@/lib/api-contracts';
+import { siteUrl } from '@/lib/site';
 
 /**
  * T9-4 — public read-only API. Returns the full production payload as
@@ -36,23 +38,25 @@ export async function GET(_req: NextRequest, { params }: { params: { slug: strin
     getProductionPostHouses(db, data.production.id),
   ]);
 
-  return NextResponse.json(
-    {
-      production: data.production,
-      formats: data.formats,
-      studios: data.studios,
-      crew: data.crew,
-      scenes: data.scenes,
-      sources: data.productionSources,
-      vfx,
-      videos,
-      post_houses: postHouses,
-      _meta: {
-        license: 'CC-BY 4.0',
-        attribution: 'Data courtesy of Studio Pro (https://studiopro.example.com)',
-        api_version: 'v1',
-      },
+  const payload = {
+    production: data.production,
+    formats: data.formats,
+    studios: data.studios,
+    crew: data.crew,
+    scenes: data.scenes,
+    sources: data.productionSources,
+    vfx,
+    videos,
+    post_houses: postHouses,
+    _meta: {
+      license: 'CC-BY 4.0',
+      attribution: `Data courtesy of Studio Pro (${siteUrl()})`,
+      api_version: 'v1',
     },
+  } satisfies ProductionApiResponse;
+
+  return NextResponse.json(
+    payload,
     {
       headers: {
         'Cache-Control': 's-maxage=300, stale-while-revalidate=3600',

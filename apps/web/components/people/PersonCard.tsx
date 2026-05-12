@@ -1,6 +1,5 @@
 import Link from 'next/link';
-import Image from 'next/image';
-import { profileUrl } from '@/lib/tmdb-image';
+import { PersonAvatar } from './PersonAvatar';
 
 interface PersonCardProps {
   slug: string;
@@ -21,35 +20,18 @@ export function PersonCard({
   profilePath,
   creditCount,
 }: PersonCardProps) {
-  const photo = profileUrl(profilePath, 'w185');
-  const initials = displayName
-    .split(/\s+/)
-    .map((w) => w[0])
-    .filter(Boolean)
-    .slice(0, 2)
-    .join('')
-    .toUpperCase();
-
   return (
     <Link
       href={`/crew/${slug}`}
       className="group flex gap-3 rounded border border-zinc-800 bg-zinc-900 p-3 hover:border-zinc-600 transition-colors"
     >
-      <div className="relative h-14 w-14 shrink-0 overflow-hidden rounded-full bg-zinc-800">
-        {photo ? (
-          <Image
-            src={photo}
-            alt=""
-            fill
-            sizes="56px"
-            className="object-cover transition-transform group-hover:scale-105"
-          />
-        ) : (
-          <div className="flex h-full items-center justify-center text-xs font-medium text-zinc-500">
-            {initials || '?'}
-          </div>
-        )}
-      </div>
+      <PersonAvatar
+        slug={slug}
+        displayName={displayName}
+        profilePath={profilePath}
+        size="md"
+        className="transition-transform group-hover:scale-105"
+      />
       <div className="min-w-0 flex-1">
         <div className="truncate font-medium text-zinc-100">{displayName}</div>
         <div className="mt-0.5 flex flex-wrap items-center gap-1.5 text-xs text-zinc-500">

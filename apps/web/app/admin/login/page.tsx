@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import { login } from './actions';
+import { safeAdminNextPath } from '@/lib/admin';
 
 export const metadata: Metadata = {
   title: 'Admin Login',
@@ -17,7 +18,7 @@ const ERROR_MESSAGES: Record<string, string> = {
 };
 
 export default function AdminLoginPage({ searchParams }: Props) {
-  const next = searchParams.next ?? '/admin/videos';
+  const next = safeAdminNextPath(searchParams.next);
   const errorMessage = searchParams.error ? ERROR_MESSAGES[searchParams.error] : null;
 
   return (

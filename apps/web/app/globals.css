@@ -20,3 +20,61 @@
     display: none;
   }
 }
+
+/* T8-2: respect prefers-reduced-motion. Disables CSS transitions,
+   animations, and smooth scrolling for users with vestibular disorders. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* T8-4: respect prefers-contrast: more. Boosts text and border contrast
+   for users who've opted into a high-contrast OS setting. We darken the
+   background a stop further, brighten body text and zinc-500 muted text
+   to white, and reinforce all zinc-800 borders so the dark UI's "card on
+   card" hierarchy survives the higher contrast threshold.
+
+   Tailwind's zinc-50 / zinc-100 stay as-is (already pure-ish text). The
+   amber accent stays — it's already AAA against zinc-950. */
+@media (prefers-contrast: more) {
+  html {
+    background-color: #000;
+  }
+  body {
+    color: #fff;
+  }
+  .text-zinc-400,
+  .text-zinc-500,
+  .text-zinc-600 {
+    color: #e5e5e5 !important;
+  }
+  .border-zinc-800,
+  .border-zinc-900 {
+    border-color: #fff !important;
+  }
+  .bg-zinc-900,
+  .bg-zinc-900\/40,
+  .bg-zinc-900\/60 {
+    background-color: #000 !important;
+  }
+  /* Focus ring needs to stand out against the harder background. */
+  :focus-visible {
+    @apply outline-4 outline-amber-300;
+  }
+}
+
+/* T8-2: skip-to-content link is visually hidden until focused. Keyboard
+   users hitting Tab on page load see it as the first focusable target. */
+.skip-link {
+  @apply absolute left-2 top-2 z-50 rounded bg-amber-600 px-3 py-2 text-sm font-medium text-zinc-950;
+  @apply -translate-y-20 transition-transform;
+}
+.skip-link:focus {
+  @apply translate-y-0;
+}

@@ -1,11 +1,13 @@
 import Link from 'next/link';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Badge } from '@/components/ui/Badge';
+import { CitationMarker } from '@/components/ui/CitationMarker';
 
 interface SceneRow {
   scene_id: number; scene_slug: string; scene_title: string;
   scene_synopsis: string | null; time_of_day: string | null;
   interior_exterior: string | null; location: string | null;
+  equipment_usage_id: number;
   series_slug: string; series_name: string; series_category: string;
   manufacturer_slug: string;
   item_slug: string | null; item_name: string | null;
@@ -14,9 +16,13 @@ interface SceneRow {
 
 interface SceneListProps {
   rows: SceneRow[];
+  productionSlug: string;
+  /** T6-1 — equipment_usage_id → ordered source numbers for inline citations. */
+  citationsByUsage?: Record<number, number[]>;
 }
 
 interface GearRow {
+  equipment_usage_id: number;
   series_slug: string; series_name: string; series_category: string;
   manufacturer_slug: string;
   item_slug: string | null; item_name: string | null;
@@ -42,6 +48,7 @@ function groupScenes(rows: SceneRow[]): Scene[] {
       });
     }
     map.get(row.scene_id)!.gear.push({
+      equipment_usage_id: row.equipment_usage_id,
       series_slug: row.series_slug, series_name: row.series_name,
       series_category: row.series_category, manufacturer_slug: row.manufacturer_slug,
       item_slug: row.item_slug, item_name: row.item_name,
@@ -51,7 +58,7 @@ function groupScenes(rows: SceneRow[]): Scene[] {
   return Array.from(map.values());
 }
 
-export function SceneList({ rows }: SceneListProps) {
+export function SceneList({ rows, productionSlug, citationsByUsage }: SceneListProps) {
   const scenes = groupScenes(rows);
 
   if (scenes.length === 0) {
@@ -70,7 +77,12 @@ export function SceneList({ rows }: SceneListProps) {
           >
             <div className="border-b border-zinc-800 px-4 py-3">
               <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-medium text-zinc-100">{scene.scene_title}</h3>
+                <Link
+                  href={`/films/${productionSlug}/scenes/${scene.scene_slug}`}
+                  className="font-medium text-zinc-100 hover:text-amber-400"
+                >
+                  {scene.scene_title}
+                </Link>
                 {scene.interior_exterior && (
                   <Badge label={scene.interior_exterior.toUpperCase()} variant="category" />
                 )}
@@ -109,6 +121,7 @@ export function SceneList({ rows }: SceneListProps) {
                   {g.usage_role && (
                     <span className="text-xs text-zinc-600">{g.usage_role}</span>
                   )}
+                  <CitationMarker numbers={citationsByUsage?.[g.equipment_usage_id] ?? []} />
                 </div>
               ))}
             </div>

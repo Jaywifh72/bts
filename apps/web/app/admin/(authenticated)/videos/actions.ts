@@ -6,7 +6,10 @@ import {
   rejectVideo as rejectVideoQuery,
   updateVideoStatus,
   updateVideoCategory,
+  bulkUpdateVideoStatus,
+  bulkRejectVideos,
   type VideoCategory,
+  type VideoStatus,
 } from '@bts/db';
 
 /**
@@ -17,6 +20,11 @@ import {
 function revalidateAfterAction(productionSlug?: string) {
   revalidatePath('/admin/videos');
   if (productionSlug) revalidatePath(`/films/${productionSlug}`);
+}
+
+function revalidateForSlugs(slugs: string[]) {
+  revalidatePath('/admin/videos');
+  for (const slug of slugs) revalidatePath(`/films/${slug}`);
 }
 
 export async function approveAction(id: number, productionSlug: string) {
@@ -41,4 +49,19 @@ export async function recategorizeAction(
 ) {
   await updateVideoCategory(db, id, category);
   revalidateAfterAction(productionSlug);
+}
+
+export async function bulkApproveAction(ids: number[]) {
+  const slugs = await bulkUpdateVideoStatus(db, ids, 'published');
+  revalidateForSlugs(slugs);
+}
+
+export async function bulkRejectAction(ids: number[]) {
+  const slugs = await bulkRejectVideos(db, ids);
+  revalidateForSlugs(slugs);
+}
+
+export async function bulkResetAction(ids: number[]) {
+  const slugs = await bulkUpdateVideoStatus(db, ids, 'pending' satisfies VideoStatus);
+  revalidateForSlugs(slugs);
 }

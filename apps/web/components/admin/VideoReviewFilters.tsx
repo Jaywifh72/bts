@@ -32,6 +32,8 @@ export function VideoReviewFilters({ status, productionSlug, category, productio
   return (
     <form
       method="get"
+      role="search"
+      aria-label="Filter videos for review"
       className="mb-6 flex flex-wrap items-end gap-4 rounded border border-zinc-800 bg-zinc-900/40 p-3"
     >
       <label className="flex flex-col gap-1 text-xs text-zinc-500">

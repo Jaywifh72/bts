@@ -50,7 +50,13 @@ function decodeEntities(s: string): string {
     .replace(/&nbsp;/g, ' ');
 }
 
-export function VideoReviewRow({ video }: { video: VideoForReview }) {
+type Props = {
+  video: VideoForReview;
+  checked?: boolean;
+  onToggle?: (id: number, checked: boolean) => void;
+};
+
+export function VideoReviewRow({ video, checked, onToggle }: Props) {
   const [pending, startTransition] = useTransition();
   const score = parseFloat(video.confidence_score);
   const slug = video.production_slug;
@@ -80,10 +86,26 @@ export function VideoReviewRow({ video }: { video: VideoForReview }) {
 
   return (
     <div
-      className={`grid grid-cols-[112px_1fr_auto] gap-4 rounded border border-zinc-800 bg-zinc-900/40 p-3 transition ${
+      className={`grid grid-cols-[24px_112px_1fr_auto] items-start gap-4 rounded border border-zinc-800 bg-zinc-900/40 p-3 transition ${
         pending ? 'opacity-50' : 'hover:border-zinc-700'
-      }`}
+      } ${checked ? 'border-amber-600/60 bg-amber-950/20' : ''}`}
     >
+      {/* Selection checkbox. Hidden if no parent provides onToggle. */}
+      {onToggle ? (
+        <label className="mt-1 flex cursor-pointer items-center justify-center">
+          <input
+            type="checkbox"
+            checked={!!checked}
+            onChange={(e) => onToggle(video.id, e.currentTarget.checked)}
+            disabled={pending}
+            aria-label={`Select ${video.title}`}
+            className="h-4 w-4 cursor-pointer accent-amber-500"
+          />
+        </label>
+      ) : (
+        <div />
+      )}
+
       {/* Thumbnail. YouTube CDN sometimes blocks hot-linked thumbs without a
           referrer — `referrerpolicy="no-referrer"` keeps them loading. */}
       <a

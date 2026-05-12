@@ -55,14 +55,38 @@ export default async function SearchPage({ searchParams }: Props) {
               </li>
             ))}
           </ul>
+          <p className="mt-5 border-t border-zinc-800 pt-4 text-xs text-zinc-500">
+            Or ask a question in natural language —{' '}
+            <a
+              href="/ask?q=Lubezki+anamorphic+at+golden+hour+before+2015"
+              className="text-amber-400 hover:underline"
+            >
+              try /ask
+            </a>{' '}with prompts like
+            &ldquo;Lubezki anamorphic at golden hour before 2015&rdquo; or
+            &ldquo;magic-hour exterior lighting 2023.&rdquo;
+          </p>
         </div>
       )}
 
       {noMatches && (
         <div className="rounded border border-zinc-800 bg-zinc-900/40 p-6 text-sm text-zinc-400">
-          No films, crew, gear, scenes, videos, or VFX houses matched <span className="text-zinc-200">"{q}"</span>.
-          Try a shorter or different spelling — fuzzy match catches small typos
-          but not entirely different terms.
+          <p>
+            No films, crew, gear, scenes, videos, or VFX houses matched{' '}
+            <span className="text-zinc-200">&ldquo;{q}&rdquo;</span>. Lexical
+            search catches small typos but not paraphrases or descriptions.
+          </p>
+          <p className="mt-3">
+            For descriptive queries (&ldquo;films with single-take long
+            sequences,&rdquo; &ldquo;magic-hour exteriors with practical lighting only&rdquo;),
+            try{' '}
+            <a
+              href={`/ask?q=${encodeURIComponent(q)}`}
+              className="text-amber-400 hover:underline"
+            >
+              /ask with this same query →
+            </a>
+          </p>
         </div>
       )}
 

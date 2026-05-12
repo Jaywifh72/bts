@@ -21,33 +21,33 @@ export default async function MagicHour2023Page() {
         </p>
       </div>
       <KillerQueryTable
-        rows={rows as unknown as Record<string, unknown>[]}
+        rows={rows}
         columns={[
           {
             key: 'title',
             header: 'Production',
             render: (row) => (
-              <Link href={`/films/${row['slug'] as string}`} className="text-zinc-200 hover:text-amber-400">
-                {row['title'] as string}
+              <Link href={`/films/${row.slug}`} className="text-zinc-200 hover:text-amber-400">
+                {row.title}
               </Link>
             ),
           },
           {
             key: 'scene_title',
             header: 'Scene',
-            render: (row) => <span className="text-zinc-400">{row['scene_title'] as string}</span>,
+            render: (row) => <span className="text-zinc-400">{row.scene_title}</span>,
           },
           {
             key: 'lighting_series',
             header: 'Lighting Series',
-            render: (row) => <span className="text-zinc-200">{row['lighting_series'] as string}</span>,
+            render: (row) => <span className="text-zinc-200">{row.lighting_series}</span>,
           },
           {
             key: 'lighting_item',
             header: 'Item',
             render: (row) =>
-              row['lighting_item']
-                ? <span className="text-zinc-400">{row['lighting_item'] as string}</span>
+              row.lighting_item
+                ? <span className="text-zinc-400">{row.lighting_item}</span>
                 : <span className="text-zinc-600">—</span>,
           },
         ]}
