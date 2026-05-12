@@ -1,6 +1,8 @@
 services:
   postgres:
-    image: postgres:16
+    # E-26 — pgvector image is just postgres:16 with the `vector`
+    # extension bundled. Bind-mounted data volume survives the swap.
+    image: pgvector/pgvector:pg16
     container_name: bts-postgres
     environment:
       POSTGRES_USER: bts

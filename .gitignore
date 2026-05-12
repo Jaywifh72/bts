@@ -1,5 +1,8 @@
 # deps
 node_modules/
+.corepack/
+.pnpm-store/
+.cache/
 
 # build
 dist/

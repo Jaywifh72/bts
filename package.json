@@ -11,6 +11,8 @@
     "web:dev": "pnpm --filter @bts/web dev",
     "web:build": "pnpm --filter @bts/web build",
     "web:typecheck": "pnpm --filter @bts/web typecheck",
-    "typecheck": "pnpm --filter @bts/db typecheck && pnpm --filter @bts/web typecheck"
+    "web:lint": "pnpm --filter @bts/web lint",
+    "typecheck": "pnpm --filter @bts/db typecheck && pnpm --filter @bts/web typecheck",
+    "lint": "pnpm --filter @bts/web lint"
   }
 }
