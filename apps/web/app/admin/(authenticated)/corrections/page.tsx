@@ -11,7 +11,7 @@ export const metadata: Metadata = {
 const STATUSES: (CorrectionStatus | 'all')[] = ['open', 'triaged', 'resolved', 'dismissed', 'all'];
 
 type Props = {
-  searchParams: { status?: string };
+  searchParams: Promise<{ status?: string }>;
 };
 
 function parseStatus(v: string | undefined): CorrectionStatus | 'all' {
@@ -19,7 +19,8 @@ function parseStatus(v: string | undefined): CorrectionStatus | 'all' {
   return 'open';
 }
 
-export default async function AdminCorrectionsPage({ searchParams }: Props) {
+export default async function AdminCorrectionsPage(props: Props) {
+  const searchParams = await props.searchParams;
   const status = parseStatus(searchParams.status);
   const rows = await listCorrections(db, { status });
 

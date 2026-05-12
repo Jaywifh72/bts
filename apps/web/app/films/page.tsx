@@ -21,14 +21,14 @@ export const revalidate = 3600;
 const PAGE_SIZE = 60;
 
 type Props = {
-  searchParams: {
+  searchParams: Promise<{
     decade?: string;
     genre?: string;
     tier?: string;
     sort?: string;
     page?: string;
     studio?: string;
-  };
+  }>;
 };
 
 function parseSort(v: string | undefined) {
@@ -41,7 +41,8 @@ function parseTier(v: string | undefined): 'curated' | 'imported' | 'all' {
   return v === 'curated' || v === 'imported' || v === 'all' ? v : 'all';
 }
 
-export default async function FilmsPage({ searchParams }: Props) {
+export default async function FilmsPage(props: Props) {
+  const searchParams = await props.searchParams;
   const decade = searchParams.decade ? parseInt(searchParams.decade, 10) : undefined;
   const genre = searchParams.genre || undefined;
   const studioSlug = searchParams.studio || undefined;

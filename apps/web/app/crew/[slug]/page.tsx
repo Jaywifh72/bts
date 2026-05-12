@@ -27,7 +27,7 @@ import { profileUrl, posterUrl } from '@/lib/tmdb-image';
 import { pickPrimaryRole } from '@/lib/primary-role';
 import { BookmarkButton } from '@/components/ui/BookmarkButton';
 
-interface Props { params: { slug: string } }
+interface Props { params: Promise<{ slug: string }> }
 
 // QA — crew detail pages change slowly; daily revalidation is plenty.
 export const revalidate = 86400;
@@ -38,7 +38,8 @@ export async function generateStaticParams() {
   return [];
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const person = await getPersonBySlug(db, params.slug);
   if (!person) return {};
   // E-39 — oEmbed autodiscovery (matches the films/[slug] pattern).
@@ -65,7 +66,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function CrewDetailPage({ params }: Props) {
+export default async function CrewDetailPage(props: Props) {
+  const params = await props.params;
   const [person, filmography, equipment, collaborators, knownFor, awards] = await Promise.all([
     getPersonBySlug(db, params.slug),
     getPersonFilmography(db, params.slug),
@@ -602,13 +604,13 @@ export default async function CrewDetailPage({ params }: Props) {
                         <div className="relative aspect-video w-full bg-zinc-950">
                           {v.thumbnail_url ? (
                             // eslint-disable-next-line @next/next/no-img-element
-                            <img
+                            (<img
                               src={v.thumbnail_url}
                               alt={v.title}
                               referrerPolicy="no-referrer"
                               loading="lazy"
                               className="h-full w-full object-cover"
-                            />
+                            />)
                           ) : null}
                         </div>
                         <div className="p-2">

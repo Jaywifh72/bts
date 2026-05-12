@@ -141,11 +141,12 @@ function JobCard({
   );
 }
 
-export default async function AdminIngestPage({
-  searchParams,
-}: {
-  searchParams: { error?: string };
-}) {
+export default async function AdminIngestPage(
+  props: {
+    searchParams: Promise<{ error?: string }>;
+  }
+) {
+  const searchParams = await props.searchParams;
   const [recentRuns, lastPerJob] = await Promise.all([
     listJobRuns(db, { limit: 15 }),
     getLastRunPerJob(db),

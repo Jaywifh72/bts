@@ -5,14 +5,15 @@ import { db, listManufacturers, getManufacturerBySlug } from '@bts/db';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 
-interface Props { params: { manufacturer: string } }
+interface Props { params: Promise<{ manufacturer: string }> }
 
 export async function generateStaticParams() {
   const rows = await listManufacturers(db);
   return rows.map((r) => ({ manufacturer: r.slug }));
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const data = await getManufacturerBySlug(db, params.manufacturer);
   if (!data) return {};
   const m = data.manufacturer;
@@ -43,7 +44,8 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-export default async function ManufacturerPage({ params }: Props) {
+export default async function ManufacturerPage(props: Props) {
+  const params = await props.params;
   const data = await getManufacturerBySlug(db, params.manufacturer);
   if (!data) notFound();
   const { manufacturer, series } = data;
@@ -104,7 +106,6 @@ export default async function ManufacturerPage({ params }: Props) {
           )}
         </div>
       </header>
-
       {paragraphs.length > 0 && (
         <section className="mb-10">
           <SectionHeader label="About" heading={manufacturer.name} />
@@ -115,13 +116,11 @@ export default async function ManufacturerPage({ params }: Props) {
           </div>
         </section>
       )}
-
       {paragraphs.length === 0 && manufacturer.description && (
         <section className="mb-10">
           <p className="max-w-3xl text-sm leading-relaxed text-zinc-300">{manufacturer.description}</p>
         </section>
       )}
-
       <section className="mb-10">
         <SectionHeader
           label="Catalog"
@@ -172,7 +171,6 @@ export default async function ManufacturerPage({ params }: Props) {
           })}
         </div>
       </section>
-
       {manufacturer.references && manufacturer.references.length > 0 && (
         <section className="mb-10">
           <SectionHeader label="References" heading="Further reading" />
@@ -196,7 +194,6 @@ export default async function ManufacturerPage({ params }: Props) {
           </ul>
         </section>
       )}
-
       <footer className="border-t border-zinc-800 pt-6">
         <p className="mb-3 text-xs uppercase tracking-wide text-zinc-500">Resources</p>
         <div className="flex flex-wrap gap-x-6 gap-y-2 text-sm">

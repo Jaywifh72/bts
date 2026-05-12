@@ -8,10 +8,11 @@ export const metadata: Metadata = {
 };
 
 type Props = {
-  searchParams: { productionSlug?: string };
+  searchParams: Promise<{ productionSlug?: string }>;
 };
 
-export default async function AdminKeyFramesPage({ searchParams }: Props) {
+export default async function AdminKeyFramesPage(props: Props) {
+  const searchParams = await props.searchParams;
   const slug = searchParams.productionSlug || undefined;
   const [frames, productions] = await Promise.all([
     listAllKeyFrames(db, slug),

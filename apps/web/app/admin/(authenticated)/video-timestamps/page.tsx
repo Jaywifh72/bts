@@ -31,12 +31,12 @@ const ANNOTATION_TYPES: (VideoAnnotationType | 'all')[] = [
 ];
 
 type Props = {
-  searchParams: {
+  searchParams: Promise<{
     status?: string;
     annotationType?: string;
     productionSlug?: string;
     page?: string;
-  };
+  }>;
 };
 
 function parseStatus(value: string | undefined): VideoAnnotationReviewStatus | 'all' {
@@ -63,7 +63,8 @@ function buildHref(base: URLSearchParams, next: Record<string, string | number |
   return qs ? `/admin/video-timestamps?${qs}` : '/admin/video-timestamps';
 }
 
-export default async function AdminVideoTimestampsPage({ searchParams }: Props) {
+export default async function AdminVideoTimestampsPage(props: Props) {
+  const searchParams = await props.searchParams;
   const status = parseStatus(searchParams.status);
   const annotationType = parseAnnotationType(searchParams.annotationType);
   const productionSlug = searchParams.productionSlug || null;

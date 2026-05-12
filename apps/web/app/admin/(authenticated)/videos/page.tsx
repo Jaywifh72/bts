@@ -20,12 +20,12 @@ export const metadata: Metadata = {
 const PAGE_SIZE = 50;
 
 type Props = {
-  searchParams: {
+  searchParams: Promise<{
     status?: string;
     productionSlug?: string;
     category?: string;
     page?: string;
-  };
+  }>;
 };
 
 function parseStatus(v: string | undefined): VideoStatus | 'all' {
@@ -48,7 +48,8 @@ function buildPageHref(base: URLSearchParams, page: number): string {
   return `/admin/videos?${next.toString()}`;
 }
 
-export default async function AdminVideosPage({ searchParams }: Props) {
+export default async function AdminVideosPage(props: Props) {
+  const searchParams = await props.searchParams;
   const status = parseStatus(searchParams.status);
   const productionSlug = searchParams.productionSlug || null;
   const category = parseCategory(searchParams.category);

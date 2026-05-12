@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 type Props = {
-  searchParams: { next?: string; error?: string };
+  searchParams: Promise<{ next?: string; error?: string }>;
 };
 
 const ERROR_MESSAGES: Record<string, string> = {
@@ -17,7 +17,8 @@ const ERROR_MESSAGES: Record<string, string> = {
     'ADMIN_TOKEN is not set on the server. Set it in apps/web/.env.local and restart.',
 };
 
-export default function AdminLoginPage({ searchParams }: Props) {
+export default async function AdminLoginPage(props: Props) {
+  const searchParams = await props.searchParams;
   const next = safeAdminNextPath(searchParams.next);
   const errorMessage = searchParams.error ? ERROR_MESSAGES[searchParams.error] : null;
 

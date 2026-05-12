@@ -6,14 +6,15 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { JsonLd, buildOrganizationJsonLd } from '@/lib/jsonLd';
 
-interface Props { params: { slug: string } }
+interface Props { params: Promise<{ slug: string }> }
 
 export async function generateStaticParams() {
   const rows = await listStuntSchools(db);
   return rows.map((r) => ({ slug: r.slug }));
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const s = await getStuntSchoolBySlug(db, params.slug);
   if (!s) return {};
   return {
@@ -31,7 +32,8 @@ function Stat({ label, value }: { label: string; value: string | number }) {
   );
 }
 
-export default async function StuntSchoolPage({ params }: Props) {
+export default async function StuntSchoolPage(props: Props) {
+  const params = await props.params;
   const s = await getStuntSchoolBySlug(db, params.slug);
   if (!s) notFound();
 

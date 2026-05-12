@@ -11,7 +11,7 @@ import { CrewWhoUsedTable } from '@/components/equipment/CrewWhoUsedTable';
 import { SensorCoverageList } from '@/components/equipment/SensorCoverageList';
 import { JsonLd, buildProductJsonLd } from '@/lib/jsonLd';
 
-interface Props { params: { manufacturer: string; series: string; item: string } }
+interface Props { params: Promise<{ manufacturer: string; series: string; item: string }> }
 
 export async function generateStaticParams() {
   // Single-query enumeration of every (manufacturer, series, item)
@@ -24,7 +24,8 @@ export async function generateStaticParams() {
   }));
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const data = await getItemBySlug(db, params.item);
   if (!data) return {};
   return {
@@ -72,7 +73,8 @@ function heroSpecs(category: string, specs: Record<string, unknown>): Array<{ la
   return out;
 }
 
-export default async function ItemPage({ params }: Props) {
+export default async function ItemPage(props: Props) {
+  const params = await props.params;
   const [data, crew] = await Promise.all([
     getItemBySlug(db, params.item),
     getCrewForItem(db, params.item),

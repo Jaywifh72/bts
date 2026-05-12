@@ -15,7 +15,8 @@ import { PrintButtonClient } from '@/components/productions/PrintButtonClient';
  * borrowing the same `print:` Tailwind utilities.
  */
 
-export async function generateMetadata({ params }: { params: { slug: string } }): Promise<Metadata> {
+export async function generateMetadata(props: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const params = await props.params;
   const data = await getProductionWithFullDetail(db, params.slug);
   if (!data) return {};
   return {
@@ -24,7 +25,8 @@ export async function generateMetadata({ params }: { params: { slug: string } })
   };
 }
 
-export default async function LoadoutPage({ params }: { params: { slug: string } }) {
+export default async function LoadoutPage(props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const data = await getProductionWithFullDetail(db, params.slug);
   if (!data) notFound();
   const { production, formats, crew, scenes, productionSources } = data;
@@ -81,7 +83,6 @@ export default async function LoadoutPage({ params }: { params: { slug: string }
         </Link>
         <PrintButton />
       </div>
-
       <div className="rounded border border-zinc-800 bg-zinc-950 p-8 print:border-0 print:bg-white print:p-0 print:text-black">
         {/* Header */}
         <header className="mb-6 border-b border-zinc-800 pb-4 print:border-zinc-300">

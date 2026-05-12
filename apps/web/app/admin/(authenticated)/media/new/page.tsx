@@ -8,13 +8,14 @@ export const metadata: Metadata = {
 };
 
 interface Props {
-  searchParams: { error?: string };
+  searchParams: Promise<{ error?: string }>;
 }
 
 const inputClass =
   'mt-1 w-full rounded border border-zinc-700 bg-zinc-950/60 px-3 py-1.5 text-sm text-zinc-100 focus:border-amber-700 focus:outline-none';
 
-export default function NewMediaAssetPage({ searchParams }: Props) {
+export default async function NewMediaAssetPage(props: Props) {
+  const searchParams = await props.searchParams;
   const error = searchParams.error;
 
   return (

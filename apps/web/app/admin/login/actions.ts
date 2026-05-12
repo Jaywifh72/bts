@@ -40,7 +40,7 @@ export async function login(formData: FormData) {
     redirect(`/admin/login?error=invalid&next=${encodeURIComponent(next)}`);
   }
 
-  cookies().set(COOKIE_NAME, token, {
+  (await cookies()).set(COOKIE_NAME, token, {
     httpOnly: true,
     sameSite: 'lax',
     secure: process.env.NODE_ENV === 'production',
@@ -52,6 +52,6 @@ export async function login(formData: FormData) {
 }
 
 export async function logout() {
-  cookies().delete(COOKIE_NAME);
+  (await cookies()).delete(COOKIE_NAME);
   redirect('/admin/login');
 }

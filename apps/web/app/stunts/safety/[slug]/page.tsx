@@ -11,9 +11,10 @@ import {
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { EntityReferencesList } from '@/components/EntityReferencesList';
 
-interface Props { params: { slug: string } }
+interface Props { params: Promise<{ slug: string }> }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const b = await getSafetyBulletinBySlug(db, params.slug);
   if (!b) return {};
   return {
@@ -40,7 +41,8 @@ const CATEGORY_LABEL: Record<string, string> = {
   medical: 'Medical / blood',
 };
 
-export default async function SafetyBulletinDetailPage({ params }: Props) {
+export default async function SafetyBulletinDetailPage(props: Props) {
+  const params = await props.params;
   const bulletin = await getSafetyBulletinBySlug(db, params.slug);
   if (!bulletin) notFound();
 
@@ -66,7 +68,6 @@ export default async function SafetyBulletinDetailPage({ params }: Props) {
         <span className="mx-2 text-zinc-700">/</span>
         <span className="text-zinc-300">#{bulletin.bulletin_number}</span>
       </nav>
-
       <header className="mb-10 rounded border border-red-900/40 bg-red-950/10 p-6">
         <div className="flex items-baseline gap-3">
           <span className="font-mono text-3xl text-amber-400">#{bulletin.bulletin_number}</span>
@@ -106,7 +107,6 @@ export default async function SafetyBulletinDetailPage({ params }: Props) {
           )}
         </div>
       </header>
-
       {/* Editorial summary */}
       <section className="mb-10">
         <SectionHeader label="Context" heading="Why this bulletin matters" />
@@ -116,7 +116,6 @@ export default async function SafetyBulletinDetailPage({ params }: Props) {
           ))}
         </div>
       </section>
-
       {/* Key requirements */}
       {bulletin.key_requirements.length > 0 && (
         <section className="mb-10">
@@ -147,7 +146,6 @@ export default async function SafetyBulletinDetailPage({ params }: Props) {
           </ul>
         </section>
       )}
-
       {/* Related rigging — bidirectional cross-link */}
       {relatedRigging.length > 0 && (
         <section className="mb-10">
@@ -180,10 +178,8 @@ export default async function SafetyBulletinDetailPage({ params }: Props) {
           </div>
         </section>
       )}
-
       {/* References — Phase 31 polymorphic render with cross-citation hints */}
       <EntityReferencesList references={crossCitedReferences} />
-
       <aside className="mt-12 rounded border border-zinc-800 bg-zinc-900/40 p-4 text-xs leading-relaxed text-zinc-500">
         <p className="mb-2 text-[10px] uppercase tracking-widest text-zinc-400">
           Editorial note

@@ -52,11 +52,11 @@ const CLAIM_TYPES: (ClaimType | 'all')[] = [
 ];
 
 type Props = {
-  searchParams: {
+  searchParams: Promise<{
     status?: string;
     claimType?: string;
     page?: string;
-  };
+  }>;
 };
 
 function parseStatus(value: string | undefined): ClaimStatus | 'all' {
@@ -83,7 +83,8 @@ function label(value: string): string {
   return value.replace(/_/g, ' ');
 }
 
-export default async function AdminClaimsPage({ searchParams }: Props) {
+export default async function AdminClaimsPage(props: Props) {
+  const searchParams = await props.searchParams;
   const status = parseStatus(searchParams.status);
   const claimType = parseClaimType(searchParams.claimType);
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1);

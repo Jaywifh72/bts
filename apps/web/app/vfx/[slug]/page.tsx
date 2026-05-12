@@ -11,14 +11,15 @@ import { BrandLogo } from '@/components/ui/BrandLogo';
 import { JsonLd, buildOrganizationJsonLd } from '@/lib/jsonLd';
 import { posterUrl } from '@/lib/tmdb-image';
 
-interface Props { params: { slug: string } }
+interface Props { params: Promise<{ slug: string }> }
 
 export async function generateStaticParams() {
   const rows = await listVfxHouses(db);
   return rows.map((r) => ({ slug: r.slug }));
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const data = await getVfxHouseWithFilmography(db, params.slug);
   if (!data) return {};
   const description = data.house.tagline ?? data.house.summary?.split('\n')[0]?.slice(0, 160) ?? undefined;
@@ -36,7 +37,8 @@ function formatNumber(n: number | null | undefined): string {
   return Math.round(n).toLocaleString();
 }
 
-export default async function VfxHousePage({ params }: Props) {
+export default async function VfxHousePage(props: Props) {
+  const params = await props.params;
   const data = await getVfxHouseWithFilmography(db, params.slug);
   if (!data) notFound();
   const { house, filmography, techniques, offices, highlights } = data;

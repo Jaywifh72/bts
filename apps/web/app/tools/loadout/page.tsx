@@ -22,7 +22,7 @@ const CATEGORY_LABELS: Record<string, string> = {
 };
 const CATEGORY_ORDER = ['camera_body', 'lens_set', 'filter', 'lighting_fixture', 'recorder', 'mount', 'accessory'];
 
-type Props = { searchParams: { items?: string; add?: string } };
+type Props = { searchParams: Promise<{ items?: string; add?: string }> };
 
 function parsePicks(raw: string | undefined): string[] {
   if (!raw) return [];
@@ -39,7 +39,8 @@ function rebuildUrl(picks: string[]): string {
 
 const SLUG_PATH_RE = /^[a-z0-9-]+\/[a-z0-9-]+\/[a-z0-9-]+$/;
 
-export default async function LoadoutPage({ searchParams }: Props) {
+export default async function LoadoutPage(props: Props) {
+  const searchParams = await props.searchParams;
   // Merge `?add=...` into items + redirect to the canonical URL so
   // shareable links always reflect the kit fully via `?items=...`.
   if (searchParams.add && SLUG_PATH_RE.test(searchParams.add)) {

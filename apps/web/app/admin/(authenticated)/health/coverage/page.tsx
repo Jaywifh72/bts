@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 interface Props {
-  searchParams: { table?: string };
+  searchParams: Promise<{ table?: string }>;
 }
 
 const TABLE_BLURB: Record<string, string> = {
@@ -51,7 +51,8 @@ function formatRelative(iso: string): string {
   return `${Math.round(ms / 86_400_000)}d ago`;
 }
 
-export default async function AdminCoverageGapsPage({ searchParams }: Props) {
+export default async function AdminCoverageGapsPage(props: Props) {
+  const searchParams = await props.searchParams;
   const filter = searchParams.table ?? 'all';
   const [allGaps, summary] = await Promise.all([
     listCoverageGaps(50),

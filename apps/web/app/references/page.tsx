@@ -23,7 +23,7 @@ const KIND_FILTERS: Array<{ key: 'all' | MediaAssetKind; label: string }> = [
 const PAGE_SIZE = 30;
 
 interface Props {
-  searchParams: { kind?: string; page?: string };
+  searchParams: Promise<{ kind?: string; page?: string }>;
 }
 
 function buildHref(args: { kind?: string; page?: number }): string {
@@ -42,7 +42,8 @@ const KIND_BADGE: Record<string, string> = {
   audio:    'bg-sky-950/30 text-sky-300 border-sky-900/50',
 };
 
-export default async function ReferencesIndexPage({ searchParams }: Props) {
+export default async function ReferencesIndexPage(props: Props) {
+  const searchParams = await props.searchParams;
   const kindParam = searchParams.kind;
   const kind = kindParam && KIND_FILTERS.some((f) => f.key === kindParam) && kindParam !== 'all'
     ? (kindParam as MediaAssetKind)

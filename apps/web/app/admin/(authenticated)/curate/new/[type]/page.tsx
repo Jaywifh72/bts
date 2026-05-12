@@ -6,11 +6,12 @@ import { EntityFormField } from '@/components/admin/form/EntityFormField';
 import { createEntityAction } from '../../actions';
 
 interface Props {
-  params: { type: string };
-  searchParams: { error?: string };
+  params: Promise<{ type: string }>;
+  searchParams: Promise<{ error?: string }>;
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const config = getEntityConfig(params.type);
   if (!config) return { robots: { index: false, follow: false } };
   return {
@@ -42,7 +43,9 @@ function FieldSection({
   );
 }
 
-export default function NewEntityPage({ params, searchParams }: Props) {
+export default async function NewEntityPage(props: Props) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const config = getEntityConfig(params.type);
   if (!config) notFound();
   const error = searchParams.error;

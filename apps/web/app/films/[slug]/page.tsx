@@ -31,7 +31,7 @@ import { JsonLd, buildMovieJsonLd, buildBreadcrumbJsonLd } from '@/lib/jsonLd';
 import { posterUrl } from '@/lib/tmdb-image';
 
 interface Props {
-  params: { slug: string };
+  params: Promise<{ slug: string }>;
 }
 
 // QA — film details change slowly (re-curate every few days at most);
@@ -52,7 +52,8 @@ export async function generateStaticParams() {
   return rows.map((r) => ({ slug: r.slug }));
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const data = await getProductionWithFullDetail(db, params.slug);
   if (!data) return {};
   const { production } = data;
@@ -83,7 +84,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function FilmDetailPage({ params }: Props) {
+export default async function FilmDetailPage(props: Props) {
+  const params = await props.params;
   const data = await getProductionWithFullDetail(db, params.slug);
   if (!data) notFound();
 

@@ -9,7 +9,7 @@ import { BookmarkButton } from '@/components/ui/BookmarkButton';
 import { CrewWhoUsedTable } from '@/components/equipment/CrewWhoUsedTable';
 import { posterUrl } from '@/lib/tmdb-image';
 
-interface Props { params: { manufacturer: string; series: string } }
+interface Props { params: Promise<{ manufacturer: string; series: string }> }
 
 export async function generateStaticParams() {
   // Single-query enumeration of every (manufacturer, series) pair.
@@ -19,7 +19,8 @@ export async function generateStaticParams() {
   return rows.map((r) => ({ manufacturer: r.manufacturer_slug, series: r.series_slug }));
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const data = await getSeriesBySlug(db, params.series);
   if (!data) return {};
   return {
@@ -64,7 +65,8 @@ function formatRange(min: number | null, max: number | null, suffix: string): st
   return `${min}–${max}${suffix}`;
 }
 
-export default async function SeriesPage({ params }: Props) {
+export default async function SeriesPage(props: Props) {
+  const params = await props.params;
   const [data, crew] = await Promise.all([
     getSeriesBySlug(db, params.series),
     getCrewForSeries(db, params.series),
@@ -151,7 +153,6 @@ export default async function SeriesPage({ params }: Props) {
           </div>
         )}
       </header>
-
       {/* Editorial summary */}
       {paragraphs.length > 0 && (
         <section className="mb-10">
@@ -163,13 +164,11 @@ export default async function SeriesPage({ params }: Props) {
           </div>
         </section>
       )}
-
       {paragraphs.length === 0 && series.description && (
         <section className="mb-10">
           <p className="max-w-3xl text-sm leading-relaxed text-zinc-300">{series.description}</p>
         </section>
       )}
-
       {/* Signature look callout */}
       {series.signature_look && (
         <section className="mb-10">
@@ -179,7 +178,6 @@ export default async function SeriesPage({ params }: Props) {
           </div>
         </section>
       )}
-
       {/* Items — with key specs visible per row */}
       <section className="mb-10">
         <SectionHeader
@@ -246,7 +244,6 @@ export default async function SeriesPage({ params }: Props) {
           </table>
         </div>
       </section>
-
       {/* Used on — with poster thumbnails */}
       {usedOn.length > 0 && (
         <section className="mb-10">
@@ -286,7 +283,6 @@ export default async function SeriesPage({ params }: Props) {
           </ul>
         </section>
       )}
-
       {/* Crew */}
       {crew.length > 0 && (
         <section id="cinematographers" className="mb-10 scroll-mt-6">
@@ -298,7 +294,6 @@ export default async function SeriesPage({ params }: Props) {
           <CrewWhoUsedTable rows={crew} />
         </section>
       )}
-
       {/* Further reading */}
       {series.references && series.references.length > 0 && (
         <section className="mb-10">

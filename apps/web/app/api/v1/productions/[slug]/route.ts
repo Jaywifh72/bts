@@ -27,7 +27,8 @@ import { siteUrl } from '@/lib/site';
 
 export const runtime = 'nodejs';
 
-export async function GET(_req: NextRequest, { params }: { params: { slug: string } }) {
+export async function GET(_req: NextRequest, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const data = await getProductionWithFullDetail(db, params.slug);
   if (!data) {
     return NextResponse.json({ error: 'not_found' }, { status: 404 });
