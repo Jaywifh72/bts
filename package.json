@@ -14,5 +14,11 @@
     "web:lint": "pnpm --filter @bts/web lint",
     "typecheck": "pnpm --filter @bts/db typecheck && pnpm --filter @bts/web typecheck",
     "lint": "pnpm --filter @bts/web lint"
+  },
+  "pnpm": {
+    "overrides": {
+      "@types/react": "19.2.14",
+      "@types/react-dom": "19.2.3"
+    }
   }
 }
