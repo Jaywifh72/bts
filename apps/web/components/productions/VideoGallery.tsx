@@ -198,21 +198,22 @@ export function VideoGallery({
 }) {
   const [activeCategory, setActiveCategory] = useState<string>('all');
 
-  if (videos.length === 0) return null;
-
-  const categoryCounts = new Map<string, number>();
-  for (const v of videos) {
-    categoryCounts.set(v.category, (categoryCounts.get(v.category) ?? 0) + 1);
-  }
-
   // Memoised — `timestamps` is stable across renders for a given film,
   // so the bucketing only needs to run when the prop changes.
+  // Must run before the early return below to satisfy rules-of-hooks.
   const timestampsByVideo = useMemo(() => {
     return timestamps.reduce<Record<number, VideoTimestampAnnotation[]>>((acc, timestamp) => {
       (acc[timestamp.video_id] ??= []).push(timestamp);
       return acc;
     }, {});
   }, [timestamps]);
+
+  if (videos.length === 0) return null;
+
+  const categoryCounts = new Map<string, number>();
+  for (const v of videos) {
+    categoryCounts.set(v.category, (categoryCounts.get(v.category) ?? 0) + 1);
+  }
 
   const visibleVideos =
     activeCategory === 'all'
