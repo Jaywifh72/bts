@@ -1,46 +1,111 @@
-# BTS — Global Cinematic Technical Repository
+# Studio Pro / BTS
 
-Monorepo for a behind-the-scenes / technical filmmaking metadata platform. v1 ships only the data layer (`packages/db`); other layers (web app, search, ingestion, design system, monetization) are documented in `docs/superpowers/specs/` and arrive as separate sub-projects.
+A cinematography reference engine built for working professionals and the AI
+search engines they increasingly trust. Per-scene gear attribution, lighting
+plots with cinematographer motivation paragraphs, color pipelines, stunt
+sequences, and the citation chain that backs every claim.
 
-## Setup
+## What's here
 
-1. Install Docker Desktop, Node 20+ (24+ also works), pnpm 10.
-2. `pnpm install`
-3. `cp .env.example .env`
-4. `cp .env.example packages/db/.env` (the db package needs its own copy — pnpm scripts run with cwd inside the package)
-5. `docker compose up -d` — starts Postgres 16 with `bts_dev` and `bts_test` databases.
-6. `pnpm db:migrate` — applies migrations to `bts_dev`.
-7. `pnpm db:seed` — populates `bts_dev` with v1 seed data (~30s).
-8. `pnpm db:test` — runs all four test suites (26 tests).
+A pnpm monorepo with three workspaces:
 
-## Repo layout
-
-- `packages/db/` — Drizzle schema, migrations, seed, queries, tests.
-- `docs/superpowers/specs/` — design specs.
-- `docs/superpowers/plans/` — implementation plans.
-
-## Specs and plans
-
-- `docs/superpowers/specs/2026-04-30-data-layer-design.md` — v1 data layer design (the source of truth for schema decisions).
-- `docs/superpowers/plans/2026-04-30-data-layer-plan.md` — the step-by-step implementation plan that produced this codebase.
-
-## Useful root scripts
-
-| Command | What it does |
+| Workspace | Purpose |
 |---|---|
-| `pnpm db:migrate` | Apply Drizzle migrations to `bts_dev`. |
-| `pnpm db:seed` | Idempotent seed of `bts_dev` (~30s). |
-| `pnpm db:test` | Run all 4 test suites against `bts_test`. |
-| `pnpm db:studio` | Open Drizzle Studio at http://localhost:4983. |
+| `apps/web` | Next.js 14 App Router site — public dossiers + admin console |
+| `packages/db` | Drizzle + Postgres schema, migrations, queries, seed, tests |
+| `packages/scraper` | TMDb / Wikidata / RSS / social ingest pipelines |
 
-## Future sub-projects (not in v1)
+## Stack
 
-| Sub-project | Will live at |
-|---|---|
-| Public web app | `apps/web/` |
-| Algolia / search | `packages/search/` |
-| TMDb / IMDb / Wikidata / EPK ingestion | `packages/ingest/` |
-| Admin / editorial UI | `apps/admin/` |
-| "Studio Pro" design system | `packages/ui/` |
+- **Runtime**: Next.js 14 (App Router, RSC, ISR via `revalidate`)
+- **DB**: Postgres 16 + pgvector + pg_trgm (Docker locally; Neon for prod — see `docs/runbooks/managed-postgres.md`)
+- **ORM**: drizzle-orm + postgres-js
+- **Embeddings**: SigLIP-2 (visual, 768-dim) + text-embedding-3-small (1536-dim), HNSW indexed
+- **Rate limit**: Upstash Redis with in-memory fallback (`docs/runbooks/upstash-redis.md`)
+- **Errors**: Sentry, opt-in via DSN (`docs/runbooks/sentry.md`)
+- **CI**: GitHub Actions — typecheck, lint, vitest against Postgres-pgvector, build, Playwright E2E
 
-Each gets its own brainstorm → spec → plan cycle.
+## Local development
+
+```bash
+# Prereqs: Node 22+, pnpm 10, Docker Desktop
+pnpm install
+
+# Start Postgres
+docker compose up -d postgres
+
+# Migrate + seed
+pnpm --filter @bts/db migrate
+pnpm --filter @bts/db seed
+
+# Start the dev server
+pnpm web:dev
+# → http://localhost:3000
+```
+
+## Quality gates
+
+```bash
+pnpm typecheck                  # tsc --noEmit across all workspaces
+pnpm lint                       # next lint (web)
+pnpm --filter @bts/db test      # vitest against real Postgres
+pnpm --filter @bts/web e2e      # Playwright smokes (dev server must be running)
+```
+
+All four run automatically on every push via `.github/workflows/ci.yml`.
+
+## Layout
+
+```
+apps/web/
+  app/                  # Next.js routes
+    admin/              # Curation + review console (token-auth)
+    api/                # Public + internal API + CSV export + lookbook search
+    films/[slug]/       # Per-production dossier
+    crew/[slug]/        # Per-person dossier
+    gear/.../           # Manufacturer → series → item
+    for-{dps,colorists,coordinators,gaffers}/             # Role landing pages
+    {sound,editing,music,production-design,
+     costume-hair-makeup}/                                # Discipline pages
+    {locations,awards,decades,shots,lookbook,methodology}/  # Cross-cuts
+  components/           # Server + client components
+  e2e/                  # Playwright smoke spec
+  lib/                  # jsonLd, rate-limit, site, tmdb-image, etc.
+
+packages/db/
+  migrations/           # SQL migrations (0001 → 0055)
+  src/
+    schema/             # Drizzle schema modules
+    queries/            # Read paths
+    seed/               # Curated seed data
+    tests/              # vitest specs
+
+packages/scraper/
+  src/
+    tmdb/               # Person + production enrichment
+    wikidata/           # SPARQL ingest (awards, education)
+    rss/, newsletter/   # Cinematography.com, AC Magazine, ICG, etc.
+    social/             # IG/X/Threads citation normalisation
+    vfx-studios/        # 60+ post-houses
+    wayback/            # Link-rot archive + health
+    embeddings/         # Visual + text embedding generators (Modal Python)
+```
+
+## Deferred wiring
+
+Some production infrastructure needs credentials that aren't in this repo.
+Each has a self-contained runbook:
+
+- [`docs/runbooks/sentry.md`](docs/runbooks/sentry.md) — error tracking
+- [`docs/runbooks/upstash-redis.md`](docs/runbooks/upstash-redis.md) — rate-limit backend
+- [`docs/runbooks/managed-postgres.md`](docs/runbooks/managed-postgres.md) — Neon cutover
+- [`docs/runbooks/siglip2-inference.md`](docs/runbooks/siglip2-inference.md) — Modal-hosted encoder for `/lookbook`
+
+## Documentation
+
+- `docs/superpowers/plans/` — strategy and roadmap docs
+- `docs/runbooks/` — deployment runbooks
+
+## License
+
+Private. © 2026.

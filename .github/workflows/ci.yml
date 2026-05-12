@@ -6,16 +6,21 @@ on:
   pull_request:
     branches: [master, main]
 
+# Cancel in-progress runs on the same branch when a new commit lands.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   typecheck:
     name: Typecheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
         with:
           version: 10.33.2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -26,11 +31,11 @@ jobs:
     name: Lint (apps/web only)
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
         with:
           version: 10.33.2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -56,11 +61,11 @@ jobs:
           --health-timeout 5s
           --health-retries 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
         with:
           version: 10.33.2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -75,11 +80,11 @@ jobs:
     name: Build apps/web
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - uses: pnpm/action-setup@v4
         with:
           version: 10.33.2
-      - uses: actions/setup-node@v4
+      - uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'pnpm'
@@ -92,3 +97,85 @@ jobs:
           NEXT_PUBLIC_SITE_URL: https://studiopro.example.com
         run: pnpm --filter @bts/web build
         continue-on-error: true  # generateStaticParams may fail without a real DB; track but don't block
+
+  e2e:
+    name: E2E smokes (Playwright)
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: bts
+          POSTGRES_PASSWORD: bts
+          POSTGRES_DB: bts_dev
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U bts -d bts_dev"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+    steps:
+      - uses: actions/checkout@v5
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+
+      # Migrate + seed against the bts_dev service container so the dev server
+      # has the data the smoke spec asserts on (e.g. Top Gun: Maverick page).
+      - name: Migrate + seed
+        env:
+          DATABASE_URL: postgres://bts:bts@localhost:5432/bts_dev
+        run: |
+          pnpm --filter @bts/db migrate
+          pnpm --filter @bts/db seed
+
+      - name: Install Playwright chromium
+        run: pnpm --filter @bts/web exec playwright install --with-deps chromium
+
+      - name: Start dev server
+        env:
+          DATABASE_URL: postgres://bts:bts@localhost:5432/bts_dev
+          NEXT_PUBLIC_SITE_URL: http://localhost:3000
+        run: |
+          pnpm --filter @bts/web dev > /tmp/dev.log 2>&1 &
+          echo $! > /tmp/dev.pid
+          # Wait up to 90s for the server to respond. Next.js dev compile can
+          # take 30-60s in CI; aborting earlier produces false negatives.
+          for i in $(seq 1 90); do
+            if curl -sSf -o /dev/null http://localhost:3000/; then
+              echo "Dev server ready after ${i}s"
+              exit 0
+            fi
+            sleep 1
+          done
+          echo "Dev server failed to start within 90s. Log:"
+          cat /tmp/dev.log
+          exit 1
+
+      - name: Run smoke pack
+        env:
+          E2E_BASE_URL: http://localhost:3000
+        run: pnpm --filter @bts/web e2e
+
+      - name: Stop dev server
+        if: always()
+        run: |
+          if [ -f /tmp/dev.pid ]; then
+            kill "$(cat /tmp/dev.pid)" || true
+          fi
+
+      - name: Upload Playwright artifacts on failure
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: |
+            apps/web/test-results
+            apps/web/playwright-report
+          retention-days: 7
