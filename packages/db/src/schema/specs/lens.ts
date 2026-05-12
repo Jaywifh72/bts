@@ -7,6 +7,8 @@ export const lensFormatEnum = z.enum([
 
 export const lensMountEnum = z.enum(['PL', 'LPL', 'PV', 'EF', 'B4', 'F', 'M', 'other']);
 
+export const lensBreathingEnum = z.enum(['negligible', 'low', 'moderate', 'noticeable', 'pronounced']);
+
 export const lensSpecsSchema = z.object({
   focal_length_mm: z.number().positive().optional(),
   max_aperture_t: z.number().positive().optional(),
@@ -19,6 +21,10 @@ export const lensSpecsSchema = z.object({
   weight_kg: z.number().positive().optional(),
   front_diameter_mm: z.number().positive().optional(),
   mount: lensMountEnum.optional(),
+  // E-21 v2 additions
+  breathing: lensBreathingEnum.optional(),
+  focus_throw_deg: z.number().positive().max(360).optional(),
+  mtf_chart_url: z.string().url().optional(),
 }).strict();
 
 export type LensSpecs = z.infer<typeof lensSpecsSchema>;

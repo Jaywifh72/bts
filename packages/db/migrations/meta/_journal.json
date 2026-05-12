@@ -113,6 +113,286 @@
       "when": 1779062400000,
       "tag": "0015_post_houses",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1779148800000,
+      "tag": "0016_release_dates",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1779235200000,
+      "tag": "0017_keyframes",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1779321600000,
+      "tag": "0018_awards",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1779408000000,
+      "tag": "0019_corrections",
+      "breakpoints": true
+    },
+    {
+      "idx": 20,
+      "version": "7",
+      "when": 1779494400000,
+      "tag": "0020_ves_award",
+      "breakpoints": true
+    },
+    {
+      "idx": 21,
+      "version": "7",
+      "when": 1779580800000,
+      "tag": "0021_pgvector",
+      "breakpoints": true
+    },
+    {
+      "idx": 22,
+      "version": "7",
+      "when": 1779667200000,
+      "tag": "0022_vfx_house_kind",
+      "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1779753600000,
+      "tag": "0023_production_locations",
+      "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1779840000000,
+      "tag": "0024_film_schools",
+      "breakpoints": true
+    },
+    {
+      "idx": 25,
+      "version": "7",
+      "when": 1779926400000,
+      "tag": "0025_keyframe_palette",
+      "breakpoints": true
+    },
+    {
+      "idx": 26,
+      "version": "7",
+      "when": 1780012800000,
+      "tag": "0026_source_health",
+      "breakpoints": true
+    },
+    {
+      "idx": 27,
+      "version": "7",
+      "when": 1780099200000,
+      "tag": "0027_keyframe_phash",
+      "breakpoints": true
+    },
+    {
+      "idx": 28,
+      "version": "7",
+      "when": 1780185600000,
+      "tag": "0028_lighting_setups",
+      "breakpoints": true
+    },
+    {
+      "idx": 29,
+      "version": "7",
+      "when": 1780272000000,
+      "tag": "0029_color_pipelines",
+      "breakpoints": true
+    },
+    {
+      "idx": 30,
+      "version": "7",
+      "when": 1780358400000,
+      "tag": "0030_keyframe_embedding",
+      "breakpoints": true
+    },
+    {
+      "idx": 31,
+      "version": "7",
+      "when": 1780444800000,
+      "tag": "0031_social_post_log",
+      "breakpoints": true
+    },
+    {
+      "idx": 32,
+      "version": "7",
+      "when": 1780531200000,
+      "tag": "0032_eca_award",
+      "breakpoints": true
+    },
+    {
+      "idx": 33,
+      "version": "7",
+      "when": 1780617600000,
+      "tag": "0033_claims",
+      "breakpoints": true
+    },
+    {
+      "idx": 34,
+      "version": "7",
+      "when": 1780704000000,
+      "tag": "0034_source_taxonomy_and_evidence",
+      "breakpoints": true
+    },
+    {
+      "idx": 35,
+      "version": "7",
+      "when": 1780790400000,
+      "tag": "0035_source_health_details",
+      "breakpoints": true
+    },
+    {
+      "idx": 36,
+      "version": "7",
+      "when": 1780876800000,
+      "tag": "0036_video_timestamps",
+      "breakpoints": true
+    },
+    {
+      "idx": 37,
+      "version": "7",
+      "when": 1780963200000,
+      "tag": "0037_vfx_house_editorial",
+      "breakpoints": true
+    },
+    {
+      "idx": 38,
+      "version": "7",
+      "when": 1781049600000,
+      "tag": "0038_vfx_house_references",
+      "breakpoints": true
+    },
+    {
+      "idx": 39,
+      "version": "7",
+      "when": 1781136000000,
+      "tag": "0039_gear_editorial",
+      "breakpoints": true
+    },
+    {
+      "idx": 40,
+      "version": "7",
+      "when": 1781222400000,
+      "tag": "0040_item_gallery_compat",
+      "breakpoints": true
+    },
+    {
+      "idx": 41,
+      "version": "7",
+      "when": 1781308800000,
+      "tag": "0041_stunts_phase_1",
+      "breakpoints": true
+    },
+    {
+      "idx": 42,
+      "version": "7",
+      "when": 1781395200000,
+      "tag": "0042_stunts_phase_2",
+      "breakpoints": true
+    },
+    {
+      "idx": 43,
+      "version": "7",
+      "when": 1781481600000,
+      "tag": "0043_stunts_phase_3",
+      "breakpoints": true
+    },
+    {
+      "idx": 44,
+      "version": "7",
+      "when": 1781568000000,
+      "tag": "0044_stunts_phase_4",
+      "breakpoints": true
+    },
+    {
+      "idx": 45,
+      "version": "7",
+      "when": 1781654400000,
+      "tag": "0045_stunt_rigging",
+      "breakpoints": true
+    },
+    {
+      "idx": 46,
+      "version": "7",
+      "when": 1781740800000,
+      "tag": "0046_safety_bulletins",
+      "breakpoints": true
+    },
+    {
+      "idx": 47,
+      "version": "7",
+      "when": 1781827200000,
+      "tag": "0047_job_runs",
+      "breakpoints": true
+    },
+    {
+      "idx": 48,
+      "version": "7",
+      "when": 1781913600000,
+      "tag": "0048_stunt_memberships_doubling",
+      "breakpoints": true
+    },
+    {
+      "idx": 49,
+      "version": "7",
+      "when": 1782000000000,
+      "tag": "0049_media_polymorphic",
+      "breakpoints": true
+    },
+    {
+      "idx": 50,
+      "version": "7",
+      "when": 1782086400000,
+      "tag": "0050_qa_fixes",
+      "breakpoints": true
+    },
+    {
+      "idx": 51,
+      "version": "7",
+      "when": 1782172800000,
+      "tag": "0051_cascade_consistency",
+      "breakpoints": true
+    },
+    {
+      "idx": 52,
+      "version": "7",
+      "when": 1782259200000,
+      "tag": "0052_drop_duplicate_cascade_fks",
+      "breakpoints": true
+    },
+    {
+      "idx": 53,
+      "version": "7",
+      "when": 1782345600000,
+      "tag": "0053_embedding_versioning",
+      "breakpoints": true
+    },
+    {
+      "idx": 54,
+      "version": "7",
+      "when": 1782432000000,
+      "tag": "0054_editorial_bylines",
+      "breakpoints": true
+    },
+    {
+      "idx": 55,
+      "version": "7",
+      "when": 1782518400000,
+      "tag": "0055_production_equipment",
+      "breakpoints": true
     }
   ]
 }

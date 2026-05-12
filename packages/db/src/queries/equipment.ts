@@ -17,35 +17,95 @@ export async function listManufacturers(
   const withSeriesOnly = opts.withSeriesOnly ?? true;
   return db.execute<{
     slug: string; name: string; kind: string; country: string | null;
-    description: string | null; series_count: number;
+    description: string | null; website: string | null; tagline: string | null;
+    series_count: number; item_count: number;
   }>(sql`
-    SELECT em.slug, em.name, em.kind, em.country, em.description,
-           COUNT(es.id)::int AS series_count
+    SELECT em.slug, em.name, em.kind::text, em.country, em.description, em.website, em.tagline,
+           COUNT(DISTINCT es.id)::int AS series_count,
+           COUNT(DISTINCT ei.id)::int AS item_count
     FROM equipment_manufacturers em
     LEFT JOIN equipment_series es ON es.manufacturer_id = em.id
+    LEFT JOIN equipment_items ei ON ei.series_id = es.id
     GROUP BY em.id
     HAVING ${withSeriesOnly ? sql`COUNT(es.id) > 0` : sql`TRUE`}
     ORDER BY em.name ASC
   `);
 }
 
+/**
+ * Aggregate counts for the gear index hero — one query, used by the
+ * index page header to show the size of the catalog at a glance.
+ */
+export async function getGearArchiveStats(db: SeedDb = defaultDb) {
+  const [row] = await db.execute<{
+    manufacturers: number;
+    rental_houses: number;
+    series: number;
+    items: number;
+    cameras: number;
+    lenses: number;
+    lighting: number;
+    filters: number;
+  }>(sql`
+    SELECT
+      (SELECT COUNT(*)::int FROM equipment_manufacturers WHERE kind = 'manufacturer') AS manufacturers,
+      (SELECT COUNT(*)::int FROM equipment_manufacturers WHERE kind = 'rental_house') AS rental_houses,
+      (SELECT COUNT(*)::int FROM equipment_series) AS series,
+      (SELECT COUNT(*)::int FROM equipment_items) AS items,
+      (SELECT COUNT(*)::int FROM equipment_items ei JOIN equipment_series es ON es.id = ei.series_id WHERE es.category = 'camera_body') AS cameras,
+      (SELECT COUNT(*)::int FROM equipment_items ei JOIN equipment_series es ON es.id = ei.series_id WHERE es.category = 'lens_set') AS lenses,
+      (SELECT COUNT(*)::int FROM equipment_items ei JOIN equipment_series es ON es.id = ei.series_id WHERE es.category = 'lighting_fixture') AS lighting,
+      (SELECT COUNT(*)::int FROM equipment_items ei JOIN equipment_series es ON es.id = ei.series_id WHERE es.category = 'filter') AS filters
+  `);
+  return row ?? { manufacturers: 0, rental_houses: 0, series: 0, items: 0, cameras: 0, lenses: 0, lighting: 0, filters: 0 };
+}
+
 export async function getManufacturerBySlug(db: SeedDb = defaultDb, slug: string) {
   const [manufacturer] = await db.execute<{
+    id: number;
     slug: string; name: string; kind: string; country: string | null;
     founded_year: number | null; website: string | null; description: string | null;
+    summary: string | null; tagline: string | null; headquarters: string | null;
+    parent_company: string | null; employee_count: number | null;
+    references: Array<{ title: string; url: string; publication?: string; kind?: string }>;
+    total_items: number; total_productions: number; primary_credits: number;
   }>(sql`
-    SELECT slug, name, kind, country, founded_year, website, description
-    FROM equipment_manufacturers WHERE slug = ${slug}
+    SELECT em.id, em.slug, em.name, em.kind::text, em.country,
+           em.founded_year, em.website, em.description,
+           em.summary, em.tagline, em.headquarters, em.parent_company,
+           em.employee_count, em."references",
+           (SELECT COUNT(*)::int FROM equipment_items ei
+              JOIN equipment_series es ON es.id = ei.series_id
+              WHERE es.manufacturer_id = em.id) AS total_items,
+           (SELECT COUNT(DISTINCT sc.production_id)::int
+              FROM equipment_usage eu
+              JOIN equipment_series es ON es.id = eu.equipment_series_id
+              JOIN scenes sc ON sc.id = eu.scene_id
+              WHERE es.manufacturer_id = em.id) AS total_productions,
+           (SELECT COUNT(DISTINCT sc.production_id)::int
+              FROM equipment_usage eu
+              JOIN equipment_series es ON es.id = eu.equipment_series_id
+              JOIN scenes sc ON sc.id = eu.scene_id
+              WHERE es.manufacturer_id = em.id
+                AND es.category IN ('camera_body', 'lens_set')) AS primary_credits
+    FROM equipment_manufacturers em
+    WHERE em.slug = ${slug}
   `);
   if (!manufacturer) return null;
 
   const series = await db.execute<{
     slug: string; name: string; category: string;
     year_introduced: number | null; year_discontinued: number | null;
-    description: string | null; item_count: number;
+    description: string | null; summary: string | null;
+    item_count: number; production_count: number;
   }>(sql`
-    SELECT es.slug, es.name, es.category, es.year_introduced, es.year_discontinued,
-           es.description, COUNT(ei.id)::int AS item_count
+    SELECT es.slug, es.name, es.category::text, es.year_introduced, es.year_discontinued,
+           es.description, es.summary,
+           COUNT(DISTINCT ei.id)::int AS item_count,
+           (SELECT COUNT(DISTINCT sc.production_id)::int
+              FROM equipment_usage eu
+              JOIN scenes sc ON sc.id = eu.scene_id
+              WHERE eu.equipment_series_id = es.id) AS production_count
     FROM equipment_series es
     JOIN equipment_manufacturers em ON em.id = es.manufacturer_id
     LEFT JOIN equipment_items ei ON ei.series_id = es.id
@@ -70,10 +130,13 @@ export async function getSeriesBySlug(db: SeedDb = defaultDb, seriesSlug: string
   const [series] = await db.execute<{
     id: number; slug: string; name: string; category: string;
     year_introduced: number | null; year_discontinued: number | null;
-    description: string | null; manufacturer_slug: string; manufacturer_name: string;
+    description: string | null; summary: string | null; signature_look: string | null;
+    references: Array<{ title: string; url: string; publication?: string; kind?: string }>;
+    manufacturer_slug: string; manufacturer_name: string;
   }>(sql`
-    SELECT es.id, es.slug, es.name, es.category, es.year_introduced, es.year_discontinued,
-           es.description, em.slug AS manufacturer_slug, em.name AS manufacturer_name
+    SELECT es.id, es.slug, es.name, es.category::text, es.year_introduced, es.year_discontinued,
+           es.description, es.summary, es.signature_look, es."references",
+           em.slug AS manufacturer_slug, em.name AS manufacturer_name
     FROM equipment_series es
     JOIN equipment_manufacturers em ON em.id = es.manufacturer_id
     WHERE es.slug = ${seriesSlug}
@@ -83,14 +146,17 @@ export async function getSeriesBySlug(db: SeedDb = defaultDb, seriesSlug: string
   const [items, usedOn] = await Promise.all([
     db.execute<{
       slug: string; name: string; status: string;
-      year_introduced: number | null; specs: unknown;
+      year_introduced: number | null; specs: Record<string, unknown>;
+      description: string | null; image_url: string | null; notable_uses: string | null;
     }>(sql`
-      SELECT slug, name, status, year_introduced, specs
+      SELECT slug, name, status::text, year_introduced, specs,
+             description, image_url, notable_uses
       FROM equipment_items WHERE series_id = ${series.id}
       ORDER BY name
     `),
-    db.execute<{ production_slug: string; production_title: string; release_year: number | null }>(sql`
-      SELECT DISTINCT p.slug AS production_slug, p.title AS production_title, p.release_year
+    db.execute<{ production_slug: string; production_title: string; release_year: number | null; poster_path: string | null }>(sql`
+      SELECT DISTINCT p.slug AS production_slug, p.title AS production_title,
+             p.release_year, p.poster_path
       FROM equipment_usage eu
       JOIN scenes sc ON sc.id = eu.scene_id
       JOIN productions p ON p.id = sc.production_id
@@ -257,6 +323,20 @@ export async function listAllGearPaths(db: SeedDb = defaultDb) {
   `);
 }
 
+/**
+ * (manufacturer, series) pairs — for the series-level gear page
+ * generateStaticParams. Replaces the old N+M pattern that fanned out
+ * one listSeriesByManufacturer call per manufacturer at build time.
+ */
+export async function listAllSeriesPaths(db: SeedDb = defaultDb) {
+  return db.execute<{ manufacturer_slug: string; series_slug: string }>(sql`
+    SELECT em.slug AS manufacturer_slug, es.slug AS series_slug
+    FROM equipment_series es
+    JOIN equipment_manufacturers em ON em.id = es.manufacturer_id
+    ORDER BY em.slug, es.slug
+  `);
+}
+
 // ── Items ──────────────────────────────────────────────────────────────────────
 
 export async function listItemsBySeries(db: SeedDb = defaultDb, seriesSlug: string) {
@@ -271,13 +351,24 @@ export async function getItemBySlug(db: SeedDb = defaultDb, itemSlug: string) {
   const [item] = await db.execute<{
     slug: string; name: string; model_number: string | null; status: string;
     year_introduced: number | null; year_discontinued: number | null;
-    specs: unknown; series_slug: string; series_name: string;
-    series_category: string; manufacturer_slug: string; manufacturer_name: string;
+    specs: Record<string, unknown>;
+    description: string | null; image_url: string | null; notable_uses: string | null;
+    value_proposition: string | null;
+    images: Array<{ url: string; caption?: string; credit?: string; source?: string }>;
+    compatibility: { mount?: string; compatible_cameras?: string[]; compatible_lens_mounts?: string[]; adapter_notes?: string };
+    series_slug: string; series_name: string;
+    series_category: string; series_summary: string | null;
+    manufacturer_slug: string; manufacturer_name: string;
+    manufacturer_website: string | null;
   }>(sql`
-    SELECT ei.slug, ei.name, ei.model_number, ei.status,
+    SELECT ei.slug, ei.name, ei.model_number, ei.status::text,
            ei.year_introduced, ei.year_discontinued, ei.specs,
-           es.slug AS series_slug, es.name AS series_name, es.category AS series_category,
-           em.slug AS manufacturer_slug, em.name AS manufacturer_name
+           ei.description, ei.image_url, ei.notable_uses,
+           ei.value_proposition, ei.images, ei.compatibility,
+           es.slug AS series_slug, es.name AS series_name,
+           es.category::text AS series_category, es.summary AS series_summary,
+           em.slug AS manufacturer_slug, em.name AS manufacturer_name,
+           em.website AS manufacturer_website
     FROM equipment_items ei
     JOIN equipment_series es ON es.id = ei.series_id
     JOIN equipment_manufacturers em ON em.id = es.manufacturer_id

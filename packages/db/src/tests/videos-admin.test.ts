@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { sql as drizzleSql } from 'drizzle-orm';
-import { createTestDb, resetTestSchema } from './helpers.ts';
+import { createTestDb, expectOne, resetTestSchema } from './helpers.ts';
 import { runSeed } from '../seed/run.ts';
 import {
   listVideosForReview,
@@ -9,6 +9,8 @@ import {
   updateVideoStatus,
   updateVideoCategory,
   rejectVideo,
+  bulkUpdateVideoStatus,
+  bulkRejectVideos,
 } from '../queries/videos.ts';
 
 const { sql, db } = createTestDb();
@@ -20,9 +22,10 @@ beforeAll(async () => {
 
   // Insert a known set of pending/published rows for ordering and filter assertions.
   // We rely on the seeded productions; pick dune-part-two-2024.
-  const [{ id: prodId }] = await db.execute<{ id: number }>(drizzleSql`
+  const production = expectOne(await db.execute<{ id: number }>(drizzleSql`
     SELECT id FROM productions WHERE slug = 'dune-part-two-2024'
-  `);
+  `), 'dune-part-two-2024 production');
+  const prodId = production.id;
 
   await db.execute(drizzleSql`
     INSERT INTO production_videos
@@ -101,40 +104,104 @@ describe('videos admin queries', () => {
   });
 
   it('updateVideoStatus changes status without touching category_locked', async () => {
-    const [target] = await db.execute<{ id: number }>(drizzleSql`
+    const target = expectOne(await db.execute<{ id: number }>(drizzleSql`
       SELECT id FROM production_videos WHERE external_id = 'pending-high' LIMIT 1
-    `);
-    await updateVideoStatus(db, target!.id, 'published');
-    const [after] = await db.execute<{ status: string; category_locked: boolean }>(drizzleSql`
-      SELECT status, category_locked FROM production_videos WHERE id = ${target!.id}
-    `);
-    expect(after!.status).toBe('published');
-    expect(after!.category_locked).toBe(false);
+    `), 'pending-high video');
+    await updateVideoStatus(db, target.id, 'published');
+    const after = expectOne(await db.execute<{ status: string; category_locked: boolean }>(drizzleSql`
+      SELECT status, category_locked FROM production_videos WHERE id = ${target.id}
+    `), 'updated pending-high video');
+    expect(after.status).toBe('published');
+    expect(after.category_locked).toBe(false);
     // restore for other tests
-    await updateVideoStatus(db, target!.id, 'pending');
+    await updateVideoStatus(db, target.id, 'pending');
   });
 
   it('rejectVideo sets status=rejected AND category_locked=true', async () => {
-    const [target] = await db.execute<{ id: number }>(drizzleSql`
+    const target = expectOne(await db.execute<{ id: number }>(drizzleSql`
       SELECT id FROM production_videos WHERE external_id = 'pending-mid' LIMIT 1
-    `);
-    await rejectVideo(db, target!.id);
-    const [after] = await db.execute<{ status: string; category_locked: boolean }>(drizzleSql`
-      SELECT status, category_locked FROM production_videos WHERE id = ${target!.id}
-    `);
-    expect(after!.status).toBe('rejected');
-    expect(after!.category_locked).toBe(true);
+    `), 'pending-mid video');
+    await rejectVideo(db, target.id);
+    const after = expectOne(await db.execute<{ status: string; category_locked: boolean }>(drizzleSql`
+      SELECT status, category_locked FROM production_videos WHERE id = ${target.id}
+    `), 'rejected pending-mid video');
+    expect(after.status).toBe('rejected');
+    expect(after.category_locked).toBe(true);
   });
 
   it('updateVideoCategory changes category AND sets category_locked=true', async () => {
-    const [target] = await db.execute<{ id: number }>(drizzleSql`
+    const target = expectOne(await db.execute<{ id: number }>(drizzleSql`
       SELECT id FROM production_videos WHERE external_id = 'pending-low' LIMIT 1
+    `), 'pending-low video');
+    await updateVideoCategory(db, target.id, 'compositing');
+    const after = expectOne(await db.execute<{ category: string; category_locked: boolean }>(drizzleSql`
+      SELECT category, category_locked FROM production_videos WHERE id = ${target.id}
+    `), 'updated pending-low video');
+    expect(after.category).toBe('compositing');
+    expect(after.category_locked).toBe(true);
+  });
+
+  it('bulkUpdateVideoStatus updates many rows in one statement and returns slugs', async () => {
+    const prodRows = await db.execute<{ id: number }>(drizzleSql`
+      SELECT id FROM productions WHERE slug = 'dune-part-two-2024'
     `);
-    await updateVideoCategory(db, target!.id, 'compositing');
-    const [after] = await db.execute<{ category: string; category_locked: boolean }>(drizzleSql`
-      SELECT category, category_locked FROM production_videos WHERE id = ${target!.id}
+    const prodId = expectOne(prodRows, 'dune-part-two-2024 production').id;
+    await db.execute(drizzleSql`
+      INSERT INTO production_videos
+        (production_id, source, external_id, url, title, category, confidence_score, status)
+      VALUES
+        (${prodId}, 'youtube', 'bulk-1', 'https://x/b1', 'Bulk one', 'making_of', '0.5', 'pending'),
+        (${prodId}, 'youtube', 'bulk-2', 'https://x/b2', 'Bulk two', 'making_of', '0.5', 'pending')
+      ON CONFLICT DO NOTHING
     `);
-    expect(after!.category).toBe('compositing');
-    expect(after!.category_locked).toBe(true);
+    const targets = await db.execute<{ id: number }>(drizzleSql`
+      SELECT id FROM production_videos WHERE external_id IN ('bulk-1', 'bulk-2')
+    `);
+    const ids = targets.map((t) => t.id);
+
+    const slugs = await bulkUpdateVideoStatus(db, ids, 'published');
+    expect(slugs).toContain('dune-part-two-2024');
+
+    const idList = drizzleSql.join(ids.map((id) => drizzleSql`${id}`), drizzleSql`, `);
+    const after = await db.execute<{ status: string; category_locked: boolean }>(drizzleSql`
+      SELECT status, category_locked FROM production_videos WHERE id IN (${idList})
+    `);
+    expect(after.every((r) => r.status === 'published')).toBe(true);
+    // status flip alone must NOT lock the category
+    expect(after.every((r) => r.category_locked === false)).toBe(true);
+  });
+
+  it('bulkRejectVideos rejects many rows and locks their categories', async () => {
+    const prodRows = await db.execute<{ id: number }>(drizzleSql`
+      SELECT id FROM productions WHERE slug = 'dune-part-two-2024'
+    `);
+    const prodId = expectOne(prodRows, 'dune-part-two-2024 production').id;
+    await db.execute(drizzleSql`
+      INSERT INTO production_videos
+        (production_id, source, external_id, url, title, category, confidence_score, status)
+      VALUES
+        (${prodId}, 'youtube', 'bulk-rej-1', 'https://x/r1', 'Rej one', 'making_of', '0.5', 'pending'),
+        (${prodId}, 'youtube', 'bulk-rej-2', 'https://x/r2', 'Rej two', 'making_of', '0.5', 'pending')
+      ON CONFLICT DO NOTHING
+    `);
+    const targets = await db.execute<{ id: number }>(drizzleSql`
+      SELECT id FROM production_videos WHERE external_id IN ('bulk-rej-1', 'bulk-rej-2')
+    `);
+    const ids = targets.map((t) => t.id);
+
+    const slugs = await bulkRejectVideos(db, ids);
+    expect(slugs).toContain('dune-part-two-2024');
+
+    const idList = drizzleSql.join(ids.map((id) => drizzleSql`${id}`), drizzleSql`, `);
+    const after = await db.execute<{ status: string; category_locked: boolean }>(drizzleSql`
+      SELECT status, category_locked FROM production_videos WHERE id IN (${idList})
+    `);
+    expect(after.every((r) => r.status === 'rejected')).toBe(true);
+    expect(after.every((r) => r.category_locked === true)).toBe(true);
+  });
+
+  it('bulk operations are no-ops with empty input', async () => {
+    expect(await bulkUpdateVideoStatus(db, [], 'published')).toEqual([]);
+    expect(await bulkRejectVideos(db, [])).toEqual([]);
   });
 });

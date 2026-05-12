@@ -21,6 +21,16 @@ export const manufacturersData = [
   { slug: 'vantage', name: 'Vantage Film (Hawk)', kind: 'manufacturer' as const, country: 'DE', foundedYear: 1995 },
   { slug: 'bausch-lomb', name: 'Bausch & Lomb', kind: 'manufacturer' as const, country: 'US', foundedYear: 1853 },
   { slug: 'lomo', name: 'LOMO', kind: 'manufacturer' as const, country: 'RU', foundedYear: 1914 },
+  // T4-5 — major cinema rental houses. Pros pick a rental house first
+  // (for relationships, prep facilities, custom mods) and a glass set
+  // second; surfacing them as first-class entities lets us hang
+  // "operates the only Vintage 765 set in NA" / "Otto's anamorphics"
+  // hooks off the same hierarchy as manufacturers.
+  { slug: 'panavision-rentals', name: 'Panavision Rentals', kind: 'rental_house' as const, country: 'US' },
+  { slug: 'otto-nemenz', name: 'Otto Nemenz International', kind: 'rental_house' as const, country: 'US' },
+  { slug: 'keslow-camera', name: 'Keslow Camera', kind: 'rental_house' as const, country: 'US' },
+  { slug: 'nelson-cameras', name: 'Nelson Cameras', kind: 'rental_house' as const, country: 'US' },
+  { slug: 'cinelease', name: 'Cinelease', kind: 'rental_house' as const, country: 'US' },
 ];
 
 export async function seedManufacturers(db: SeedDb) {

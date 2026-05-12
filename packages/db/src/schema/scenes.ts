@@ -67,3 +67,40 @@ export const equipmentUsage = pgTable('equipment_usage', {
     .on(t.crewAssignmentId)
     .where(sql`${t.crewAssignmentId} IS NOT NULL`),
 }));
+
+// ─────────────────────────────────────────────────────────────────────
+// 0055 — Production-level equipment attribution (parallel to scene-level).
+//
+// Lifts gear attribution out of scenes-only. 482/539 productions had no
+// scenes seeded so couldn't surface gear via equipment_usage alone. This
+// table is the per-production path; equipment_usage remains the per-scene
+// path. Queries that surface "every film ARRI ALEXA 65 has shot" UNION
+// both tables.
+// ─────────────────────────────────────────────────────────────────────
+
+export const productionEquipment = pgTable('production_equipment', {
+  id: bigserial('id', { mode: 'number' }).primaryKey(),
+  productionId: bigint('production_id', { mode: 'number' })
+    .notNull()
+    .references(() => productions.id, { onDelete: 'cascade' }),
+  equipmentSeriesId: bigint('equipment_series_id', { mode: 'number' })
+    .notNull()
+    .references(() => equipmentSeries.id, { onDelete: 'restrict' }),
+  equipmentItemId: bigint('equipment_item_id', { mode: 'number' })
+    .references(() => equipmentItems.id, { onDelete: 'restrict' }),
+  /** 'primary' = main A-camera/key-light/etc, 'secondary' = B-cam/fill,
+   *  'specialty' = single-sequence (e.g. Phantom for high-speed inserts). */
+  role: text('role').notNull().default('primary'),
+  notes: text('notes'),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+}, (t) => ({
+  naturalKey: unique('production_equipment_natural_key')
+    .on(t.productionId, t.equipmentSeriesId, t.equipmentItemId, t.role)
+    .nullsNotDistinct(),
+  productionIdx: index('production_equipment_production_idx').on(t.productionId),
+  seriesIdx: index('production_equipment_series_idx').on(t.equipmentSeriesId),
+  itemIdx: index('production_equipment_item_idx')
+    .on(t.equipmentItemId)
+    .where(sql`${t.equipmentItemId} IS NOT NULL`),
+}));

@@ -18,6 +18,14 @@ export const equipmentManufacturers = pgTable('equipment_manufacturers', {
   website: text('website'),
   description: text('description'),
   wikidataId: text('wikidata_id').unique(),
+  // 0039 — editorial-page additions.
+  summary: text('summary'),
+  tagline: text('tagline'),
+  headquarters: text('headquarters'),
+  parentCompany: text('parent_company'),
+  employeeCount: integer('employee_count'),
+  references: jsonb('references').notNull().default(sql`'[]'::jsonb`)
+    .$type<Array<{ title: string; url: string; publication?: string; kind?: string }>>(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 });
@@ -33,6 +41,11 @@ export const equipmentSeries = pgTable('equipment_series', {
   yearIntroduced: integer('year_introduced'),
   yearDiscontinued: integer('year_discontinued'),
   description: text('description'),
+  // 0039 editorial.
+  summary: text('summary'),
+  signatureLook: text('signature_look'),
+  references: jsonb('references').notNull().default(sql`'[]'::jsonb`)
+    .$type<Array<{ title: string; url: string; publication?: string; kind?: string }>>(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
@@ -51,6 +64,16 @@ export const equipmentItems = pgTable('equipment_items', {
   yearDiscontinued: integer('year_discontinued'),
   status: equipmentItemStatusEnum('status').notNull().default('active'),
   specs: jsonb('specs').notNull().default(sql`'{}'::jsonb`),
+  // 0039 editorial.
+  description: text('description'),
+  imageUrl: text('image_url'),
+  notableUses: text('notable_uses'),
+  // 0040 — gallery + value-prop + compatibility.
+  valueProposition: text('value_proposition'),
+  images: jsonb('images').notNull().default(sql`'[]'::jsonb`)
+    .$type<Array<{ url: string; caption?: string; credit?: string; source?: string }>>(),
+  compatibility: jsonb('compatibility').notNull().default(sql`'{}'::jsonb`)
+    .$type<{ mount?: string; compatible_cameras?: string[]; compatible_lens_mounts?: string[]; adapter_notes?: string }>(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({

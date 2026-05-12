@@ -58,6 +58,42 @@ export type VideoCategory =
   | 'director_interview' | 'dp_interview' | 'production_design'
   | 'stunts' | 'sound' | 'music' | 'other';
 
+export type VideoAnnotationType =
+  | 'visible_gear'
+  | 'vfx_before_after'
+  | 'lighting_setup_visible'
+  | 'monitor_lut_visible'
+  | 'rigging_stunt_visible'
+  | 'virtual_production_visible'
+  | 'interview_quote'
+  | 'general_evidence';
+
+export type VideoAnnotationReviewStatus = 'pending' | 'reviewed' | 'rejected';
+
+export type VideoTimestampAnnotation = {
+  id: number;
+  video_id: number;
+  production_id: number;
+  production_slug: string;
+  production_title: string;
+  video_title: string;
+  video_url: string;
+  thumbnail_url: string | null;
+  claim_id: number | null;
+  claim_slug: string | null;
+  claim_statement: string | null;
+  evidence_item_id: number | null;
+  annotation_type: VideoAnnotationType;
+  review_status: VideoAnnotationReviewStatus;
+  start_seconds: number;
+  end_seconds: number | null;
+  label: string;
+  note: string | null;
+  created_by: string | null;
+  created_at: string;
+  updated_at: string;
+};
+
 export type VideoForReview = ProductionVideo & {
   production_id: number;
   production_slug: string;
@@ -73,6 +109,14 @@ export type ReviewFilters = {
   status?: VideoStatus | 'all';
   productionSlug?: string;
   category?: VideoCategory | 'all';
+  limit?: number;
+  offset?: number;
+};
+
+export type VideoTimestampAnnotationFilters = {
+  status?: VideoAnnotationReviewStatus | 'all';
+  annotationType?: VideoAnnotationType | 'all';
+  productionSlug?: string;
   limit?: number;
   offset?: number;
 };
@@ -196,4 +240,188 @@ export async function updateVideoCategory(
     SET category = ${category}, category_locked = TRUE, updated_at = NOW()
     WHERE id = ${id}
   `);
+}
+
+/**
+ * Bulk variant of updateVideoStatus. Single UPDATE for atomicity.
+ * Returns the distinct production slugs touched so the caller can revalidate.
+ */
+export async function bulkUpdateVideoStatus(
+  db: SeedDb = defaultDb,
+  ids: number[],
+  status: VideoStatus,
+): Promise<string[]> {
+  if (ids.length === 0) return [];
+  const idList = sql.join(ids.map((id) => sql`${id}`), sql`, `);
+  await db.execute(sql`
+    UPDATE production_videos
+    SET status = ${status}, updated_at = NOW()
+    WHERE id IN (${idList})
+  `);
+  const rows = await db.execute<{ slug: string }>(sql`
+    SELECT DISTINCT p.slug
+    FROM production_videos v
+    JOIN productions p ON p.id = v.production_id
+    WHERE v.id IN (${idList})
+  `);
+  return rows.map((r) => r.slug);
+}
+
+/**
+ * Bulk variant of rejectVideo. Sets status='rejected' AND category_locked=true.
+ * Returns the distinct production slugs touched so the caller can revalidate.
+ */
+export async function bulkRejectVideos(
+  db: SeedDb = defaultDb,
+  ids: number[],
+): Promise<string[]> {
+  if (ids.length === 0) return [];
+  const idList = sql.join(ids.map((id) => sql`${id}`), sql`, `);
+  await db.execute(sql`
+    UPDATE production_videos
+    SET status = 'rejected', category_locked = TRUE, updated_at = NOW()
+    WHERE id IN (${idList})
+  `);
+  const rows = await db.execute<{ slug: string }>(sql`
+    SELECT DISTINCT p.slug
+    FROM production_videos v
+    JOIN productions p ON p.id = v.production_id
+    WHERE v.id IN (${idList})
+  `);
+  return rows.map((r) => r.slug);
+}
+
+export async function listVideoTimestampAnnotationsForReview(
+  db: SeedDb = defaultDb,
+  filters: VideoTimestampAnnotationFilters = {},
+): Promise<VideoTimestampAnnotation[]> {
+  const status = filters.status ?? 'pending';
+  const annotationType = filters.annotationType ?? 'all';
+  const limit = filters.limit ?? 50;
+  const offset = filters.offset ?? 0;
+
+  return db.execute<VideoTimestampAnnotation>(sql`
+    SELECT
+      a.id,
+      a.video_id,
+      v.production_id,
+      p.slug AS production_slug,
+      p.title AS production_title,
+      v.title AS video_title,
+      v.url AS video_url,
+      v.thumbnail_url,
+      a.claim_id,
+      c.slug AS claim_slug,
+      c.statement AS claim_statement,
+      a.evidence_item_id,
+      a.annotation_type,
+      a.review_status,
+      a.start_seconds,
+      a.end_seconds,
+      a.label,
+      a.note,
+      a.created_by,
+      a.created_at::text AS created_at,
+      a.updated_at::text AS updated_at
+    FROM production_video_timestamp_annotations a
+    JOIN production_videos v ON v.id = a.video_id
+    JOIN productions p ON p.id = v.production_id
+    LEFT JOIN claims c ON c.id = a.claim_id
+    WHERE
+      ${status === 'all' ? sql`TRUE` : sql`a.review_status = ${status}::video_annotation_review_status_enum`}
+      AND ${annotationType === 'all' ? sql`TRUE` : sql`a.annotation_type = ${annotationType}::video_annotation_type_enum`}
+      AND ${filters.productionSlug ? sql`p.slug = ${filters.productionSlug}` : sql`TRUE`}
+    ORDER BY a.created_at DESC, a.id DESC
+    LIMIT ${limit} OFFSET ${offset}
+  `);
+}
+
+export async function countVideoTimestampAnnotationsForReview(
+  db: SeedDb = defaultDb,
+  filters: Omit<VideoTimestampAnnotationFilters, 'limit' | 'offset'> = {},
+): Promise<number> {
+  const status = filters.status ?? 'pending';
+  const annotationType = filters.annotationType ?? 'all';
+  const [row] = await db.execute<{ count: string }>(sql`
+    SELECT COUNT(*)::text AS count
+    FROM production_video_timestamp_annotations a
+    JOIN production_videos v ON v.id = a.video_id
+    JOIN productions p ON p.id = v.production_id
+    WHERE
+      ${status === 'all' ? sql`TRUE` : sql`a.review_status = ${status}::video_annotation_review_status_enum`}
+      AND ${annotationType === 'all' ? sql`TRUE` : sql`a.annotation_type = ${annotationType}::video_annotation_type_enum`}
+      AND ${filters.productionSlug ? sql`p.slug = ${filters.productionSlug}` : sql`TRUE`}
+  `);
+  return Number(row?.count ?? 0);
+}
+
+export async function createVideoTimestampAnnotation(
+  db: SeedDb = defaultDb,
+  input: {
+    videoId: number;
+    claimId?: number | null;
+    evidenceItemId?: number | null;
+    annotationType: VideoAnnotationType;
+    startSeconds: number;
+    endSeconds?: number | null;
+    label: string;
+    note?: string | null;
+    createdBy?: string | null;
+  },
+): Promise<number> {
+  const rows = await db.execute<{ id: number }>(sql`
+    INSERT INTO production_video_timestamp_annotations (
+      video_id, claim_id, evidence_item_id, annotation_type,
+      start_seconds, end_seconds, label, note, created_by
+    )
+    VALUES (
+      ${input.videoId},
+      ${input.claimId ?? null},
+      ${input.evidenceItemId ?? null},
+      ${input.annotationType}::video_annotation_type_enum,
+      ${input.startSeconds},
+      ${input.endSeconds ?? null},
+      ${input.label},
+      ${input.note ?? null},
+      ${input.createdBy ?? null}
+    )
+    RETURNING id
+  `);
+  return rows[0]!.id;
+}
+
+export async function updateVideoTimestampAnnotationReviewStatus(
+  db: SeedDb = defaultDb,
+  id: number,
+  status: VideoAnnotationReviewStatus,
+): Promise<string[]> {
+  await db.execute(sql`
+    UPDATE production_video_timestamp_annotations
+    SET review_status = ${status}::video_annotation_review_status_enum,
+        updated_at = NOW()
+    WHERE id = ${id}
+  `);
+  const rows = await db.execute<{ slug: string }>(sql`
+    SELECT DISTINCT p.slug
+    FROM production_video_timestamp_annotations a
+    JOIN production_videos v ON v.id = a.video_id
+    JOIN productions p ON p.id = v.production_id
+    WHERE a.id = ${id}
+  `);
+  return rows.map((r) => r.slug);
+}
+
+export async function listVideoTimestampAnnotationsForProduction(
+  db: SeedDb = defaultDb,
+  productionId: number,
+): Promise<VideoTimestampAnnotation[]> {
+  const [production] = await db.execute<{ slug: string }>(sql`
+    SELECT slug FROM productions WHERE id = ${productionId}
+  `);
+  if (!production) return [];
+  return listVideoTimestampAnnotationsForReview(db, {
+    status: 'reviewed',
+    productionSlug: production.slug,
+    limit: 500,
+  });
 }

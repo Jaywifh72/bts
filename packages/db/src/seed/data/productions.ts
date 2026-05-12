@@ -648,7 +648,7 @@ export const productionsData: ProductionSeed[] = [
 export async function seedProductions(db: SeedDb) {
   for (const p of productionsData) {
     // 1. Upsert the production itself
-    const [{ id: prodId }] = await db.insert(productions)
+    const [insertedProduction] = await db.insert(productions)
       .values({
         slug: p.slug, title: p.title, type: p.type,
         releaseYear: p.releaseYear ?? null,
@@ -666,6 +666,10 @@ export async function seedProductions(db: SeedDb) {
         },
       })
       .returning({ id: productions.id });
+    if (!insertedProduction) {
+      throw new Error(`failed to upsert production: ${p.slug}`);
+    }
+    const prodId = insertedProduction.id;
 
     // 2. Replace all formats for this production (idempotent via delete+insert)
     await db.delete(productionFormats).where(eq(productionFormats.productionId, prodId));

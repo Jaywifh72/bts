@@ -29,15 +29,24 @@ export async function findFeaturesShotOnAlexa65WithSphero(db: SeedDb = defaultDb
 
 /**
  * Q2: What lenses did this DP use on this production?
+ *
+ * Includes manufacturer_slug so the consumer can build /gear/<manufacturer>/<series>/<item>
+ * links without hard-coding any manufacturer.
  */
 export async function findLensesByDpOnProduction(db: SeedDb, personSlug: string, productionSlug: string) {
-  return db.execute<{ series_slug: string; series_name: string; item_slug: string | null; item_name: string | null }>(sql`
+  return db.execute<{
+    series_slug: string; series_name: string;
+    item_slug: string | null; item_name: string | null;
+    manufacturer_slug: string;
+  }>(sql`
     SELECT DISTINCT es.slug AS series_slug, es.name AS series_name,
-                    ei.slug AS item_slug, ei.name AS item_name
+                    ei.slug AS item_slug, ei.name AS item_name,
+                    m.slug AS manufacturer_slug
     FROM productions p
     JOIN scenes sc ON sc.production_id = p.id
     JOIN equipment_usage eu ON eu.scene_id = sc.id
     JOIN equipment_series es ON es.id = eu.equipment_series_id
+    JOIN manufacturers m ON m.id = es.manufacturer_id
     LEFT JOIN equipment_items ei ON ei.id = eu.equipment_item_id
     JOIN crew_assignments ca ON ca.production_id = p.id
     JOIN roles r ON r.id = ca.role_id

@@ -1,5 +1,5 @@
 import {
-  pgTable, bigserial, bigint, text, timestamp, date, primaryKey, index, uniqueIndex,
+  pgTable, bigserial, bigint, integer, text, timestamp, date, primaryKey, index, uniqueIndex, check,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { sourceKindEnum, sourceConfidenceEnum } from './enums.ts';
@@ -18,6 +18,12 @@ export const sources = pgTable('sources', {
   accessedAt: date('accessed_at'),
   url: text('url'),
   archiveUrl: text('archive_url'),
+  lastCheckedAt: timestamp('last_checked_at', { withTimezone: true }),
+  lastStatus: integer('last_status'),
+  contentHash: text('content_hash'),
+  canonicalUrl: text('canonical_url'),
+  paywallStatus: text('paywall_status').notNull().default('unknown'),
+  archiveStatus: text('archive_status').notNull().default('unknown'),
   notes: text('notes'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
@@ -26,6 +32,13 @@ export const sources = pgTable('sources', {
   urlUnq: uniqueIndex('sources_url_unq').on(t.url).where(sql`${t.url} IS NOT NULL`),
   kindIdx: index('sources_kind_idx').on(t.kind),
   publishedIdx: index('sources_published_idx').on(t.publishedAt),
+  lastCheckedIdx: index('sources_last_checked_idx')
+    .on(t.lastCheckedAt)
+    .where(sql`${t.url} IS NOT NULL`),
+  paywallStatusCheck: check('sources_paywall_status_check',
+    sql`${t.paywallStatus} IN ('unknown', 'open', 'soft_paywall', 'hard_paywall', 'login_required')`),
+  archiveStatusCheck: check('sources_archive_status_check',
+    sql`${t.archiveStatus} IN ('unknown', 'not_needed', 'captured', 'missing', 'failed')`),
 }));
 
 // Helper: each call returns fresh column instances (Drizzle requires distinct

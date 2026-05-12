@@ -32,6 +32,11 @@ export const sceneTimeOfDayEnum = pgEnum('scene_time_of_day_enum', [
   'dawn', 'day', 'dusk', 'night', 'magic_hour',
 ]);
 
+export const lightingRoleEnum = pgEnum('lighting_role_enum', [
+  'key', 'fill', 'back', 'rim', 'kicker', 'practical', 'eye_light',
+  'ambient', 'hair_light', 'set_light', 'special', 'natural',
+]);
+
 export const roleCategoryEnum = pgEnum('role_category_enum', [
   'camera', 'grip', 'electric', 'sound', 'art', 'wardrobe', 'makeup_hair',
   'production', 'post', 'vfx', 'direction', 'writing', 'music', 'stunts',
@@ -41,7 +46,13 @@ export const sourceKindEnum = pgEnum('source_kind_enum', [
   'magazine_article', 'press_release', 'epk_document', 'interview_transcript',
   'book', 'podcast', 'commentary_track', 'documentary',
   'manufacturer_product_page', 'social_media', 'personal_communication',
-  'forum_post', 'wiki', 'vfx_breakdown_article', 'other',
+  'forum_post', 'wiki', 'vfx_breakdown_article',
+  'asc_article', 'icg_article', 'cinematographer_interview',
+  'director_interview', 'vfx_supervisor_interview', 'official_epk',
+  'bts_video', 'vfx_breakdown_video', 'manufacturer_documentation',
+  'rental_house_confirmation', 'studio_press_kit', 'award_submission',
+  'trade_article', 'database_import', 'community_submission',
+  'other',
 ]);
 
 export const sourceConfidenceEnum = pgEnum('source_confidence_enum', [
@@ -69,4 +80,132 @@ export const videoCategoryEnum = pgEnum('video_category_enum', [
   'vfx_breakdown', 'compositing', 'making_of', 'behind_the_scenes',
   'director_interview', 'dp_interview', 'production_design',
   'stunts', 'sound', 'music', 'other',
+]);
+
+export const awardOrgEnum = pgEnum('award_org_enum', [
+  'academy_awards', 'bafta', 'cannes', 'golden_globes',
+  'critics_choice', 'asc_award', 'aso_award', 'csc_award',
+  'bsc_award', 'spirit_awards', 'venice', 'berlin', 'ves_award', 'eca', 'other',
+]);
+
+export const vfxHouseKindEnum = pgEnum('vfx_house_kind_enum', [
+  'full_service', 'boutique', 'in_house', 'rendering', 'previsualization', 'other',
+]);
+
+export const correctionStatusEnum = pgEnum('correction_status_enum', [
+  'open', 'triaged', 'resolved', 'dismissed',
+]);
+
+export const claimTypeEnum = pgEnum('claim_type_enum', [
+  'production_camera',
+  'production_lens',
+  'production_filter',
+  'production_format',
+  'production_lighting',
+  'production_color_pipeline',
+  'production_post_house',
+  'production_vfx_house',
+  'production_vfx_sequence',
+  'scene_camera',
+  'scene_lens',
+  'scene_lighting',
+  'scene_vfx',
+  'scene_location',
+  'gear_spec',
+  'person_credit',
+  'video_evidence',
+  'general_bts_fact',
+]);
+
+export const claimStatusEnum = pgEnum('claim_status_enum', [
+  'candidate',
+  'needs_source',
+  'sourced',
+  'reviewed',
+  'verified',
+  'disputed',
+  'deprecated',
+  'rejected',
+]);
+
+export const claimConfidenceEnum = pgEnum('claim_confidence_enum', [
+  'primary',
+  'secondary',
+  'manufacturer',
+  'rental_house',
+  'bts_visual',
+  'inferred',
+  'speculative',
+  'conflicting',
+]);
+
+export const claimEntityTypeEnum = pgEnum('claim_entity_type_enum', [
+  'production',
+  'scene',
+  'person',
+  'role',
+  'equipment_manufacturer',
+  'equipment_series',
+  'equipment_item',
+  'vfx_house',
+  'source',
+  'video',
+  'post_house',
+  'location',
+]);
+
+export const claimConflictKindEnum = pgEnum('claim_conflict_kind_enum', [
+  'direct_conflict',
+  'partial_conflict',
+  'stale_source',
+  'duplicate',
+  'scope_mismatch',
+]);
+
+export const claimConflictResolutionStatusEnum = pgEnum('claim_conflict_resolution_status_enum', [
+  'open',
+  'reviewing',
+  'resolved',
+  'dismissed',
+]);
+
+export const evidenceKindEnum = pgEnum('evidence_kind_enum', [
+  'video_timestamp',
+  'video_still',
+  'article_quote',
+  'image_crop',
+  'pdf_page',
+  'social_post',
+  'manual_editor_note',
+]);
+
+export const evidenceReviewStatusEnum = pgEnum('evidence_review_status_enum', [
+  'pending',
+  'reviewed',
+  'rejected',
+]);
+
+export const transcriptStatusEnum = pgEnum('transcript_status_enum', [
+  'pending',
+  'fetched',
+  'manual',
+  'unavailable',
+  'failed',
+]);
+
+export const videoAnnotationTypeEnum = pgEnum('video_annotation_type_enum', [
+  'visible_gear',
+  'vfx_before_after',
+  'lighting_setup_visible',
+  'monitor_lut_visible',
+  'rigging_stunt_visible',
+  'virtual_production_visible',
+  'interview_quote',
+  'general_evidence',
+]);
+
+export const videoAnnotationReviewStatusEnum = pgEnum('video_annotation_review_status_enum', [
+  'pending',
+  'reviewed',
+  'rejected',
 ]);

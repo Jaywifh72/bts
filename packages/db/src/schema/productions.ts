@@ -1,6 +1,6 @@
 import {
   pgTable, pgEnum, bigserial, bigint, text, integer, timestamp, date, boolean, numeric,
-  primaryKey, unique, index, type AnyPgColumn,
+  primaryKey, unique, index, jsonb, vector, type AnyPgColumn,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import {
@@ -10,6 +10,22 @@ import {
 } from './enums.ts';
 
 export const productionDataTierEnum = pgEnum('production_data_tier', ['curated', 'imported']);
+
+/**
+ * TMDb release-date types — matches the integer codes returned by TMDb's
+ * /release_dates endpoint. Stored as a number in the JSONB column; UI
+ * components map this to a human label.
+ */
+export type ReleaseDateType = 1 | 2 | 3 | 4 | 5 | 6;
+
+export type ProductionReleaseDate = {
+  /** ISO-3166-1 alpha-2 country code, e.g. 'US', 'GB', 'JP'. */
+  country: string;
+  /** 'YYYY-MM-DD' (TMDb returns ISO-8601 timestamps; we store the date portion only). */
+  date: string;
+  type: ReleaseDateType;
+  certification?: string;
+};
 
 export const studios = pgTable('studios', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
@@ -22,7 +38,11 @@ export const studios = pgTable('studios', {
   wikidataId: text('wikidata_id').unique(),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => ({
+  // 0050 — reverse-lookup ("list child studios of a parent group").
+  parentIdx: index('studios_parent_studio_idx').on(t.parentStudioId)
+    .where(sql`${t.parentStudioId} IS NOT NULL`),
+}));
 
 export const productions = pgTable('productions', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
@@ -54,6 +74,23 @@ export const productions = pgTable('productions', {
   dataTier: productionDataTierEnum('data_tier').notNull().default('imported'),
   // T1-3: bumped only by human review; bulk TMDb enrich does NOT touch this.
   lastVerifiedAt: timestamp('last_verified_at', { withTimezone: true }),
+  // 0054 — editorial bylines for E-E-A-T. Null on imported rows; set to
+  // a name or pen-name on curated rows. `curated_by_url` optional link to
+  // contributor profile / society listing.
+  curatedBy: text('curated_by'),
+  curatedByUrl: text('curated_by_url'),
+  lastCuratedReview: timestamp('last_curated_review', { withTimezone: true }),
+  // T2-4: TMDb release dates by region. Shape per release_dates.ts.
+  releaseDates: jsonb('release_dates').$type<ProductionReleaseDate[]>(),
+  // E-26: 1536-dim embedding from text-embedding-3-small over the
+  // production's title + synopsis + DP/director credits. Backed by an
+  // HNSW index for sub-100ms cosine-similarity retrieval.
+  embedding: vector('embedding', { dimensions: 1536 }),
+  // 0053 — embedding model versioning. `embedding_model` records WHICH
+  // model produced the vector so re-embed sweeps can target stale rows
+  // after a model rotation.
+  embeddingModel: text('embedding_model'),
+  embeddingGeneratedAt: timestamp('embedding_generated_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
@@ -83,6 +120,11 @@ export const productionFormats = pgTable('production_formats', {
   primaryPerProductionIdx: index('production_formats_primary_idx')
     .on(t.productionId)
     .where(sql`${t.isPrimary} = true`),
+  // 0050 — natural-key unique so ON CONFLICT DO NOTHING in seeds is genuinely
+  // idempotent. NULLS NOT DISTINCT lets colorSpace/frameRate vary while still
+  // collapsing duplicates on (production_id, aspect_ratio, acquisition_format).
+  naturalKey: unique('production_formats_natural_key')
+    .on(t.productionId, t.aspectRatio, t.acquisitionFormat),
 }));
 
 export const productionStudios = pgTable('production_studios', {

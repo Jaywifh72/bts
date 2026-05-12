@@ -15,8 +15,15 @@ export type PersonListRow = {
 };
 
 export type ListPeopleFilters = {
-  /** Filter to people with at least one crew assignment in the given role category. */
+  /** Filter to people whose primary role is in the given role category. */
   category?: string;
+  /** Filter to people whose primary role is in any of the given categories
+   *  (multi-category disciplines like /sound = post + sound). */
+  categories?: string[];
+  /** Filter to people who have at least one credit in any of the given role slugs.
+   *  More precise than `category` for sub-disciplines like /sound = sound-designer
+   *  + foley-artist + re-recording-mixer + ... where the roles span two categories. */
+  roleSlugs?: string[];
   /** ISO-3166 alpha-2 nationality filter. */
   nationality?: string;
   /** When true, hides people with zero crew_assignments. */
@@ -70,6 +77,17 @@ export async function listPeople(
     WHERE
       ${filters.withCreditsOnly ? sql`COALESCE(cc.cnt, 0) > 0` : sql`TRUE`}
       AND ${filters.category ? sql`pr.role_category = ${filters.category}::role_category_enum` : sql`TRUE`}
+      AND ${filters.categories && filters.categories.length > 0
+        ? sql`pr.role_category = ANY(${`{${filters.categories.join(',')}}`}::role_category_enum[])`
+        : sql`TRUE`}
+      AND ${filters.roleSlugs && filters.roleSlugs.length > 0
+        ? sql`EXISTS (
+            SELECT 1 FROM crew_assignments ca
+            JOIN roles r ON r.id = ca.role_id
+            WHERE ca.person_id = p.id
+              AND r.slug = ANY(${`{${filters.roleSlugs.join(',')}}`}::text[])
+          )`
+        : sql`TRUE`}
       AND ${filters.nationality ? sql`p.country = ${filters.nationality}` : sql`TRUE`}
     ORDER BY ${orderClause}
     LIMIT ${limit} OFFSET ${offset}
@@ -137,6 +155,18 @@ export async function getPersonBySlug(db: SeedDb = defaultDb, slug: string) {
     profile_path: string | null;
     tmdb_person_id: number | null;
     aliases: string[];
+    film_schools: string[];
+    member_societies: string[];
+    // 0042 — phase-2 stunt fields.
+    stunt_disciplines: string[];
+    height_cm: number | null;
+    weight_kg: string | null;            // numeric → text round-trip
+    performer_union: string | null;
+    doubles_for: string[];
+    training_school_slugs: string[];
+    stunt_company_slug: string | null;
+    // 0044 — phase-4 lineage edges.
+    mentor_person_slugs: string[];
   }>(sql`
     SELECT id, slug, display_name,
            EXTRACT(YEAR FROM birth_date)::int AS birth_year,
@@ -149,12 +179,255 @@ export async function getPersonBySlug(db: SeedDb = defaultDb, slug: string) {
            wikidata_id,
            profile_path,
            tmdb_person_id,
-           aliases
+           aliases,
+           film_schools,
+           member_societies,
+           stunt_disciplines,
+           height_cm,
+           weight_kg::text,
+           performer_union,
+           doubles_for,
+           training_school_slugs,
+           stunt_company_slug,
+           mentor_person_slugs
     FROM people
     WHERE slug = ${slug}
   `);
 
   return person ?? null;
+}
+
+export type LineageNode = {
+  slug: string;
+  display_name: string;
+  profile_path: string | null;
+  primary_role: string | null;
+  stunt_disciplines: string[];
+};
+
+/**
+ * Resolves the mentor → protégé graph for a single person:
+ *   - mentors: people listed in this person's `mentor_person_slugs`
+ *   - protégés: people whose `mentor_person_slugs` array contains
+ *     this person's slug (inverse lookup, GIN-indexed)
+ *
+ * Both directions are hydrated to `LineageNode` so the crew page
+ * can render names + photos + roles without a second roundtrip.
+ */
+export async function getStuntLineage(
+  db: SeedDb = defaultDb,
+  personSlug: string,
+  mentorSlugs: readonly string[],
+): Promise<{ mentors: LineageNode[]; protégés: LineageNode[] }> {
+  const lineageNodeSql = sql`
+    SELECT
+      p.slug, p.display_name, p.profile_path, p.stunt_disciplines,
+      (
+        SELECT r.name
+        FROM crew_assignments ca
+        JOIN roles r ON r.id = ca.role_id
+        WHERE ca.person_id = p.id AND r.category = 'stunts'
+        ORDER BY r.slug
+        LIMIT 1
+      ) AS primary_role
+    FROM people p
+  `;
+
+  const [mentors, protégés] = await Promise.all([
+    mentorSlugs.length > 0
+      ? db.execute<LineageNode>(sql`
+          ${lineageNodeSql}
+          WHERE p.slug IN ${sql`(${sql.join(mentorSlugs.map((s) => sql`${s}`), sql`, `)})`}
+          ORDER BY p.display_name
+        `)
+      : Promise.resolve([]),
+    db.execute<LineageNode>(sql`
+      ${lineageNodeSql}
+      WHERE p.mentor_person_slugs @> ARRAY[${personSlug}]::text[]
+      ORDER BY p.display_name
+    `),
+  ]);
+
+  return { mentors: [...mentors], protégés: [...protégés] };
+}
+
+export type LineageEdge = {
+  mentor_slug: string;
+  mentor_display_name: string;
+  mentor_profile_path: string | null;
+  protégé_slug: string;
+  protégé_display_name: string;
+  protégé_profile_path: string | null;
+  protégé_primary_role: string | null;
+};
+
+/**
+ * Returns every mentor → protégé edge in the dataset, hydrated, for
+ * the /stunts/lineage page. Sorted so root mentors (those without
+ * mentors of their own) come first within each cluster.
+ */
+export async function listStuntLineageEdges(db: SeedDb = defaultDb): Promise<LineageEdge[]> {
+  return db.execute<LineageEdge>(sql`
+    SELECT
+      m.slug AS mentor_slug,
+      m.display_name AS mentor_display_name,
+      m.profile_path AS mentor_profile_path,
+      p.slug AS "protégé_slug",
+      p.display_name AS "protégé_display_name",
+      p.profile_path AS "protégé_profile_path",
+      (
+        SELECT r.name
+        FROM crew_assignments ca
+        JOIN roles r ON r.id = ca.role_id
+        WHERE ca.person_id = p.id AND r.category = 'stunts'
+        ORDER BY r.slug
+        LIMIT 1
+      ) AS "protégé_primary_role"
+    FROM people p,
+         unnest(p.mentor_person_slugs) AS mentor_slug
+    JOIN people m ON m.slug = mentor_slug
+    WHERE COALESCE(array_length(p.mentor_person_slugs, 1), 0) > 0
+    ORDER BY m.display_name, p.display_name
+  `);
+}
+
+/**
+ * Cross-reference: hydrate slug arrays on a person row into rich
+ * objects so the page can render names + links without a second query.
+ * Used by the stunt section + the crew page's stunt block.
+ */
+export async function getStuntContextForPerson(
+  db: SeedDb = defaultDb,
+  doublesFor: readonly string[],
+  trainingSchoolSlugs: readonly string[],
+  stuntCompanySlug: string | null,
+) {
+  const [doubles, schools, company] = await Promise.all([
+    doublesFor.length > 0
+      ? db.execute<{ slug: string; display_name: string }>(sql`
+          SELECT slug, display_name FROM people
+          WHERE slug IN ${sql`(${sql.join(doublesFor.map((s) => sql`${s}`), sql`, `)})`}
+        `)
+      : Promise.resolve([]),
+    trainingSchoolSlugs.length > 0
+      ? db.execute<{ slug: string; name: string }>(sql`
+          SELECT slug, name FROM stunt_schools
+          WHERE slug IN ${sql`(${sql.join(trainingSchoolSlugs.map((s) => sql`${s}`), sql`, `)})`}
+        `)
+      : Promise.resolve([]),
+    stuntCompanySlug
+      ? db.execute<{ slug: string; name: string }>(sql`
+          SELECT slug, name FROM stunt_companies WHERE slug = ${stuntCompanySlug}
+        `).then((rows) => rows[0] ?? null)
+      : Promise.resolve(null),
+  ]);
+  return { doubles: [...doubles], schools: [...schools], company };
+}
+
+export type StuntPersonRow = {
+  slug: string;
+  display_name: string;
+  profile_path: string | null;
+  performer_union: string | null;
+  stunt_disciplines: string[];
+  doubles_for: string[];
+  stunt_company_slug: string | null;
+  training_school_slugs: string[];
+  primary_role: string | null;
+  credit_count: number;
+  // Phase 8/9/12 enrichments — pulled from the relational tables
+  // rather than the legacy text-array columns above. The text array
+  // is preserved for backwards-compat with seeds that haven't been
+  // re-imported yet.
+  doubling_credit_count: number;
+  /** display_name of the actor this person has doubled most often, with the count */
+  top_doubled_name: string | null;
+  top_doubled_slug: string | null;
+  top_doubled_count: number;
+  /** company memberships from stunt_company_members — slugs only, principals first */
+  member_company_slugs: string[];
+  /** primary company name to render inline on the card; first principal membership */
+  primary_company_name: string | null;
+  primary_company_slug: string | null;
+};
+
+/**
+ * Lists every person with at least one stunt-relevant attribute —
+ * either a populated `stunt_disciplines` array, a primary affiliation
+ * to a stunt company, or a credited `roles.category = 'stunts'` work
+ * entry. Used by the /stunts/people index.
+ */
+export async function listStuntPeople(db: SeedDb = defaultDb): Promise<StuntPersonRow[]> {
+  return db.execute<StuntPersonRow>(sql`
+    WITH stunt_credits AS (
+      SELECT ca.person_id,
+             COUNT(*)::int AS cnt,
+             (ARRAY_AGG(r.name ORDER BY r.slug))[1] AS primary_role
+      FROM crew_assignments ca
+      JOIN roles r ON r.id = ca.role_id
+      WHERE r.category = 'stunts'
+      GROUP BY ca.person_id
+    ),
+    -- Phase 8/9 doubling-credits aggregations.
+    doubling_summary AS (
+      SELECT sdc.doubler_person_id AS person_id,
+             COUNT(*)::int AS cnt
+      FROM stunt_doubling_credits sdc
+      GROUP BY sdc.doubler_person_id
+    ),
+    top_doubled_per_person AS (
+      SELECT DISTINCT ON (sdc.doubler_person_id)
+             sdc.doubler_person_id AS person_id,
+             dp.slug AS doubled_slug,
+             dp.display_name AS doubled_name,
+             COUNT(*)::int AS doubled_count
+      FROM stunt_doubling_credits sdc
+      JOIN people dp ON dp.id = sdc.doubled_person_id
+      GROUP BY sdc.doubler_person_id, dp.slug, dp.display_name
+      ORDER BY sdc.doubler_person_id, COUNT(*) DESC, dp.display_name
+    ),
+    -- Phase 8 company-memberships aggregations.
+    membership_summary AS (
+      SELECT scm.person_id,
+             ARRAY_AGG(sc.slug ORDER BY scm.is_principal DESC, scm.sort_order) AS company_slugs
+      FROM stunt_company_members scm
+      JOIN stunt_companies sc ON sc.id = scm.company_id
+      GROUP BY scm.person_id
+    ),
+    primary_company AS (
+      SELECT DISTINCT ON (scm.person_id)
+             scm.person_id,
+             sc.slug AS company_slug,
+             sc.name AS company_name
+      FROM stunt_company_members scm
+      JOIN stunt_companies sc ON sc.id = scm.company_id
+      ORDER BY scm.person_id, scm.is_principal DESC, scm.sort_order
+    )
+    SELECT p.slug, p.display_name, p.profile_path,
+           p.performer_union, p.stunt_disciplines, p.doubles_for,
+           p.stunt_company_slug, p.training_school_slugs,
+           sc.primary_role,
+           COALESCE(sc.cnt, 0)::int AS credit_count,
+           COALESCE(ds.cnt, 0)::int AS doubling_credit_count,
+           td.doubled_name AS top_doubled_name,
+           td.doubled_slug AS top_doubled_slug,
+           COALESCE(td.doubled_count, 0)::int AS top_doubled_count,
+           COALESCE(ms.company_slugs, '{}'::text[]) AS member_company_slugs,
+           pc.company_name AS primary_company_name,
+           pc.company_slug AS primary_company_slug
+    FROM people p
+    LEFT JOIN stunt_credits sc ON sc.person_id = p.id
+    LEFT JOIN doubling_summary ds ON ds.person_id = p.id
+    LEFT JOIN top_doubled_per_person td ON td.person_id = p.id
+    LEFT JOIN membership_summary ms ON ms.person_id = p.id
+    LEFT JOIN primary_company pc ON pc.person_id = p.id
+    WHERE COALESCE(array_length(p.stunt_disciplines, 1), 0) > 0
+       OR p.stunt_company_slug IS NOT NULL
+       OR sc.cnt > 0
+       OR ds.cnt > 0
+       OR ms.company_slugs IS NOT NULL
+    ORDER BY p.display_name ASC
+  `);
 }
 
 /**
@@ -202,6 +475,7 @@ export async function getPersonFilmography(db: SeedDb = defaultDb, slug: string)
     release_year: number | null;
     production_type: string;
     role_name: string;
+    role_slug: string;
     role_category: string;
     credit_name_override: string | null;
     /** T3-4 — surfaced when present (e.g. "additional photography only") */
@@ -212,7 +486,7 @@ export async function getPersonFilmography(db: SeedDb = defaultDb, slug: string)
   }>(sql`
     SELECT p.slug AS production_slug, p.title AS production_title,
            p.release_year, p.type AS production_type,
-           r.name AS role_name, r.category AS role_category,
+           r.name AS role_name, r.slug AS role_slug, r.category AS role_category,
            ca.credit_name_override,
            ca.notes,
            pf.aspect_ratio AS primary_aspect_ratio,

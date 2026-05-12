@@ -53,7 +53,8 @@ export async function runSeed(db: SeedDb = defaultDb): Promise<void> {
 // CLI entry: only when this file is invoked directly via `tsx src/seed/run.ts`.
 // On Windows, process.argv[1] uses backslashes (C:\...) while import.meta.url
 // uses forward slashes (file:///C:/...). Normalise both sides for comparison.
-const _argv1AsUrl = `file:///${process.argv[1].replace(/\\/g, '/')}`;
+const invokedPath = process.argv[1];
+const _argv1AsUrl = invokedPath ? `file:///${invokedPath.replace(/\\/g, '/')}` : null;
 if (import.meta.url === _argv1AsUrl) {
   runSeed(defaultDb)
     .then(() => defaultSql.end())

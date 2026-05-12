@@ -455,10 +455,11 @@ export const scenesData: SceneSeed[] = [
 
 export async function seedScenes(db: SeedDb) {
   for (const s of scenesData) {
-    const [{ id: prodId }] = await db.select({ id: productions.id })
+    const [production] = await db.select({ id: productions.id })
       .from(productions)
       .where(eq(productions.slug, s.productionSlug));
-    if (!prodId) throw new Error(`unknown production slug: ${s.productionSlug}`);
+    if (!production) throw new Error(`unknown production slug: ${s.productionSlug}`);
+    const prodId = production.id;
     await db.insert(scenes)
       .values({
         productionId: prodId,

@@ -12,3 +12,9 @@ export function createTestDb() {
 export async function resetTestSchema(sql: postgres.Sql) {
   await sql.unsafe('DROP SCHEMA public CASCADE; CREATE SCHEMA public; DROP SCHEMA IF EXISTS drizzle CASCADE;');
 }
+
+export function expectOne<T>(rows: readonly T[], label = 'row'): T {
+  const row = rows[0];
+  if (!row) throw new Error(`Expected ${label} to exist`);
+  return row;
+}
