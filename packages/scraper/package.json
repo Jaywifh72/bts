@@ -18,7 +18,7 @@
     "fuse.js": "^7.0.0",
     "node-cron": "^3.0.0",
     "dotenv": "^16.0.0",
-    "jimp": "^0.22.10",
+    "jimp": "^1.6.1",
     "zod": "^3.23.0"
   },
   "devDependencies": {
