@@ -1,0 +1,62 @@
+# Dependabot — automated dependency security + minor-version updates.
+#
+# Why each ecosystem:
+#   • npm:    Three pnpm workspaces under one root manifest. Dependabot
+#             handles pnpm correctly via package-ecosystem: "npm" with
+#             versioning-strategy: "increase".
+#   • github-actions: The CI workflow pins actions/checkout, actions/
+#             setup-node, pnpm/action-setup, actions/upload-artifact.
+#             Dependabot will PR major+minor bumps when they ship.
+#
+# Cadence: weekly is the right default for a solo project. Security
+# alerts come through regardless of schedule (they're separate from the
+# scheduled bump checks).
+#
+# Grouping: small monorepo, group everything into ONE PR per ecosystem
+# per week to keep review overhead low. Major bumps still come as
+# individual PRs (default Dependabot behavior).
+
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 5
+    versioning-strategy: "increase"
+    groups:
+      # All minor/patch bumps in one PR per week. Major bumps still
+      # come as individual PRs since they can carry breaking changes.
+      npm-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    commit-message:
+      prefix: "chore(deps)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "npm"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "08:00"
+      timezone: "America/New_York"
+    open-pull-requests-limit: 3
+    groups:
+      actions-minor-and-patch:
+        update-types:
+          - "minor"
+          - "patch"
+    commit-message:
+      prefix: "chore(ci)"
+      include: "scope"
+    labels:
+      - "dependencies"
+      - "github-actions"
