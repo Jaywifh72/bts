@@ -2,6 +2,34 @@ import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import { migrate } from 'drizzle-orm/postgres-js/migrator';
 import { eq } from 'drizzle-orm';
 import { createTestDb, expectOne, resetTestSchema } from './helpers.ts';
+
+// Walk an error's `cause` chain looking for a foreign-key violation.
+//
+// Drizzle 0.36 surfaced the raw postgres-js error directly, so its `message`
+// contained "foreign key constraint". Drizzle 0.45 wraps queries with a new
+// Error whose message is "Failed query: <SQL>" and stashes the original on
+// `.cause` (this is the wrapper introduced alongside the sql.identifier()
+// SQL-injection patch). Match either shape, and prefer the postgres-js error
+// code 23503 (foreign_key_violation) when we can find it.
+function isFkViolation(err: unknown): boolean {
+  let cur: unknown = err;
+  while (cur) {
+    const e = cur as { code?: string; message?: string; cause?: unknown };
+    if (e.code === '23503') return true;
+    if (typeof e.message === 'string' && /foreign key/i.test(e.message)) return true;
+    cur = e.cause;
+  }
+  return false;
+}
+
+async function expectFkViolation(p: Promise<unknown>): Promise<void> {
+  try {
+    await p;
+    throw new Error('Expected a foreign-key violation, got resolved promise');
+  } catch (err) {
+    if (!isFkViolation(err)) throw err;
+  }
+}
 import {
   productions, scenes, productionFormats, productionStudios, productionSources,
   studios, people, roles, crewAssignments, crewAssignmentSources,
@@ -152,7 +180,7 @@ describe('cascade matrix — RESTRICT edges', () => {
     const person = expectOne(await db.insert(people).values({ slug: 'casc-r-pp-1', displayName: 'P' }).returning(), 'person');
     const role = expectOne(await db.insert(roles).values({ slug: 'casc-r-rr-1', name: 'R', category: 'production' }).returning(), 'role');
     await db.insert(crewAssignments).values({ productionId: p.id, personId: person.id, roleId: role.id });
-    await expect(db.delete(people).where(eq(people.id, person.id))).rejects.toThrow(/foreign key/i);
+    await expectFkViolation(db.delete(people).where(eq(people.id, person.id)));
     // Cleanup: delete production first (cascades crew_assignments), then person/role
     await db.delete(productions).where(eq(productions.id, p.id));
     await db.delete(people).where(eq(people.id, person.id));
@@ -166,7 +194,7 @@ describe('cascade matrix — RESTRICT edges', () => {
     const es = expectOne(await db.insert(equipmentSeries).values({ slug: 'casc-r-es-2', name: 'ES', category: 'camera_body', manufacturerId: m.id }).returning(), 'es');
     const it = expectOne(await db.insert(equipmentItems).values({ slug: 'casc-r-it-2', name: 'IT', seriesId: es.id, status: 'active' }).returning(), 'it');
     await db.insert(equipmentUsage).values({ sceneId: sc.id, equipmentSeriesId: es.id, equipmentItemId: it.id });
-    await expect(db.delete(equipmentItems).where(eq(equipmentItems.id, it.id))).rejects.toThrow(/foreign key/i);
+    await expectFkViolation(db.delete(equipmentItems).where(eq(equipmentItems.id, it.id)));
     // Cleanup: production cascade wipes scenes+equipment_usage, then items/series/manufacturer
     await db.delete(productions).where(eq(productions.id, p.id));
     await db.delete(equipmentItems).where(eq(equipmentItems.id, it.id));
@@ -178,7 +206,7 @@ describe('cascade matrix — RESTRICT edges', () => {
     const m = expectOne(await db.insert(equipmentManufacturers).values({ slug: 'casc-r-m-3', name: 'M', kind: 'manufacturer' }).returning(), 'm');
     const es = expectOne(await db.insert(equipmentSeries).values({ slug: 'casc-r-es-3', name: 'ES', category: 'camera_body', manufacturerId: m.id }).returning(), 'es');
     await db.insert(equipmentItems).values({ slug: 'casc-r-it-3', name: 'IT', seriesId: es.id, status: 'active' });
-    await expect(db.delete(equipmentSeries).where(eq(equipmentSeries.id, es.id))).rejects.toThrow(/foreign key/i);
+    await expectFkViolation(db.delete(equipmentSeries).where(eq(equipmentSeries.id, es.id)));
     await db.delete(equipmentItems).where(eq(equipmentItems.seriesId, es.id));
     await db.delete(equipmentSeries).where(eq(equipmentSeries.id, es.id));
     await db.delete(equipmentManufacturers).where(eq(equipmentManufacturers.id, m.id));
@@ -187,7 +215,7 @@ describe('cascade matrix — RESTRICT edges', () => {
   it('equipment_manufacturer deletion is RESTRICTED when it has series', async () => {
     const m = expectOne(await db.insert(equipmentManufacturers).values({ slug: 'casc-r-m-4', name: 'M', kind: 'manufacturer' }).returning(), 'm');
     await db.insert(equipmentSeries).values({ slug: 'casc-r-es-4', name: 'ES', category: 'camera_body', manufacturerId: m.id });
-    await expect(db.delete(equipmentManufacturers).where(eq(equipmentManufacturers.id, m.id))).rejects.toThrow(/foreign key/i);
+    await expectFkViolation(db.delete(equipmentManufacturers).where(eq(equipmentManufacturers.id, m.id)));
     await db.delete(equipmentSeries).where(eq(equipmentSeries.manufacturerId, m.id));
     await db.delete(equipmentManufacturers).where(eq(equipmentManufacturers.id, m.id));
   });
@@ -196,7 +224,7 @@ describe('cascade matrix — RESTRICT edges', () => {
     const p = expectOne(await db.insert(productions).values({ slug: 'casc-r-p-5', type: 'feature', title: 'T' }).returning(), 'p');
     const s = expectOne(await db.insert(studios).values({ slug: 'casc-r-s-5', name: 'S', kind: 'studio' }).returning(), 's');
     await db.insert(productionStudios).values({ productionId: p.id, studioId: s.id, role: 'distributor' });
-    await expect(db.delete(studios).where(eq(studios.id, s.id))).rejects.toThrow(/foreign key/i);
+    await expectFkViolation(db.delete(studios).where(eq(studios.id, s.id)));
     await db.delete(productions).where(eq(productions.id, p.id));
     await db.delete(studios).where(eq(studios.id, s.id));
   });
@@ -206,7 +234,7 @@ describe('cascade matrix — RESTRICT edges', () => {
     const person = expectOne(await db.insert(people).values({ slug: 'casc-r-pp-6', displayName: 'P' }).returning(), 'person');
     const role = expectOne(await db.insert(roles).values({ slug: 'casc-r-rr-6', name: 'R', category: 'production' }).returning(), 'role');
     await db.insert(crewAssignments).values({ productionId: p.id, personId: person.id, roleId: role.id });
-    await expect(db.delete(roles).where(eq(roles.id, role.id))).rejects.toThrow(/foreign key/i);
+    await expectFkViolation(db.delete(roles).where(eq(roles.id, role.id)));
     await db.delete(productions).where(eq(productions.id, p.id));
     await db.delete(people).where(eq(people.id, person.id));
     await db.delete(roles).where(eq(roles.id, role.id));
@@ -216,7 +244,7 @@ describe('cascade matrix — RESTRICT edges', () => {
     const p = expectOne(await db.insert(productions).values({ slug: 'casc-r-p-7', type: 'feature', title: 'T' }).returning(), 'p');
     const src = expectOne(await db.insert(sources).values({ slug: 'casc-r-src-7', kind: 'wiki', title: 'S' }).returning(), 'src');
     await db.insert(productionSources).values({ productionId: p.id, sourceId: src.id, confidence: 'primary' });
-    await expect(db.delete(sources).where(eq(sources.id, src.id))).rejects.toThrow(/foreign key/i);
+    await expectFkViolation(db.delete(sources).where(eq(sources.id, src.id)));
     await db.delete(productions).where(eq(productions.id, p.id));
     await db.delete(sources).where(eq(sources.id, src.id));
   });
@@ -284,7 +312,7 @@ describe('cascade matrix — VFX tables', () => {
     const p = expectOne(await db.insert(productions).values({ slug: 'casc-vfx-r-p-1', type: 'feature', title: 'T' }).returning(), 'p');
     const h = expectOne(await db.insert(vfxHouses).values({ slug: 'casc-vfx-r-h-1', name: 'H' }).returning(), 'h');
     await db.insert(vfxCredits).values({ productionId: p.id, vfxHouseId: h.id, role: 'primary' });
-    await expect(db.delete(vfxHouses).where(eq(vfxHouses.id, h.id))).rejects.toThrow(/foreign key/i);
+    await expectFkViolation(db.delete(vfxHouses).where(eq(vfxHouses.id, h.id)));
     await db.delete(productions).where(eq(productions.id, p.id));
     await db.delete(vfxHouses).where(eq(vfxHouses.id, h.id));
   });
