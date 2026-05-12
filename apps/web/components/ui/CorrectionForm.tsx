@@ -1,7 +1,10 @@
 'use client';
 
-import { useFormState, useFormStatus } from 'react-dom';
-import { useState } from 'react';
+// React 19 removed useFormState (it lived on react-dom). The replacement is
+// useActionState on `react`. The two share an API shape, so the call below
+// is a drop-in. useFormStatus stayed on react-dom unchanged.
+import { useActionState, useState } from 'react';
+import { useFormStatus } from 'react-dom';
 import { submitCorrectionAction, type CorrectionFormState } from '../../app/corrections/actions';
 
 const initialState: CorrectionFormState = { ok: false };
@@ -32,7 +35,7 @@ export function CorrectionForm({
   pageUrl: string;
 }) {
   const [open, setOpen] = useState(false);
-  const [state, formAction] = useFormState(submitCorrectionAction, initialState);
+  const [state, formAction] = useActionState(submitCorrectionAction, initialState);
 
   if (!open) {
     return (
