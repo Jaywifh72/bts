@@ -39,3 +39,7 @@ pnpm-debug.log*
 # scraper raw data
 packages/scraper/data/vfx-raw/*.json
 packages/scraper/data/vfx-raw/**/*.json
+
+# Playwright artifacts
+apps/web/test-results/
+apps/web/playwright-report/
