@@ -52,7 +52,7 @@ function yearFromDate(date: string | null): number | null {
   return Number.isFinite(y) ? y : null;
 }
 
-async function upsertMovie(movie: TmdbMovie): Promise<'inserted' | 'updated' | 'skipped'> {
+export async function upsertMovie(movie: TmdbMovie): Promise<'inserted' | 'updated' | 'skipped'> {
   const year = yearFromDate(movie.release_date);
   let slug = buildSlug(movie, year);
 

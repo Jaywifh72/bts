@@ -13,12 +13,43 @@ interface CategoriseInput {
 
 /**
  * Keyword lists per category. Checked in priority order.
- * compositing MUST be checked before vfx_breakdown to avoid being swallowed.
+ *
+ * Ordering rules:
+ *   - compositing before vfx_breakdown — "compositing breakdown"
+ *     should not be swallowed by the broader "breakdown" keyword.
+ *   - stunts before making_of and behind_the_scenes — a video
+ *     titled "BTS — Stunt Coordination" or "Making of the Mission
+ *     Impossible Stunts" is fundamentally a stunt video, not a
+ *     generic BTS or making-of. The previous order produced 0
+ *     stunt-categorised rows in the entire corpus.
+ *   - vfx_breakdown after stunts so "stunt breakdown" doesn't get
+ *     swallowed; the "breakdown" keyword is broad.
  */
 const KEYWORD_CATEGORIES: Array<{ category: VideoCategory; keywords: string[] }> = [
   {
     category: 'compositing',
     keywords: ['compositing', 'nuke', 'colour grade', 'color grade'],
+  },
+  {
+    category: 'stunts',
+    keywords: [
+      // Bare 'stunt' covers stunt/stunts/coordinator/double/sequence.
+      'stunt',
+      // Bare 'fight' / 'fights' is broad but in a film-discovery
+      // context (titles already scoped to a production) almost
+      // always indicates stunt or fight-choreography content.
+      'fight', 'fights',
+      // Common chase / action-sequence vocabulary.
+      'car chase', 'chase scene', 'chase sequence',
+      'action design', 'action choreography', 'action sequence',
+      'action set piece', 'action set-piece',
+      // Specific rigs / choreography languages from the rigging glossary.
+      'cannon roll', 'high fall', 'wirework', 'wire work',
+      'free fall',
+      // Working studio / coordinator vocabulary.
+      '87eleven', '87 eleven',
+      'gun fu', 'gun-fu', 'martial arts choreography',
+    ],
   },
   {
     category: 'vfx_breakdown',
@@ -43,10 +74,6 @@ const KEYWORD_CATEGORIES: Array<{ category: VideoCategory; keywords: string[] }>
   {
     category: 'production_design',
     keywords: ['production design', 'set design', 'art department'],
-  },
-  {
-    category: 'stunts',
-    keywords: ['stunts', 'stunt'],
   },
   {
     category: 'sound',

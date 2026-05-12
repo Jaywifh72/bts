@@ -170,6 +170,67 @@ export async function fetchMovieCredits(id: number): Promise<TmdbCredits | null>
 }
 
 /**
+ * TMDb release-date type codes. We expose these so callers can filter for
+ * theatrical-only or premiere-only without hard-coding the magic numbers.
+ */
+export const RELEASE_TYPE = {
+  premiere: 1,
+  theatrical_limited: 2,
+  theatrical: 3,
+  digital: 4,
+  physical: 5,
+  tv: 6,
+} as const;
+
+export type TmdbReleaseDate = {
+  country: string;
+  date: string; // 'YYYY-MM-DD'
+  type: 1 | 2 | 3 | 4 | 5 | 6;
+  certification?: string;
+};
+
+/**
+ * Fetches /movie/{id}/release_dates. Flattens TMDb's nested per-country
+ * shape into a single array sorted by (country, date). Empty arrays come
+ * back as [], not null, so callers can distinguish "fetched but empty"
+ * from "never fetched" via the column-level NULL on productions.
+ */
+export async function fetchMovieReleaseDates(
+  id: number,
+): Promise<TmdbReleaseDate[] | null> {
+  type Resp = {
+    results: Array<{
+      iso_3166_1: string;
+      release_dates: Array<{
+        certification: string;
+        release_date: string; // ISO-8601 with T00:00:00.000Z
+        type: number;
+        note?: string;
+      }>;
+    }>;
+  };
+  const raw = await tmdbFetch<Resp>(`/movie/${id}/release_dates`);
+  if (!raw) return null;
+  const flat: TmdbReleaseDate[] = [];
+  for (const country of raw.results) {
+    for (const r of country.release_dates) {
+      const dateOnly = r.release_date?.slice(0, 10);
+      if (!dateOnly) continue;
+      const type = r.type as 1 | 2 | 3 | 4 | 5 | 6;
+      if (type < 1 || type > 6) continue;
+      flat.push({
+        country: country.iso_3166_1,
+        date: dateOnly,
+        type,
+        ...(r.certification ? { certification: r.certification } : {}),
+      });
+    }
+  }
+  flat.sort((a, b) => (a.country === b.country ? a.date.localeCompare(b.date) : a.country.localeCompare(b.country)));
+  return flat;
+}
+
+/**
  * Fetches the images endpoint. Filters backdrops by aspect ratio so we don't
  * end up with portrait poster art in the "backdrops" array (a TMDb quirk on
  * older films like The Godfather).

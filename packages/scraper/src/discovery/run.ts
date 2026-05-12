@@ -26,6 +26,11 @@ const QUERY_TEMPLATES = [
   '"[title] [year] behind the scenes"',
   '"[title] [year] cinematography"',
   '"[title] [year] production design"',
+  // Stunt-specific search terms — without these, stunt content
+  // surfaces only when a generic BTS query happens to return it,
+  // which is unreliable for stunt-heavy productions.
+  '"[title] [year] stunt coordinator"',
+  '"[title] [year] fight choreography"',
 ];
 
 function buildQuery(template: string, title: string, year: number | null): string {
