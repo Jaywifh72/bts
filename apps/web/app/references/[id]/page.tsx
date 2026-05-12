@@ -4,9 +4,10 @@ import { notFound } from 'next/navigation';
 import { db, getMediaAssetById, type HydratedAssociation } from '@bts/db';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 
-interface Props { params: { id: string } }
+interface Props { params: Promise<{ id: string }> }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const id = Number(params.id);
   if (!Number.isFinite(id)) return {};
   const data = await getMediaAssetById(db, id);
@@ -52,7 +53,8 @@ const ROLE_BADGE: Record<string, string> = {
   related:        'border-zinc-700 text-zinc-500',
 };
 
-export default async function ReferenceDetailPage({ params }: Props) {
+export default async function ReferenceDetailPage(props: Props) {
+  const params = await props.params;
   const id = Number(params.id);
   if (!Number.isFinite(id)) notFound();
   const data = await getMediaAssetById(db, id);
@@ -77,7 +79,6 @@ export default async function ReferenceDetailPage({ params }: Props) {
         <span className="mx-2 text-zinc-700">/</span>
         <span className="text-zinc-300">#{asset.id}</span>
       </nav>
-
       <header className="mb-10 rounded border border-amber-900/40 bg-amber-950/10 p-6">
         <div className="flex items-baseline gap-3">
           <span className={`shrink-0 rounded border px-2 py-0.5 font-mono text-xs uppercase tracking-wide ${KIND_BADGE[asset.kind] ?? 'border-zinc-700 text-zinc-400'}`}>
@@ -124,7 +125,6 @@ export default async function ReferenceDetailPage({ params }: Props) {
           <p className="mt-4 max-w-3xl text-sm leading-relaxed text-zinc-300">{asset.caption}</p>
         )}
       </header>
-
       <SectionHeader
         label="Cited by"
         heading={`${associations.length} ${associations.length === 1 ? 'entity' : 'entities'} across ${byType.size} ${byType.size === 1 ? 'category' : 'categories'}`}
@@ -134,7 +134,6 @@ export default async function ReferenceDetailPage({ params }: Props) {
         Click through to the entity&apos;s page to see how the source
         is used in context.
       </p>
-
       <div className="space-y-8">
         {orderedTypes.map((type) => {
           const items = byType.get(type)!;
@@ -170,7 +169,6 @@ export default async function ReferenceDetailPage({ params }: Props) {
           );
         })}
       </div>
-
       <aside className="mt-12 rounded border border-zinc-800 bg-zinc-900/40 p-4 text-xs leading-relaxed text-zinc-500">
         <p className="mb-2 text-[10px] uppercase tracking-widest text-zinc-400">
           Why this page exists

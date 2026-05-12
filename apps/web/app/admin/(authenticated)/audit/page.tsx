@@ -15,7 +15,7 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 interface Props {
-  searchParams: { table?: string; since?: string; page?: string };
+  searchParams: Promise<{ table?: string; since?: string; page?: string }>;
 }
 
 const PAGE_SIZE = 60;
@@ -51,7 +51,8 @@ function buildHref(args: { table?: string; since?: string; page?: number }): str
   return qs ? `/admin/audit?${qs}` : '/admin/audit';
 }
 
-export default async function AdminAuditPage({ searchParams }: Props) {
+export default async function AdminAuditPage(props: Props) {
+  const searchParams = await props.searchParams;
   const tableFilter = searchParams.table && searchParams.table !== 'all' ? searchParams.table : undefined;
   const sinceKey = searchParams.since ?? '7d';
   const sincePreset = SINCE_PRESETS.find((p) => p.key === sinceKey) ?? SINCE_PRESETS[1]!;

@@ -18,10 +18,10 @@ import { CorrectionForm } from '@/components/ui/CorrectionForm';
 import { JsonLd, buildSceneJsonLd } from '@/lib/jsonLd';
 
 type Props = {
-  params: {
+  params: Promise<{
     slug: string;
     sceneSlug: string;
-  };
+  }>;
 };
 
 function formatRuntime(seconds: number | null): string | null {
@@ -39,7 +39,8 @@ export async function generateStaticParams() {
   return listSceneStaticParams(db);
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const data = await getSceneWithDetail(db, params.slug, params.sceneSlug);
   if (!data) return {};
   return {
@@ -49,7 +50,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function SceneDetailPage({ params }: Props) {
+export default async function SceneDetailPage(props: Props) {
+  const params = await props.params;
   const data = await getSceneWithDetail(db, params.slug, params.sceneSlug);
   if (!data) notFound();
 

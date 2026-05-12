@@ -18,10 +18,10 @@ const PAGE_SIZE = 50;
 const STATUSES: (EvidenceReviewStatus | 'all')[] = ['pending', 'reviewed', 'rejected', 'all'];
 
 type Props = {
-  searchParams: {
+  searchParams: Promise<{
     status?: string;
     page?: string;
-  };
+  }>;
 };
 
 function parseStatus(value: string | undefined): EvidenceReviewStatus | 'all' {
@@ -41,7 +41,8 @@ function buildHref(status: EvidenceReviewStatus | 'all', page?: number): string 
   return qs ? `/admin/evidence?${qs}` : '/admin/evidence';
 }
 
-export default async function AdminEvidencePage({ searchParams }: Props) {
+export default async function AdminEvidencePage(props: Props) {
+  const searchParams = await props.searchParams;
   const status = parseStatus(searchParams.status);
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1);
   const [evidence, total] = await Promise.all([

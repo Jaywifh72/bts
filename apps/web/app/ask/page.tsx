@@ -26,7 +26,7 @@ async function embedThemes(text: string, key: string): Promise<number[] | null> 
   return json.data[0]?.embedding ?? null;
 }
 
-type Props = { searchParams: { q?: string } };
+type Props = { searchParams: Promise<{ q?: string }> };
 
 const EXAMPLES = [
   'Films Roger Deakins shot in 2.39:1 anamorphic',
@@ -36,7 +36,8 @@ const EXAMPLES = [
   'Dystopian sci-fi with practical effects',
 ];
 
-export default async function AskPage({ searchParams }: Props) {
+export default async function AskPage(props: Props) {
+  const searchParams = await props.searchParams;
   const query = searchParams.q?.trim() ?? '';
   const key = process.env.OPENAI_API_KEY;
 

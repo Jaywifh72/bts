@@ -14,7 +14,7 @@ export const metadata: Metadata = {
 };
 
 type Props = {
-  searchParams: { items?: string };
+  searchParams: Promise<{ items?: string }>;
 };
 
 type ItemRow = Awaited<ReturnType<typeof getItemsForComparison>>[number];
@@ -24,7 +24,8 @@ type ItemRow = Awaited<ReturnType<typeof getItemsForComparison>>[number];
  * 4 items at a time (table starts to shrink below readable on mobile
  * beyond that).
  */
-export default async function CompareGearPage({ searchParams }: Props) {
+export default async function CompareGearPage(props: Props) {
+  const searchParams = await props.searchParams;
   const slugs = (searchParams.items ?? '')
     .split(',')
     .map((s) => s.trim())
@@ -112,7 +113,6 @@ export default async function CompareGearPage({ searchParams }: Props) {
           {items.length} item{items.length === 1 ? '' : 's'}
         </p>
       </header>
-
       {/* Spec table */}
       <div className="overflow-x-auto rounded border border-zinc-800">
         <table className="w-full text-sm">
@@ -170,7 +170,6 @@ export default async function CompareGearPage({ searchParams }: Props) {
           </tbody>
         </table>
       </div>
-
       {sharedProductions.length > 0 && (
         <section className="mt-10">
           <h2 className="mb-2 font-serif text-lg text-zinc-200">

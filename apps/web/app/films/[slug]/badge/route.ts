@@ -28,10 +28,8 @@ function escapeHtml(s: string): string {
     .replace(/'/g, '&#39;');
 }
 
-export async function GET(
-  _req: Request,
-  { params }: { params: { slug: string } },
-) {
+export async function GET(_req: Request, props: { params: Promise<{ slug: string }> }) {
+  const params = await props.params;
   const data = await getProductionWithFullDetail(db, params.slug);
   if (!data) return new Response('Not found', { status: 404 });
   const { production, crew, formats } = data;

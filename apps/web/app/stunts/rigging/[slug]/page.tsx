@@ -13,9 +13,10 @@ import {
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { EntityReferencesList } from '@/components/EntityReferencesList';
 
-interface Props { params: { slug: string } }
+interface Props { params: Promise<{ slug: string }> }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const t = await getRiggingTechniqueBySlug(db, params.slug);
   if (!t) return {};
   return {
@@ -53,7 +54,8 @@ const CATEGORY_ACCENT: Record<string, string> = {
   water: 'border-teal-900/40 bg-teal-950/10',
 };
 
-export default async function RiggingDetailPage({ params }: Props) {
+export default async function RiggingDetailPage(props: Props) {
+  const params = await props.params;
   const technique = await getRiggingTechniqueBySlug(db, params.slug);
   if (!technique) notFound();
 
@@ -101,7 +103,6 @@ export default async function RiggingDetailPage({ params }: Props) {
         <span className="mx-2 text-zinc-700">/</span>
         <span className="text-zinc-300">{technique.name}</span>
       </nav>
-
       <header className={`mb-10 rounded border p-6 ${CATEGORY_ACCENT[technique.category]}`}>
         <p className="text-[10px] uppercase tracking-[0.25em] text-red-400/80">
           {CATEGORY_LABEL[technique.category] ?? technique.category}
@@ -126,7 +127,6 @@ export default async function RiggingDetailPage({ params }: Props) {
           </div>
         )}
       </header>
-
       {/* Mechanism — the meat of the page */}
       <section className="mb-10">
         <SectionHeader label="Mechanism" heading="How the rig works" />
@@ -136,7 +136,6 @@ export default async function RiggingDetailPage({ params }: Props) {
           ))}
         </div>
       </section>
-
       {/* Safety considerations */}
       {technique.safety_considerations && (
         <section className="mb-10 rounded border border-amber-900/40 bg-amber-950/10 p-5">
@@ -175,7 +174,6 @@ export default async function RiggingDetailPage({ params }: Props) {
           )}
         </section>
       )}
-
       {/* Common variants */}
       {technique.common_variants.length > 0 && (
         <section className="mb-10">
@@ -193,7 +191,6 @@ export default async function RiggingDetailPage({ params }: Props) {
           </ul>
         </section>
       )}
-
       {/* Notable productions — cross-linked from sequences via tag overlap */}
       {productionGroups.length > 0 && (
         <section className="mb-10">
@@ -238,10 +235,8 @@ export default async function RiggingDetailPage({ params }: Props) {
           </ul>
         </section>
       )}
-
       {/* References — Phase 31 polymorphic render with cross-citation hints */}
       <EntityReferencesList references={crossCitedReferences} />
-
       {/* Photos — currently empty for most entries; renders when seeded. */}
       {technique.photos.length > 0 && (
         <section className="mb-10">
@@ -272,7 +267,6 @@ export default async function RiggingDetailPage({ params }: Props) {
           </div>
         </section>
       )}
-
       <aside className="mt-12 rounded border border-zinc-800 bg-zinc-900/40 p-4 text-xs leading-relaxed text-zinc-500">
         <p className="mb-2 text-[10px] uppercase tracking-widest text-zinc-400">
           About this entry

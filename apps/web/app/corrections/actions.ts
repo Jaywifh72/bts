@@ -31,8 +31,8 @@ export async function submitCorrectionAction(
   }
 
   // Rate limit by IP (best-effort — falls back to in-memory if Upstash absent).
-  const fwd = headers().get('x-forwarded-for')?.split(',')[0]?.trim()
-    ?? headers().get('x-real-ip')?.trim()
+  const fwd = (await headers()).get('x-forwarded-for')?.split(',')[0]?.trim()
+    ?? (await headers()).get('x-real-ip')?.trim()
     ?? 'anonymous';
   const rl = await rateLimitByIp(fwd, { namespace: 'corrections', limit: 5, windowMs: 60 * 60_000 });
   if (!rl.ok) {

@@ -18,8 +18,9 @@ type ApiPayload = {
   crew: Array<{ role_slug: string; display_name: string; credit_name_override: string | null }>;
 };
 
-function originFromHeaders(): string {
-  const h = headers();
+async function originFromHeaders(): Promise<string> {
+  // Next 15+ — `headers()` is now async.
+  const h = await headers();
   const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000';
   const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
   return `${proto}://${host}`;
@@ -32,7 +33,7 @@ function originFromHeaders(): string {
  * card on 404; the page itself notFound()'s in that case so this branch
  * should be unreachable outside of cache-invalidation races.
  */
-export default async function OG({ params }: { params: { slug: string } }) {
+export default async function OG({ params }: { params: Promise<{ slug: string }> }) {
   const fonts = await ogFonts();
 
   let title = 'Studio Pro';
@@ -42,7 +43,7 @@ export default async function OG({ params }: { params: { slug: string } }) {
   let primaryFormat: ApiPayload['formats'][number] | undefined;
 
   try {
-    const res = await fetch(`${originFromHeaders()}/api/v1/productions/${params.slug}`, {
+    const res = await fetch(`${await originFromHeaders()}/api/v1/productions/${(await params).slug}`, {
       next: { revalidate: 300 },
     });
     if (res.ok) {

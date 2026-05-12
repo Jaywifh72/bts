@@ -37,7 +37,8 @@ function formatDuration(start: string, end: string | null): string {
   return `${(ms / 3_600_000).toFixed(2)}h`;
 }
 
-export default async function JobRunDetailPage({ params }: { params: { id: string } }) {
+export default async function JobRunDetailPage(props: { params: Promise<{ id: string }> }) {
+  const params = await props.params;
   const id = Number(params.id);
   if (!Number.isFinite(id)) notFound();
   const run = await getJobRun(db, id);

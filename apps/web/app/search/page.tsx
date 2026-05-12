@@ -10,14 +10,15 @@ export const metadata: Metadata = {
 };
 
 type Props = {
-  searchParams: { q?: string };
+  searchParams: Promise<{ q?: string }>;
 };
 
 // Curated suggestions hit interesting cross-cuts in the data: a hand-curated
 // film, a working DP, a flagship camera, a major studio, a famous lens line.
 const SUGGESTIONS = ['Dune', 'Greig Fraser', 'ALEXA 65', 'A24', 'Cooke S4 i'];
 
-export default async function SearchPage({ searchParams }: Props) {
+export default async function SearchPage(props: Props) {
+  const searchParams = await props.searchParams;
   const q = (searchParams.q ?? '').trim();
   const results = q.length > 0 ? await search(db, q) : [];
   const isEmpty = q.length === 0;

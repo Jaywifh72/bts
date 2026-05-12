@@ -5,7 +5,7 @@ import { db, getStuntSequence, listStuntSequences, getRiggingForSequence, resolv
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { JsonLd, buildStuntSequenceJsonLd } from '@/lib/jsonLd';
 
-interface Props { params: { productionSlug: string; sequenceSlug: string } }
+interface Props { params: Promise<{ productionSlug: string; sequenceSlug: string }> }
 
 export async function generateStaticParams() {
   const rows = await listStuntSequences(db);
@@ -15,7 +15,8 @@ export async function generateStaticParams() {
   }));
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const data = await getStuntSequence(db, params.productionSlug, params.sequenceSlug);
   if (!data) return {};
   return {
@@ -45,7 +46,8 @@ function towingRigLabel(rig: string) {
     .replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export default async function StuntSequenceDetailPage({ params }: Props) {
+export default async function StuntSequenceDetailPage(props: Props) {
+  const params = await props.params;
   const data = await getStuntSequence(db, params.productionSlug, params.sequenceSlug);
   if (!data) notFound();
   const { sequence, credits } = data;
@@ -137,14 +139,12 @@ export default async function StuntSequenceDetailPage({ params }: Props) {
           </div>
         </div>
       </header>
-
       {/* Description */}
       {sequence.description && (
         <section className="mb-10 max-w-3xl">
           <p className="text-sm leading-relaxed text-zinc-300">{sequence.description}</p>
         </section>
       )}
-
       {/* Credits */}
       {orderedRoles.length > 0 && (
         <section className="mb-10">
@@ -194,7 +194,6 @@ export default async function StuntSequenceDetailPage({ params }: Props) {
           </div>
         </section>
       )}
-
       {/* Rigging breakdown */}
       {(rigging.rigs?.length || rigging.mounts?.length || rigging.harness || rigging.notes) && (
         <section className="mb-10">
@@ -258,7 +257,6 @@ export default async function StuntSequenceDetailPage({ params }: Props) {
           )}
         </section>
       )}
-
       {/* Vehicle */}
       {vehicle && (vehicle.picture_car || vehicle.towing_rig || vehicle.prep_company) && (
         <section className="mb-10">
@@ -314,7 +312,6 @@ export default async function StuntSequenceDetailPage({ params }: Props) {
           </div>
         </section>
       )}
-
       {/* Safety */}
       {(sequence.safety_officer_display_name || sequence.safety_bulletins_followed.length > 0) && (
         <section className="mb-10">
@@ -367,7 +364,6 @@ export default async function StuntSequenceDetailPage({ params }: Props) {
           </div>
         </section>
       )}
-
       {/* VFX handoff */}
       {(sequence.vfx_handoff_house_slug || sequence.vfx_handoff_frame != null) && (
         <section className="mb-10">
@@ -397,7 +393,6 @@ export default async function StuntSequenceDetailPage({ params }: Props) {
           </div>
         </section>
       )}
-
       {/* BTS video — single curated link on the sequence row. */}
       {sequence.bts_video_url && (
         <section className="mb-10">
@@ -412,7 +407,6 @@ export default async function StuntSequenceDetailPage({ params }: Props) {
           </a>
         </section>
       )}
-
       {/* Phase 14 — stunt-categorised videos from the parent
           production. Auto-populates once discovery + the Phase 9.1
           categoriser have classified videos as 'stunts'. Falls back
@@ -439,13 +433,13 @@ export default async function StuntSequenceDetailPage({ params }: Props) {
                   <div className="relative aspect-video w-full bg-zinc-950">
                     {v.thumbnail_url && (
                       // eslint-disable-next-line @next/next/no-img-element
-                      <img
+                      (<img
                         src={v.thumbnail_url}
                         alt={v.title}
                         referrerPolicy="no-referrer"
                         loading="lazy"
                         className="h-full w-full object-cover"
-                      />
+                      />)
                     )}
                   </div>
                   <div className="p-2">
@@ -463,7 +457,6 @@ export default async function StuntSequenceDetailPage({ params }: Props) {
           </ul>
         </section>
       )}
-
       {/* Rigging glossary cross-link — every Phase-5 entry whose
           related_discipline_tags overlap this sequence's tags. */}
       {riggingMatches.length > 0 && (
@@ -498,7 +491,6 @@ export default async function StuntSequenceDetailPage({ params }: Props) {
           </div>
         </section>
       )}
-
       {/* References */}
       {sequence.references.length > 0 && (
         <section className="mb-10">
@@ -527,7 +519,6 @@ export default async function StuntSequenceDetailPage({ params }: Props) {
           </ul>
         </section>
       )}
-
       {/* Resources footer */}
       <footer className="border-t border-zinc-800 pt-6">
         <p className="mb-3 text-xs uppercase tracking-wide text-zinc-500">Continue</p>

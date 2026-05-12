@@ -7,8 +7,9 @@ export const contentType = 'image/png';
 export const size = { width: 1200, height: 630 };
 export const alt = 'Studio Pro crew card';
 
-function originFromHeaders(): string {
-  const h = headers();
+async function originFromHeaders(): Promise<string> {
+  // Next 15+ — `headers()` is now async.
+  const h = await headers();
   const host = h.get('x-forwarded-host') ?? h.get('host') ?? 'localhost:3000';
   const proto = h.get('x-forwarded-proto') ?? (host.startsWith('localhost') ? 'http' : 'https');
   return `${proto}://${host}`;
@@ -25,7 +26,7 @@ type CrewApiPayload = {
  * language. Edge-runtime; data via fetch to /api/v1/crew/<slug> (a
  * lightweight endpoint added for this card).
  */
-export default async function OG({ params }: { params: { slug: string } }) {
+export default async function OG({ params }: { params: Promise<{ slug: string }> }) {
   const fonts = await ogFonts();
 
   let name = 'Studio Pro';
@@ -34,7 +35,7 @@ export default async function OG({ params }: { params: { slug: string } }) {
   let credits = 0;
 
   try {
-    const res = await fetch(`${originFromHeaders()}/api/v1/crew/${params.slug}`, {
+    const res = await fetch(`${await originFromHeaders()}/api/v1/crew/${(await params).slug}`, {
       next: { revalidate: 300 },
     });
     if (res.ok) {

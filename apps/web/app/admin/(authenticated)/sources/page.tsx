@@ -24,10 +24,10 @@ const FILTERS: SourceHealthFilter[] = [
 ];
 
 type Props = {
-  searchParams: {
+  searchParams: Promise<{
     status?: string;
     page?: string;
-  };
+  }>;
 };
 
 function parseStatus(value: string | undefined): SourceHealthFilter {
@@ -66,7 +66,8 @@ function healthLabel(row: Awaited<ReturnType<typeof listSourcesForHealthReview>>
   return { label: 'healthy', className: 'border-emerald-800 bg-emerald-950/30 text-emerald-300' };
 }
 
-export default async function AdminSourcesPage({ searchParams }: Props) {
+export default async function AdminSourcesPage(props: Props) {
+  const searchParams = await props.searchParams;
   const status = parseStatus(searchParams.status);
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1);
   const [sources, total] = await Promise.all([

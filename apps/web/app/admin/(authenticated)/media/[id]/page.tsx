@@ -12,8 +12,8 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 interface Props {
-  params: { id: string };
-  searchParams: { error?: string; attached?: string; detached?: string; created?: string };
+  params: Promise<{ id: string }>;
+  searchParams: Promise<{ error?: string; attached?: string; detached?: string; created?: string }>;
 }
 
 const ENTITY_TYPES = [
@@ -35,7 +35,9 @@ const KIND_BADGE: Record<string, string> = {
 const inputClass =
   'rounded border border-zinc-700 bg-zinc-900 px-2 py-1 text-xs text-zinc-100 focus:border-amber-700 focus:outline-none';
 
-export default async function MediaAssetDetailPage({ params, searchParams }: Props) {
+export default async function MediaAssetDetailPage(props: Props) {
+  const searchParams = await props.searchParams;
+  const params = await props.params;
   const id = Number(params.id);
   if (!Number.isFinite(id)) notFound();
   const data = await getMediaAssetById(db, id);
@@ -49,7 +51,6 @@ export default async function MediaAssetDetailPage({ params, searchParams }: Pro
         <span className="mx-2 text-zinc-700">/</span>
         <span className="text-zinc-300">#{asset.id}</span>
       </nav>
-
       <header className="mb-6">
         <div className="flex items-baseline gap-3">
           <span className={`shrink-0 rounded border px-2 py-0.5 font-mono text-xs uppercase tracking-wide ${KIND_BADGE[asset.kind] ?? 'border-zinc-700 text-zinc-400'}`}>
@@ -82,7 +83,6 @@ export default async function MediaAssetDetailPage({ params, searchParams }: Pro
           )}
         </div>
       </header>
-
       {searchParams.created && (
         <div className="mb-6 rounded border border-emerald-900/40 bg-emerald-950/20 p-3 text-sm text-emerald-200">
           Asset created.
@@ -103,13 +103,11 @@ export default async function MediaAssetDetailPage({ params, searchParams }: Pro
           <span className="font-mono text-xs">{searchParams.error}</span>
         </div>
       )}
-
       {asset.caption && (
         <p className="mb-6 max-w-3xl rounded border border-zinc-800 bg-zinc-900/40 p-3 text-sm leading-relaxed text-zinc-300">
           {asset.caption}
         </p>
       )}
-
       {/* Associations list */}
       <section className="mb-8">
         <div className="mb-3 flex items-baseline justify-between">
@@ -168,7 +166,6 @@ export default async function MediaAssetDetailPage({ params, searchParams }: Pro
           </ul>
         )}
       </section>
-
       {/* Add-association form */}
       <section>
         <h2 className="mb-3 font-serif text-base text-zinc-100">Attach to entity</h2>

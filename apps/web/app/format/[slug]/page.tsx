@@ -8,13 +8,14 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { JsonLd, buildBreadcrumbJsonLd } from '@/lib/jsonLd';
 import { posterUrl } from '@/lib/tmdb-image';
 
-interface Props { params: { slug: string } }
+interface Props { params: Promise<{ slug: string }> }
 
 export function generateStaticParams() {
   return FORMAT_TAXONOMY.map((f) => ({ slug: f.slug }));
 }
 
-export async function generateMetadata({ params }: Props): Promise<Metadata> {
+export async function generateMetadata(props: Props): Promise<Metadata> {
+  const params = await props.params;
   const fmt = getFormatBySlug(params.slug);
   if (!fmt) return {};
   return {
@@ -28,7 +29,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   };
 }
 
-export default async function FormatPage({ params }: Props) {
+export default async function FormatPage(props: Props) {
+  const params = await props.params;
   const fmt = getFormatBySlug(params.slug);
   if (!fmt) notFound();
 

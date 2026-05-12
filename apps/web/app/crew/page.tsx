@@ -14,14 +14,15 @@ export const revalidate = 3600;
 const PAGE_SIZE = 60;
 
 type Props = {
-  searchParams: { category?: string; sort?: string; page?: string };
+  searchParams: Promise<{ category?: string; sort?: string; page?: string }>;
 };
 
 function parseSort(v: string | undefined): 'name' | 'credits' {
   return v === 'name' || v === 'credits' ? v : 'credits';
 }
 
-export default async function CrewPage({ searchParams }: Props) {
+export default async function CrewPage(props: Props) {
+  const searchParams = await props.searchParams;
   const category = searchParams.category || undefined;
   const sort = parseSort(searchParams.sort);
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1);
