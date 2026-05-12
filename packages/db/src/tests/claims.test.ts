@@ -20,6 +20,14 @@ beforeAll(async () => {
   await resetTestSchema(sql);
   await migrate(db, { migrationsFolder: './migrations' });
   await runSeed(db);
+  // The seed ProductionSeed shape has no dataTier field, so all seeded
+  // productions default to 'imported'. backfillClaimsFromCuratedData filters
+  // for data_tier='curated' — mark the canonical test anchor as curated so
+  // the backfill has source rows to operate on.
+  await db.execute(drizzleSql`
+    UPDATE productions SET data_tier = 'curated'
+    WHERE slug IN ('dune-part-two-2024', 'oppenheimer-2023', 'the-revenant-2015')
+  `);
 }, 120_000);
 
 afterAll(async () => { await sql.end(); });

@@ -2,10 +2,20 @@ import 'dotenv/config';
 import postgres from 'postgres';
 import { drizzle } from 'drizzle-orm/postgres-js';
 
+// Match the runtime db.ts: return BIGINT as Number so id equality checks
+// behave consistently across SELECT + INSERT RETURNING. See db.ts for the
+// safety rationale (ids stay well under 2^53).
+const BIGINT_AS_NUMBER = {
+  to: 20,
+  from: [20] as number[],
+  serialize: (x: number | bigint | string) => x.toString(),
+  parse: (x: string) => Number(x),
+};
+
 export function createTestDb() {
   const url = process.env.TEST_DATABASE_URL;
   if (!url) throw new Error('TEST_DATABASE_URL is required');
-  const sql = postgres(url, { max: 5 });
+  const sql = postgres(url, { max: 5, types: { bigint: BIGINT_AS_NUMBER } });
   return { sql, db: drizzle(sql) };
 }
 

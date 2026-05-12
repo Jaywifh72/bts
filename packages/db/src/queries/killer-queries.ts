@@ -46,7 +46,7 @@ export async function findLensesByDpOnProduction(db: SeedDb, personSlug: string,
     JOIN scenes sc ON sc.production_id = p.id
     JOIN equipment_usage eu ON eu.scene_id = sc.id
     JOIN equipment_series es ON es.id = eu.equipment_series_id
-    JOIN manufacturers m ON m.id = es.manufacturer_id
+    JOIN equipment_manufacturers m ON m.id = es.manufacturer_id
     LEFT JOIN equipment_items ei ON ei.id = eu.equipment_item_id
     JOIN crew_assignments ca ON ca.production_id = p.id
     JOIN roles r ON r.id = ca.role_id
