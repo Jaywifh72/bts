@@ -10,31 +10,42 @@ rather than a public issue.
 ## Current posture
 
 `pnpm audit` runs on every CI build via Dependabot. Known issues at the
-time of writing (2026-05) are tracked here so the audit is intentional,
-not silent.
+time of writing are tracked here so the audit is intentional, not silent.
+
+**Last audit baseline:** 2026-05-12 — 15 advisories (5 high, 8 moderate,
+2 low). **All remaining advisories are inside the `next` 14 dependency
+tree.** The drizzle 0.36→0.45 SQL-injection (high), rollup path
+traversal (high), and file-type DoS (moderate) advisories were resolved
+by the corresponding Dependabot PRs.
 
 ### Tracked / pending upgrade
 
 | Package | Severity | Current | Patched | Path | Notes |
 |---|---|---|---|---|---|
-| `drizzle-orm` | High | 0.36.4 | ≥0.45.2 | direct dep of `@bts/db` | SQL injection via improperly escaped identifiers. Drizzle's API has churned across 9 minor versions; needs a deliberate bump with full test pass. Tracked: TODO open as separate ticket. |
-| `next` | High (× several) | 14.2.35 | ≥15.5.16 | direct dep of `@bts/web` | DoS via Server Components / Image API, request smuggling in rewrites, SSRF, XSS in beforeInteractive, middleware bypass, cache poisoning. Next 14 → 15 is a major bump with breaking changes (App Router cache semantics, async params, etc.). Separate planned migration. |
-| `postcss` | Moderate | 8.4.31 (transitive via next) | ≥8.5.10 | indirect via `next` | Patched once Next 15 lands (Next 15 ships with postcss ≥8.5.10). |
-| `rollup` | High | <3.30.0 (transitive) | ≥3.30.0 | indirect via build tooling | Patched on Next/Tailwind bumps. |
-| `file-type` | Moderate | <21.3.1 (transitive) | ≥21.3.1 | indirect via Sentry CLI | Resolves on next Sentry CLI bump (Dependabot handles). |
+| `next` | High (× several) | 14.2.35 | ≥15.5.16 | direct dep of `@bts/web` | DoS via Server Components / Image API, request smuggling in rewrites, SSRF, XSS in beforeInteractive, middleware bypass, cache poisoning. Next 14 → 15 is a major bump with breaking changes (App Router cache semantics, async params, route segment config keys, React 19 required). Separate planned migration. |
+| `postcss` | Moderate | 8.4.31 (transitive via next) | ≥8.5.10 | indirect via `next` | Patched once Next 15 lands. |
 
-### Why not block on these now
+### Resolved (since last commit)
 
-The high-severity issues are real but require careful upgrade paths:
-- **Drizzle 0.36 → 0.45**: minor-version chain with documented breaking
-  changes in `sql` helpers + relational query builder. Bumping without
-  a full test pass risks production query failures.
-- **Next 14 → 15**: App Router `params` are now async, default cache
-  semantics changed, route segment config keys renamed. Bumping is a
-  multi-hour code change, not a 1-line bump.
+| Package | Old | New | Severity Resolved |
+|---|---|---|---|
+| `drizzle-orm` | 0.36.4 | 0.45.2 | **High** — SQL injection via `sql.identifier()` improperly escaped values. Mitigated upstream + tests adjusted for the new wrapped-error shape. |
+| `@sentry/nextjs` | 8.55.2 | 10.52.0 | Moderate (transitive `file-type` DoS). |
+| `eslint` | 8.57.1 | 10.3.0 | Maintenance — keeps lint config supported. |
+| `jimp` | 0.22.12 | 1.6.1 | Moderate transitive. |
+| `playwright`, `postcss` (direct) | minor bumps | latest within carets | Moderate transitive. |
 
-Both are queued as separate tasks. Dependabot will keep PR'ing them
-weekly; merge intentionally.
+### Why not block on Next 14 → 15
+
+App Router `params` became `Promise<...>` and must be awaited everywhere
+they're used (films/crew/gear dynamic pages all touch this). Default
+cache semantics changed from `force-cache` to `no-store` for `fetch()`,
+so `revalidate` settings need re-validation. Route segment config keys
+were renamed (some). And Next 15 requires React 19 (also a breaking
+upgrade — server components, async params, ref-as-prop, etc.).
+
+Both are queued as separate tasks. Dependabot reopens weekly; merge
+intentionally when ready.
 
 ### Mitigations in place
 
