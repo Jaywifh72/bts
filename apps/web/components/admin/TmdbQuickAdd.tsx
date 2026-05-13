@@ -1,6 +1,10 @@
 'use client';
 
-import { useFormState } from 'react-dom';
+// React 19 renamed useFormState → useActionState and moved it from
+// react-dom to react. Same API shape; drop-in replacement. The old
+// import logs a runtime "ReactDOM.useFormState has been renamed"
+// error and (in strict mode) can trip the component tree.
+import { useActionState } from 'react';
 import Link from 'next/link';
 import {
   previewAction,
@@ -16,8 +20,8 @@ const initialState: TmdbPreviewState = { status: 'idle' };
  * round-trips through a hidden field on the second form.
  */
 export function TmdbQuickAdd() {
-  const [previewState, runPreview] = useFormState(previewAction, initialState);
-  const [confirmState, runConfirm] = useFormState(confirmAction, initialState);
+  const [previewState, runPreview] = useActionState(previewAction, initialState);
+  const [confirmState, runConfirm] = useActionState(confirmAction, initialState);
 
   // The confirm-state takes priority once it transitions away from
   // idle, so success / error feedback replaces the preview card.
