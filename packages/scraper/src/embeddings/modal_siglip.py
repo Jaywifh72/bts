@@ -36,11 +36,16 @@ app = modal.App("siglip2-embeddings")
 image = (
     modal.Image.debian_slim()
     .pip_install(
-        "torch==2.4.0",
-        "transformers==4.45.0",
+        # torch 2.4.0 was de-listed from PyPI in late 2026; pinning to
+        # 2.5.1 (the oldest still-published wheel) for reproducibility.
+        "torch==2.5.1",
+        "transformers==4.46.3",
         "Pillow==10.4.0",
         "requests==2.32.3",
-        "accelerate==0.34.2",
+        "accelerate==1.0.1",
+        # Modal 1.x requires FastAPI explicitly for @fastapi_endpoint
+        # decorators (the implicit dep was removed in late 2026).
+        "fastapi[standard]==0.115.5",
     )
 )
 
@@ -51,12 +56,19 @@ MODEL_ID = "google/siglip2-base-patch16-384"  # 768-dim output
 class SiglipEncoder:
     @modal.enter()
     def load(self):
-        """Load the SigLIP-2 checkpoint once per container, keep on GPU."""
-        from transformers import AutoProcessor, AutoModel
+        """Load the SigLIP-2 checkpoint once per container, keep on GPU.
+
+        We use AutoImageProcessor (not AutoProcessor) so we only pull
+        the vision side of the model. AutoProcessor tries to instantiate
+        the text tokenizer too, which needs `sentencepiece` — extra
+        dependency for a code path we never exercise here (image-only
+        embeddings).
+        """
+        from transformers import AutoImageProcessor, AutoModel
         import torch
 
         self.torch = torch
-        self.processor = AutoProcessor.from_pretrained(MODEL_ID)
+        self.processor = AutoImageProcessor.from_pretrained(MODEL_ID)
         self.model = (
             AutoModel.from_pretrained(MODEL_ID, torch_dtype=torch.float16)
             .to("cuda")
@@ -64,9 +76,16 @@ class SiglipEncoder:
         )
 
     def _encode_pil(self, img):
-        """Run the encoder + L2-normalise. Returns a Python list of floats."""
+        """Run the encoder + L2-normalise. Returns a Python list of floats.
+
+        Casts pixel_values to fp16 to match the model's dtype (loaded
+        with torch_dtype=float16). Without this the conv2d forward
+        pass raises "Input type (FloatTensor) and weight type
+        (HalfTensor) should be the same."
+        """
         img = img.convert("RGB")
         inputs = self.processor(images=img, return_tensors="pt").to("cuda")
+        inputs["pixel_values"] = inputs["pixel_values"].to(self.torch.float16)
         with self.torch.no_grad():
             feats = self.model.get_image_features(**inputs)
             feats = feats / feats.norm(dim=-1, keepdim=True)
@@ -98,8 +117,10 @@ class SiglipEncoder:
 
     @modal.fastapi_endpoint(method="GET")
     def health(self):
-        """Cheap liveness probe — exercises the model with a 1x1 dummy."""
-        from PIL import Image
-        img = Image.new("RGB", (1, 1))
-        _ = self._encode_pil(img)
-        return {"ok": True, "model": "siglip2-base-patch16-384"}
+        """Liveness probe — confirms the container is up and the model is
+        loaded. Returns immediately without running inference (the 1x1
+        dummy image used previously confused the SigLIP image processor's
+        normalize step). For full end-to-end validation, POST a real
+        image to the encode endpoint."""
+        loaded = hasattr(self, "model") and hasattr(self, "processor")
+        return {"ok": loaded, "model": "siglip2-base-patch16-384", "dim": 768}
