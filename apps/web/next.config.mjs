@@ -1,6 +1,14 @@
 /** @type {import('next').NextConfig} */
 const config = {
   transpilePackages: ['@bts/db'],
+  // Next 16+ dev server treats requests to /_next/* as cross-origin unless
+  // the Host header matches the server's bound origin. When the dev server
+  // binds to `localhost` but the browser hits `127.0.0.1` (Chrome devtools
+  // workspace, IDE proxies, lan testing, etc.), every dev resource — JS
+  // chunks, HMR websocket, fonts — 403's. The static HTML still renders,
+  // which makes the failure look like "hydration is broken" rather than
+  // "the React bundle never loaded". Allowlist the common local aliases.
+  allowedDevOrigins: ['127.0.0.1', 'localhost', '10.5.0.2'],
   images: {
     remotePatterns: [
       // TMDb CDN — posters and backdrops fetched via lib/tmdb.ts
