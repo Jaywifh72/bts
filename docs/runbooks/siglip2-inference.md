@@ -132,20 +132,27 @@ export async function POST(req: NextRequest) {
 
 ## Backfill: encoding existing keyframes
 
-Same encoder, batched, against rows with `embedding IS NULL`:
+The admin ingest job **"Key-frame visual embedding"** (`embed:visual`)
+already wraps `packages/scraper/src/embeddings/visual.ts`. It detects
+the configured backend at runtime:
 
-```ts
-// packages/scraper/src/embeddings/backfill-keyframes.ts (sketch)
-// 1. SELECT id, image_url FROM production_keyframes WHERE embedding IS NULL LIMIT 100
-// 2. POST each to SIGLIP_ENCODER_URL (parallelism ~5, respect Modal's concurrency)
-// 3. UPDATE ... SET embedding = $1::vector, embedding_model = 'siglip2-so400m-384',
-//                  embedding_generated_at = NOW()
-// 4. loop
-```
+1. If `SIGLIP_ENCODER_URL` is set → uses the Modal endpoint (this
+   runbook). Same endpoint `/api/lookbook/search` uses; one env
+   covers both.
+2. Else if `REPLICATE_API_TOKEN` is set → falls back to Replicate
+   (`lucataco/siglip-2`). Legacy path, kept for environments where
+   Modal isn't set up.
+3. Else → throws `MissingSiglipBackendError` with a pointer to this
+   runbook before processing any rows (fail-fast).
 
-Migration 0053 already added `embedding_model` + `embedding_generated_at`
-columns — use them. When the canonical model changes, the sweep finds
-stale rows by `WHERE embedding_model != 'siglip2-so400m-384'`.
+So once you've deployed Modal and set `SIGLIP_ENCODER_URL`, the
+admin "Key-frame visual embedding" job works with no further changes.
+
+Migration 0053 added `embedding_model` + `embedding_generated_at`
+columns. When the canonical model changes, the sweep finds stale rows
+by `WHERE embedding_model != 'siglip2-so400m-384'`. (The current
+visual.ts writes only the `embedding` column; updating those provenance
+columns alongside is a future enhancement — track separately.)
 
 ## Cost estimate
 
