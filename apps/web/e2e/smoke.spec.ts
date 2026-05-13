@@ -38,6 +38,26 @@ test.describe('Smoke pack — top-level routes', () => {
     await expect(page.getByRole('heading', { name: /Dune: Part Two/i })).toBeVisible();
   });
 
+  test('film detail page is interactive (catches React-not-loaded regressions)', async ({ page }) => {
+    // The static-HTML-renders-but-JS-doesn't failure mode looks identical to
+    // a hydration bug from the outside: page visible, headings present, but
+    // every click is dead. Two real causes hit us:
+    //   1. Next 16 allowedDevOrigins blocking _next/* over 127.0.0.1 (fixed
+    //      in next.config.mjs)
+    //   2. React 19 removed useFormState; stale import killed hydration
+    //
+    // Click the "Suggest a correction →" button on the film page and check
+    // the form opens. The button is rendered by CorrectionForm (a 'use client'
+    // component), so this test fails fast if the React runtime isn't claiming
+    // page-level client components.
+    await page.goto('/films/dune-part-two-2024');
+    const correctionsButton = page.getByRole('button', { name: /suggest a correction/i });
+    await expect(correctionsButton).toBeVisible();
+    await correctionsButton.click();
+    // After click, the inline form should appear with the textarea.
+    await expect(page.getByPlaceholder(/dp credit on this film is wrong/i)).toBeVisible();
+  });
+
   test('a missing film renders the not-found page', async ({ page }) => {
     // Next.js 14 caches the notFound() output with status 200 in dev mode
     // when the segment uses generateStaticParams + dynamicParams: true
