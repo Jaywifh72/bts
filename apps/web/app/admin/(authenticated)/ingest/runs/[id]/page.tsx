@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { db, getJobRun, type JobRunStatus } from '@bts/db';
+import { JobRunAutoRefresh } from '@/components/admin/JobRunAutoRefresh';
 
 export const metadata: Metadata = {
   title: 'Run',
@@ -48,11 +49,14 @@ export default async function JobRunDetailPage(props: { params: Promise<{ id: st
 
   return (
     <div>
-      {/* Auto-refresh while the job is still running. Drops as soon
-          as the row finalises so we stop hammering the DB. */}
-      {isLive && (
-        <meta httpEquiv="refresh" content="3" />
-      )}
+      {/* Auto-refresh while the job is still running. Uses a client-side
+          router.refresh() — silent RSC re-fetch that doesn't unload the
+          page. Replaces an earlier <meta httpEquiv="refresh"> which
+          forced a hard browser reload every 3s and made the rest of the
+          admin UI feel "stuck" because any click competed with the
+          in-flight reload. Drops as soon as the row finalises so we stop
+          hammering the DB. */}
+      {isLive && <JobRunAutoRefresh intervalMs={3000} />}
 
       <nav className="mb-6 text-xs uppercase tracking-wide text-zinc-500">
         <Link href="/admin/ingest" className="hover:text-amber-400">Ingest</Link>
