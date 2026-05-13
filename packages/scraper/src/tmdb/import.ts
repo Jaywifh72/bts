@@ -165,13 +165,30 @@ function titleSimilarity(a: string, b: string): number {
 /**
  * Re-enriches existing productions with the new TMDb-sourced fields.
  *
- * Safety guard: if the title TMDb returns for the stored tmdb_id is
- * wildly different from the row's current title (similarity < 0.4), the
- * row is SKIPPED unless `--force` is passed. This prevents a typo in a
- * seed `tmdbId` from silently overwriting hand-curated data with an
- * unrelated movie (the bug that corrupted 22 curated rows in 2026-05-04).
+ * Two modes:
+ *   • Default (refresh=false): backfill pass — only touches productions
+ *     that have a tmdb_id but no poster_path yet. Skips already-enriched
+ *     rows so re-running the job on a healthy DB is a no-op.
+ *   • refresh=true: re-touch EVERY production with a tmdb_id, refreshing
+ *     genres / popularity / poster_path / etc. against current TMDb data.
+ *
+ * Safety guard (independent of mode): if the title TMDb returns for the
+ * stored tmdb_id is wildly different from the row's current title
+ * (similarity < 0.4), the row is SKIPPED unless `--force` is passed.
+ * This prevents a typo in a seed `tmdbId` from silently overwriting
+ * hand-curated data with an unrelated movie (the bug that corrupted 22
+ * curated rows in 2026-05-04).
+ *
+ * Common combinations:
+ *   • neither flag → backfill missing-poster rows (initial seed cleanup)
+ *   • --refresh    → re-touch every TMDb-linked row (periodic sync)
+ *   • --force      → ignore safety guard (only meaningful when the title
+ *                    similarity check would otherwise skip)
+ *   • both         → full forced re-sync; use sparingly
  */
-export async function enrichExistingMovies(opts: { force?: boolean } = {}): Promise<ImportStats> {
+export async function enrichExistingMovies(
+  opts: { force?: boolean; refresh?: boolean } = {},
+): Promise<ImportStats> {
   const stats: ImportStats = { attempted: 0, inserted: 0, updated: 0, skipped: 0 };
 
   if (!process.env.TMDB_READ_ACCESS_TOKEN) {
@@ -179,13 +196,22 @@ export async function enrichExistingMovies(opts: { force?: boolean } = {}): Prom
     return stats;
   }
 
+  // When --refresh is set, drop the `poster_path IS NULL` filter so the
+  // pass touches every TMDb-linked row, not just the as-yet-unenriched
+  // ones. Default behaviour (backfill mode) is unchanged.
+  const filter = opts.refresh
+    ? sql`tmdb_id IS NOT NULL`
+    : sql`tmdb_id IS NOT NULL AND poster_path IS NULL`;
   const targets = await db.execute<{ tmdb_id: number; title: string }>(sql`
     SELECT tmdb_id, title FROM productions
-    WHERE tmdb_id IS NOT NULL AND poster_path IS NULL
+    WHERE ${filter}
     ORDER BY tmdb_id
   `);
 
-  console.log(`tmdb:enrich — ${targets.length} rows to enrich (force=${!!opts.force})`);
+  const mode = opts.refresh ? 'refresh' : 'backfill';
+  console.log(
+    `tmdb:enrich — ${targets.length} rows to enrich (mode=${mode}, force=${!!opts.force})`,
+  );
 
   for (const row of targets) {
     stats.attempted++;

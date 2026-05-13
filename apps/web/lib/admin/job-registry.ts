@@ -77,10 +77,11 @@ const TMDB_JOBS: JobDef[] = [
     group: 'tmdb',
     label: 'TMDb — enrich existing rows',
     description:
-      'Re-fetch every production with a tmdb_id and refresh genres / popularity / poster paths. Safety guard skips rows whose stored title diverges sharply from TMDb.',
+      'Default (no flags): backfill posters/genres/popularity for productions that have a tmdb_id but no poster_path yet — re-running on a healthy DB is a no-op. Toggle "Refresh existing" to re-touch EVERY tmdb-linked row instead (periodic sync). Safety guard skips rows whose stored title diverges sharply from TMDb; enable Force to override.',
     command: { args: ['--filter', '@bts/scraper', 'cli', 'tmdb:enrich'] },
     inputs: [
-      { name: 'force', label: 'Force (override safety guard)', type: 'boolean' },
+      { name: 'refresh', label: 'Refresh existing (re-touch every tmdb-linked row)', type: 'boolean' },
+      { name: 'force', label: 'Force (override title-similarity safety guard)', type: 'boolean' },
     ],
     weight: 'long',
   },
