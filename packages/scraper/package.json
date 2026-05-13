@@ -4,6 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
+    "cli": "tsx src/cli.ts",
     "scrape:artofvfx": "tsx src/cli.ts scrape:artofvfx",
     "scrape:beforesandafters": "tsx src/cli.ts scrape:beforesandafters",
     "import:vfx": "tsx src/cli.ts import:vfx",
