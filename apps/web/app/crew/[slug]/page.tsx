@@ -25,6 +25,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { JsonLd, buildPersonJsonLd } from '@/lib/jsonLd';
 import { profileUrl, posterUrl } from '@/lib/tmdb-image';
 import { pickPrimaryRole } from '@/lib/primary-role';
+import { orgLabel } from '@/lib/award-labels';
 import { BookmarkButton } from '@/components/ui/BookmarkButton';
 
 interface Props { params: Promise<{ slug: string }> }
@@ -698,13 +699,7 @@ export default async function CrewDetailPage(props: Props) {
                   >
                     {a.is_winner ? 'WON' : 'NOM'}
                   </span>
-                  <span className="text-zinc-300">
-                    {a.award_org === 'academy_awards' ? 'Academy Award' :
-                     a.award_org === 'bafta' ? 'BAFTA' :
-                     a.award_org === 'asc_award' ? 'ASC Award' :
-                     a.award_org === 'eca' ? 'Emerging Cinematographer Award' :
-                     a.award_org}
-                  </span>
+                  <span className="text-zinc-300">{orgLabel(a.award_org)}</span>
                   <span className="text-zinc-500">·</span>
                   <span className="text-zinc-200">{a.category}</span>
                   <span className="text-zinc-500">·</span>

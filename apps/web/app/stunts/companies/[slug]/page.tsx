@@ -8,10 +8,12 @@ import {
   getStuntCompanyBySlug,
   listCompanyMembers,
   listCompanyProductions,
+  getAwardsForStuntCompany,
 } from '@bts/db';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { PersonAvatar } from '@/components/people/PersonAvatar';
+import { OrgRecipientAwardsList } from '@/components/awards/OrgRecipientAwardsList';
 import { JsonLd, buildOrganizationJsonLd } from '@/lib/jsonLd';
 import { posterUrl } from '@/lib/tmdb-image';
 
@@ -49,9 +51,10 @@ export default async function StuntCompanyPage(props: Props) {
   // Phase-8 — pull members + productions in parallel with the
   // existing company fetch so the page renders in one DB roundtrip
   // wave rather than chained queries.
-  const [members, productions] = await Promise.all([
+  const [members, productions, awards] = await Promise.all([
     listCompanyMembers(db, c.slug),
     listCompanyProductions(db, c.slug, 60),
+    getAwardsForStuntCompany(db, c.slug),
   ]);
   const principals = members.filter((m) => m.is_principal);
   const otherMembers = members.filter((m) => !m.is_principal);
@@ -248,6 +251,10 @@ export default async function StuntCompanyPage(props: Props) {
             )}
           </section>
         )}
+
+        {/* 0057 — Taurus / SAG Stunt Ensemble + similar org-level
+            awards this stunt company has received. Self-hides when none. */}
+        <OrgRecipientAwardsList awards={awards} />
 
         {/* Productions — derived from the union of crew_assignments
             (stunts category), stunt_sequence_credits, and

@@ -2,12 +2,13 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { db, listVfxHouses, getVfxHouseWithFilmography } from '@bts/db';
+import { db, listVfxHouses, getVfxHouseWithFilmography, getAwardsForVfxHouse } from '@bts/db';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Badge } from '@/components/ui/Badge';
 import { BookmarkButton } from '@/components/ui/BookmarkButton';
 import { VfxFilmography } from '@/components/vfx/VfxFilmography';
 import { BrandLogo } from '@/components/ui/BrandLogo';
+import { OrgRecipientAwardsList } from '@/components/awards/OrgRecipientAwardsList';
 import { JsonLd, buildOrganizationJsonLd } from '@/lib/jsonLd';
 import { posterUrl } from '@/lib/tmdb-image';
 
@@ -39,7 +40,10 @@ function formatNumber(n: number | null | undefined): string {
 
 export default async function VfxHousePage(props: Props) {
   const params = await props.params;
-  const data = await getVfxHouseWithFilmography(db, params.slug);
+  const [data, awards] = await Promise.all([
+    getVfxHouseWithFilmography(db, params.slug),
+    getAwardsForVfxHouse(db, params.slug),
+  ]);
   if (!data) notFound();
   const { house, filmography, techniques, offices, highlights } = data;
 
@@ -204,6 +208,11 @@ export default async function VfxHousePage(props: Props) {
             </ul>
           </section>
         )}
+
+        {/* 0057 — VES + other org-level awards this house has received,
+            joined back to the production they were given for. Self-hides
+            when none. */}
+        <OrgRecipientAwardsList awards={awards} />
 
         {/* Filmography */}
         <section className="mb-10">

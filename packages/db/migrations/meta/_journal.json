@@ -400,6 +400,13 @@
       "when": 1782604800000,
       "tag": "0056_rebrand_editorial_byline",
       "breakpoints": true
+    },
+    {
+      "idx": 57,
+      "version": "7",
+      "when": 1782691200000,
+      "tag": "0057_award_recipient_orgs",
+      "breakpoints": true
     }
   ]
 }
