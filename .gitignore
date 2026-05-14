@@ -48,3 +48,4 @@ apps/web/playwright-report/
 __pycache__/
 *.pyc
 *.pyo
+*.ps1
