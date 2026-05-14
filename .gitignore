@@ -43,3 +43,8 @@ packages/scraper/data/vfx-raw/**/*.json
 # Playwright artifacts
 apps/web/test-results/
 apps/web/playwright-report/
+
+# Python bytecode (Modal deploy artifacts on Windows)
+__pycache__/
+*.pyc
+*.pyo
