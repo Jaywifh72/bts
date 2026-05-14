@@ -1,4 +1,4 @@
-# Studio Pro / BTS
+# CineCanon
 
 A cinematography reference engine built for working professionals and the AI
 search engines they increasingly trust. Per-scene gear attribution, lighting

@@ -50,7 +50,7 @@ export default async function DecadesPage() {
 
   return (
     <>
-      <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/decades'), name: 'Browse by decade — Studio Pro' }} />
+      <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/decades'), name: 'Browse by decade — CineCanon' }} />
       <PageHero
         eyebrow="Atlas"
         title="By decade"

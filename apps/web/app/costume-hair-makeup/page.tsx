@@ -21,7 +21,7 @@ export default async function CostumeHairMakeupPage() {
 
   return (
     <>
-      <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/costume-hair-makeup'), name: 'Costume, hair, makeup — Studio Pro' }} />
+      <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/costume-hair-makeup'), name: 'Costume, hair, makeup — CineCanon' }} />
       <PageHero
         eyebrow="Department"
         title="Costume, hair, makeup"

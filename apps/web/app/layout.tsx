@@ -9,21 +9,21 @@ import { siteUrl } from '@/lib/site';
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
   title: {
-    template: '%s | Studio Pro',
-    default: 'Studio Pro — Cinematic Technical Reference',
+    template: '%s | CineCanon',
+    default: 'CineCanon — Cinematic Technical Reference',
   },
   description: 'Behind-the-scenes technical metadata for working film professionals.',
-  applicationName: 'Studio Pro',
+  applicationName: 'CineCanon',
   openGraph: {
     type: 'website',
-    siteName: 'Studio Pro',
+    siteName: 'CineCanon',
     locale: 'en_US',
-    title: 'Studio Pro — Cinematic Technical Reference',
+    title: 'CineCanon — Cinematic Technical Reference',
     description: 'Behind-the-scenes technical metadata for working film professionals.',
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Studio Pro — Cinematic Technical Reference',
+    title: 'CineCanon — Cinematic Technical Reference',
     description: 'Behind-the-scenes technical metadata for working film professionals.',
   },
   // T9-6: feed autodiscovery — readers like NetNewsWire or Feedly pick

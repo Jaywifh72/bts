@@ -43,7 +43,7 @@ export function TopNav() {
     <nav className="border-b border-zinc-800 bg-zinc-950" aria-label="Primary">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:gap-8 sm:px-6 sm:py-4">
         <Link href="/" className="font-serif text-lg text-zinc-50 hover:text-amber-400">
-          Studio Pro
+          CineCanon
         </Link>
 
         {/* Desktop links */}

@@ -272,7 +272,7 @@ export default async function RiggingDetailPage(props: Props) {
           About this entry
         </p>
         Mechanism and safety descriptions are original prose written
-        for the Studio Pro archive. The working detail of the rig
+        for the CineCanon archive. The working detail of the rig
         itself is widely documented through SAG-AFTRA safety bulletins,
         production interviews, and the public record. If you have
         first-hand correction or context to add, the archive accepts

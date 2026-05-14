@@ -19,7 +19,7 @@ const TOOLS = [
     href: '/tools/loadout',
     title: 'Loadout calculator',
     summary:
-      'Build a kit from Studio Pro\'s curated equipment list. URL-as-state share link. Print-as-PDF.',
+      'Build a kit from CineCanon\'s curated equipment list. URL-as-state share link. Print-as-PDF.',
   },
   {
     href: '/tools/frame-lines',
@@ -48,7 +48,7 @@ export default function ToolsPage() {
         <p className="text-xs uppercase tracking-widest text-zinc-500">Tools</p>
         <h1 className="mt-1 font-serif text-4xl text-zinc-50">Pre-production tools</h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Calculators and visualizers that work against the Studio Pro
+          Calculators and visualizers that work against the CineCanon
           equipment dataset. URL-as-state where it makes sense — share
           the page to share the answer.
         </p>

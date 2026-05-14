@@ -7,7 +7,7 @@ export const revalidate = 3600;
 /**
  * E-43 — WebFinger discovery so cinematographer profiles federate.
  * Mastodon / Pixelfed / Lemmy clients hit
- * `/.well-known/webfinger?resource=acct:roger-deakins@studiopro.dev`
+ * `/.well-known/webfinger?resource=acct:roger-deakins@cinecanon.com`
  * and expect a JRD payload pointing at the canonical profile URL.
  *
  * We don't currently host ActivityPub actors, so the `self` link

@@ -12,7 +12,7 @@ import { useState } from 'react';
  * on top fills the sensor frame so the user can see how their actual
  * shot will crop.
  *
- * Sensor presets cover the formats Studio Pro already taxonomizes
+ * Sensor presets cover the formats CineCanon already taxonomizes
  * (E-23 / formats.ts): ARRI ALEXA 65, Mini LF, S35 4-perf, IMAX 65mm
  * 15-perf, etc. We give each its native sensor aspect.
  */

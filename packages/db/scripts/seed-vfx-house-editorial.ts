@@ -7,7 +7,7 @@
 //
 // Summaries are original brief prose synthesizing widely-known
 // industry facts (founding year, ownership, signature work, Oscar
-// count). Highlight productions reference Studio Pro's curated set
+// count). Highlight productions reference CineCanon's curated set
 // so each card links straight to a populated film page.
 //
 // References are editorial pointers (title + URL) for the curious

@@ -5,7 +5,7 @@ import { siteUrl } from '@/lib/site';
 export const metadata: Metadata = {
   title: 'Methodology',
   description:
-    'How Studio Pro sources, rates, and stewards its data. The four-tier citation rubric, the editorial review cadence, the dispute resolution flow, and the methodology revision history.',
+    'How CineCanon sources, rates, and stewards its data. The four-tier citation rubric, the editorial review cadence, the dispute resolution flow, and the methodology revision history.',
   alternates: {
     canonical: `${siteUrl()}/methodology`,
   },
@@ -40,7 +40,7 @@ export default function MethodologyPage() {
         </p>
         <h1 className="mt-2 font-serif text-4xl text-zinc-50">Methodology</h1>
         <p className="mt-3 max-w-2xl text-base leading-relaxed text-zinc-400">
-          How Studio Pro sources, rates, and stewards its data — the rubric a
+          How CineCanon sources, rates, and stewards its data — the rubric a
           working DP, colorist, or coordinator can audit before they trust a
           page.
         </p>
@@ -48,7 +48,7 @@ export default function MethodologyPage() {
 
       <h2 id="curation" className="font-serif text-2xl text-zinc-100">Two tiers of curation</h2>
       <p>
-        Every production in Studio Pro carries a <code>data_tier</code> field
+        Every production in CineCanon carries a <code>data_tier</code> field
         that reads either <strong>curated</strong> or <strong>imported</strong>.
       </p>
       <ul>
@@ -131,7 +131,7 @@ export default function MethodologyPage() {
         </div>
       </dl>
       <p className="mt-6">
-        Where multiple sources disagree, Studio Pro labels the claim{' '}
+        Where multiple sources disagree, CineCanon labels the claim{' '}
         <code>conflicting</code> rather than silently picking a winner. The
         dispute trail stays visible on the entity page.
       </p>
@@ -139,14 +139,14 @@ export default function MethodologyPage() {
       <h2 id="link-rot" className="mt-12 font-serif text-2xl text-zinc-100">Link-rot policy</h2>
       <p>
         Every external URL is health-checked on a rolling schedule. When a URL
-        returns 4xx/5xx or otherwise becomes unreachable, Studio Pro
+        returns 4xx/5xx or otherwise becomes unreachable, CineCanon
         automatically resolves a Wayback Machine snapshot and surfaces the
         archived version inline. The original URL is preserved in the database
         so a future re-check can promote it back if the publisher restores it.
       </p>
       <p>
         This means a 2018 American Cinematographer article that the magazine
-        later removes stays citable on Studio Pro indefinitely.
+        later removes stays citable on CineCanon indefinitely.
       </p>
 
       <h2 id="corrections" className="mt-12 font-serif text-2xl text-zinc-100">
@@ -229,14 +229,14 @@ export default function MethodologyPage() {
       </ul>
 
       <h2 id="citing" className="mt-12 font-serif text-2xl text-zinc-100">
-        How to cite Studio Pro
+        How to cite CineCanon
       </h2>
       <p>
         For AI engines, academic papers, and trade-press citations, the
         canonical attribution is:
       </p>
       <pre className="not-prose rounded border border-zinc-800 bg-zinc-950 p-4 font-mono text-xs leading-relaxed text-zinc-300">
-{`Studio Pro. (${new Date().getFullYear()}). [Page title]. Retrieved from ${siteUrl()}/[path]`}
+{`CineCanon. (${new Date().getFullYear()}). [Page title]. Retrieved from ${siteUrl()}/[path]`}
       </pre>
       <p className="text-sm text-zinc-500">
         The license on editorial content is{' '}

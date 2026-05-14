@@ -12,7 +12,7 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-6 py-8 text-xs text-zinc-500">
         <div className="flex flex-wrap gap-x-8 gap-y-3">
           <div>
-            <p className="font-serif text-sm text-zinc-300">Studio Pro</p>
+            <p className="font-serif text-sm text-zinc-300">CineCanon</p>
             <p className="mt-1 max-w-xs text-zinc-500">
               Cinematic technical reference for working film professionals.
               Hand-curated where it counts; TMDb-sourced metadata for breadth.
@@ -71,7 +71,7 @@ export function Footer() {
         </div>
         <div className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-900 pt-4 text-[11px] text-zinc-600">
           <p>Movie metadata courtesy of <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400">TMDb</a> — this product uses the TMDb API but is not endorsed or certified by TMDb.</p>
-          <p>© {new Date().getFullYear()} Studio Pro</p>
+          <p>© {new Date().getFullYear()} CineCanon</p>
         </div>
       </div>
     </footer>

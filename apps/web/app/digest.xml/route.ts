@@ -46,7 +46,7 @@ export async function GET() {
 
   const body = `<?xml version="1.0" encoding="utf-8"?>
 <feed xmlns="http://www.w3.org/2005/Atom">
-  <title>Studio Pro — Weekly digest</title>
+  <title>CineCanon — Weekly digest</title>
   <subtitle>Newly curated productions with full crew and equipment data.</subtitle>
   <link rel="self" href="${escape(absoluteUrl('/digest.xml'))}"/>
   <link rel="alternate" href="${escape(base)}"/>

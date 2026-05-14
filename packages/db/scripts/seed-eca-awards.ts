@@ -1,7 +1,7 @@
 // E-17 — ECA (Emerging Cinematographer Awards) recipient seed.
 // ICG Local 600's annual award identifying camera-dept professionals
 // transitioning into DP roles. We tie recipients to a notable
-// production they later shot when the production is in Studio Pro's
+// production they later shot when the production is in CineCanon's
 // curated set. Source: ICG Magazine ECA archives + ICG press
 // releases.
 import { db, sql } from '../src/index.ts';

@@ -69,7 +69,7 @@ export default async function LocationsPage() {
 
   return (
     <>
-      <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/locations'), name: 'Shooting locations — Studio Pro' }} />
+      <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/locations'), name: 'Shooting locations — CineCanon' }} />
       <PageHero
         eyebrow="Atlas"
         title="Shooting locations"

@@ -22,7 +22,7 @@ export default async function MusicPage() {
 
   return (
     <>
-      <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/music'), name: 'Music — Studio Pro' }} />
+      <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/music'), name: 'Music — CineCanon' }} />
       <PageHero
         eyebrow="Department"
         title="Music"

@@ -3,13 +3,13 @@ import { siteUrl } from '@/lib/site';
 import { posterUrl } from '@/lib/tmdb-image';
 
 /**
- * T9-3 — embeddable "Shot on Studio Pro" badge served as raw HTML so it
+ * T9-3 — embeddable "Shot on CineCanon" badge served as raw HTML so it
  * stands alone inside an <iframe>. Bypasses the root layout (TopNav,
  * Footer, etc.) entirely. Designed for rental house sites, DP
  * portfolios, and BTS articles.
  *
  * Suggested embed:
- *   <iframe src="https://studiopro/films/<slug>/badge"
+ *   <iframe src="https://cinecanon/films/<slug>/badge"
  *           width="320" height="120" frameborder="0"
  *           style="border-radius:8px;overflow:hidden" />
  *
@@ -44,7 +44,7 @@ export async function GET(_req: Request, props: { params: Promise<{ slug: string
 <html lang="en">
 <head>
 <meta charset="utf-8" />
-<title>${escapeHtml(production.title)} — Studio Pro</title>
+<title>${escapeHtml(production.title)} — CineCanon</title>
 <meta name="referrer" content="no-referrer-when-downgrade" />
 <style>
   :root { color-scheme: dark; }

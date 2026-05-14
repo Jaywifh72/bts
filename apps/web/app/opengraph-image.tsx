@@ -4,7 +4,7 @@ import { ogFonts } from '@/lib/og/font';
 export const runtime = 'edge';
 export const contentType = 'image/png';
 export const size = { width: 1200, height: 630 };
-export const alt = 'Studio Pro — Cinematic Technical Reference';
+export const alt = 'CineCanon — Cinematic Technical Reference';
 
 /**
  * T6-5 — root-level OG card. Used as the default for any page that
@@ -37,7 +37,7 @@ export default async function OG() {
             letterSpacing: '-0.01em',
           }}
         >
-          Studio Pro
+          CineCanon
         </div>
         <div
           style={{

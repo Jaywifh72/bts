@@ -30,10 +30,10 @@ export function BookmarkButton({
     setHydrated(true);
     setActive(isBookmarked(kind, slug));
     function refresh() { setActive(isBookmarked(kind, slug)); }
-    window.addEventListener('studiopro:bookmarks-changed', refresh);
+    window.addEventListener('cinecanon:bookmarks-changed', refresh);
     window.addEventListener('storage', refresh);
     return () => {
-      window.removeEventListener('studiopro:bookmarks-changed', refresh);
+      window.removeEventListener('cinecanon:bookmarks-changed', refresh);
       window.removeEventListener('storage', refresh);
     };
   }, [kind, slug]);

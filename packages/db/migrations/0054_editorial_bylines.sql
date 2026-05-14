@@ -15,10 +15,10 @@ ALTER TABLE productions
   ADD COLUMN IF NOT EXISTS last_curated_review TIMESTAMPTZ;
 
 -- Stamp the 9 deeply-seeded films with the canonical editorial byline.
--- The operator is anonymous-by-default; pen-name "Studio Pro Editorial"
+-- The operator is anonymous-by-default; pen-name "CineCanon Editorial"
 -- attributes the work without requiring a real-name disclosure yet.
 UPDATE productions
-SET curated_by = 'Studio Pro Editorial',
+SET curated_by = 'CineCanon Editorial',
     curated_by_url = NULL,
     last_curated_review = NOW()
 WHERE slug IN (

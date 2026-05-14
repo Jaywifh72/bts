@@ -98,7 +98,7 @@ export async function collectAuditDelta(sinceDays: number = 7): Promise<AuditDel
 
 function buildPrompt(delta: AuditDelta, sinceDays: number): string {
   const lines: string[] = [];
-  lines.push(`# Studio Pro — last ${sinceDays} day${sinceDays === 1 ? '' : 's'} of curatorial deltas\n`);
+  lines.push(`# CineCanon — last ${sinceDays} day${sinceDays === 1 ? '' : 's'} of curatorial deltas\n`);
   if (delta.newCurated.length > 0) {
     lines.push('## New curated films');
     for (const c of delta.newCurated) {
@@ -138,7 +138,7 @@ function buildPrompt(delta: AuditDelta, sinceDays: number): string {
   return lines.join('\n');
 }
 
-const SYSTEM_PROMPT = `You write the weekly newsletter for Studio Pro, a cinematography reference site for working film professionals (DPs, gaffers, VFX supervisors). Your tone is informed and concise — assume the reader knows what an IDT is.
+const SYSTEM_PROMPT = `You write the weekly newsletter for CineCanon, a cinematography reference site for working film professionals (DPs, gaffers, VFX supervisors). Your tone is informed and concise — assume the reader knows what an IDT is.
 
 You will be given the week's curatorial deltas. Produce TWO outputs:
 

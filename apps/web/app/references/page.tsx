@@ -7,7 +7,7 @@ import { Pagination } from '@/components/ui/Pagination';
 export const metadata: Metadata = {
   title: 'References',
   description:
-    'Most-cited sources across the Studio Pro archive — Variety / fxguide / SAG-AFTRA / Wikipedia URLs that turn up across films, stunt people, VFX houses, sequences, and bulletins. Each row links to every entity that cites it.',
+    'Most-cited sources across the CineCanon archive — Variety / fxguide / SAG-AFTRA / Wikipedia URLs that turn up across films, stunt people, VFX houses, sequences, and bulletins. Each row links to every entity that cites it.',
 };
 
 export const dynamic = 'force-dynamic';
@@ -181,7 +181,7 @@ export default async function ReferencesIndexPage(props: Props) {
         <p className="mb-2 text-[10px] uppercase tracking-widest text-zinc-400">
           About this index
         </p>
-        Studio Pro stores every cited URL once in a polymorphic
+        CineCanon stores every cited URL once in a polymorphic
         media table. References that previously appeared as separate
         rows on a VFX house, a stunt company, and a stunt sequence
         collapse to a single canonical record with three associations

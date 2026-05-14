@@ -11,7 +11,7 @@
  * returns sensible defaults on the server.
  */
 
-const STORAGE_KEY = 'studiopro:bookmarks:v1';
+const STORAGE_KEY = 'cinecanon:bookmarks:v1';
 
 export type BookmarkKind = 'film' | 'crew' | 'gear-item' | 'gear-series' | 'vfx-house';
 
@@ -45,7 +45,7 @@ function write(items: Bookmark[]): void {
   try {
     window.localStorage.setItem(STORAGE_KEY, JSON.stringify(items));
     // Notify open tabs so the heart icon stays in sync between them.
-    window.dispatchEvent(new CustomEvent('studiopro:bookmarks-changed'));
+    window.dispatchEvent(new CustomEvent('cinecanon:bookmarks-changed'));
   } catch {
     // quota error etc. — silent
   }

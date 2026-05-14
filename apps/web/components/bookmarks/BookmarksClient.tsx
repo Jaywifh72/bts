@@ -20,10 +20,10 @@ export function BookmarksClient() {
     setHydrated(true);
     setItems(getBookmarks());
     function refresh() { setItems(getBookmarks()); }
-    window.addEventListener('studiopro:bookmarks-changed', refresh);
+    window.addEventListener('cinecanon:bookmarks-changed', refresh);
     window.addEventListener('storage', refresh);
     return () => {
-      window.removeEventListener('studiopro:bookmarks-changed', refresh);
+      window.removeEventListener('cinecanon:bookmarks-changed', refresh);
       window.removeEventListener('storage', refresh);
     };
   }, []);

@@ -12,7 +12,7 @@ import { ProductionCard } from '@/components/productions/ProductionCard';
 import { ShotOfTheDayCard } from '@/components/productions/ShotOfTheDayCard';
 
 export const metadata: Metadata = {
-  title: 'Studio Pro — Cinematic Technical Reference',
+  title: 'CineCanon — Cinematic Technical Reference',
 };
 
 // QA — revalidate hourly. The depth-stats subqueries change at most a
@@ -59,7 +59,7 @@ export default async function HomePage() {
           Reference shelf for working camera-department professionals
         </p>
         <h1 className="mt-2 font-serif text-5xl leading-none text-zinc-50">
-          Studio Pro
+          CineCanon
         </h1>
         <p className="mt-4 max-w-2xl text-base leading-relaxed text-zinc-300">
           A working reference for cinematic technical craft —
@@ -163,7 +163,7 @@ export default async function HomePage() {
           <div>
             <h2 className="font-serif text-xl text-zinc-50">Technical reference depth</h2>
             <p className="mt-1 text-xs text-zinc-500">
-              Where Studio Pro goes beyond TMDb metadata — hand-curated editorial
+              Where CineCanon goes beyond TMDb metadata — hand-curated editorial
               across the working departments.
             </p>
           </div>

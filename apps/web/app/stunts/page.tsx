@@ -46,7 +46,7 @@ export default async function StuntsIndexPage() {
         accent="red"
         description={
           'The most under-documented department in working cinema. ' +
-          'Studio Pro catalogues the coordinators, performers, companies and ' +
+          'CineCanon catalogues the coordinators, performers, companies and ' +
           'schools that move the camera through action — with cited references ' +
           'and a long-running editorial commitment to the craft.'
         }

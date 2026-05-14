@@ -26,7 +26,7 @@ params, 384px patches). 1152-dim output.
 | Self-host on Fly GPU | $0 marginal | + $2/hr GPU rental | Only worth it at >50K queries/day. |
 | HuggingFace Inference Endpoints | ~10–30s | ~$0.50 | Reliable but pricier. |
 
-**Recommendation: Modal.** Best $/query at Studio Pro's volume, and the
+**Recommendation: Modal.** Best $/query at CineCanon's volume, and the
 Python SDK is one file.
 
 ## Modal setup sketch

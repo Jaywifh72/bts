@@ -206,7 +206,7 @@ export function htmlListFetcher(
     const res = await fetch(listingUrl, {
       headers: {
         'User-Agent':
-          'Mozilla/5.0 (compatible; StudioProBot/1.0; +https://studiopro.example.com)',
+          'Mozilla/5.0 (compatible; CineCanonBot/1.0; +https://cinecanon.com)',
         Accept: 'text/html,application/xhtml+xml',
       },
     });
@@ -238,7 +238,7 @@ export function htmlListFetcher(
  * list. Use when the studio's own site is SPA-rendered AND TMDb's
  * `with_companies` index under-counts the studio's VFX work
  * (because TMDb credits the *production* studio, not the VFX house).
- * This mirrors Studio Pro's editorial model: hand-curated where it
+ * This mirrors CineCanon's editorial model: hand-curated where it
  * counts, rather than chasing a brittle scraper for thin coverage.
  */
 export function curatedListFetcher(

@@ -36,7 +36,7 @@ export async function computePhash(imageUrl: string): Promise<bigint> {
   const res = await fetch(imageUrl, {
     headers: {
       Accept: 'image/jpeg,image/png',
-      'User-Agent': 'StudioProBot/1.0 (phash)',
+      'User-Agent': 'CineCanonBot/1.0 (phash)',
     },
     redirect: 'follow',
   });

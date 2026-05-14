@@ -137,7 +137,7 @@ export default async function StuntSchoolPage(props: Props) {
           <p className="mt-3 max-w-2xl text-xs text-zinc-500">
             Performer-and-coordinator alumni are wired in once phase 2
             of the stunt-section roadmap lands — same
-            person × school mapping pattern Studio Pro already uses for
+            person × school mapping pattern CineCanon already uses for
             film-school alumni on the crew pages.
           </p>
           <div className="mt-3 rounded border border-dashed border-zinc-800 p-6 text-center text-xs text-zinc-600">

@@ -10,7 +10,7 @@ import { ogFonts } from '@/lib/og/font';
 export const runtime = 'edge';
 export const contentType = 'image/png';
 export const size = { width: 1200, height: 630 };
-export const alt = 'Studio Pro production card';
+export const alt = 'CineCanon production card';
 
 type ApiPayload = {
   production: { title: string; release_year: number | null };
@@ -36,7 +36,7 @@ async function originFromHeaders(): Promise<string> {
 export default async function OG({ params }: { params: Promise<{ slug: string }> }) {
   const fonts = await ogFonts();
 
-  let title = 'Studio Pro';
+  let title = 'CineCanon';
   let year: number | null = null;
   let director: string | undefined;
   let dp: string | undefined;
@@ -95,7 +95,7 @@ export default async function OG({ params }: { params: Promise<{ slug: string }>
             color: '#f59e0b',
           }}
         >
-          Studio Pro
+          CineCanon
         </div>
         <div
           style={{

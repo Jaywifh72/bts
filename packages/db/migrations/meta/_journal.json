@@ -393,6 +393,13 @@
       "when": 1782518400000,
       "tag": "0055_production_equipment",
       "breakpoints": true
+    },
+    {
+      "idx": 56,
+      "version": "7",
+      "when": 1747320000000,
+      "tag": "0056_rebrand_editorial_byline",
+      "breakpoints": true
     }
   ]
 }

@@ -4,7 +4,7 @@ import Link from 'next/link';
 export const metadata: Metadata = {
   title: 'Killer queries',
   description:
-    'Hand-picked queries that demonstrate what the Studio Pro archive can answer once the data is in shape. Each one cross-cuts crews, gear, productions, or scenes in a way that would be tedious-to-impossible elsewhere.',
+    'Hand-picked queries that demonstrate what the CineCanon archive can answer once the data is in shape. Each one cross-cuts crews, gear, productions, or scenes in a way that would be tedious-to-impossible elsewhere.',
 };
 
 const QUERIES = [
@@ -38,7 +38,7 @@ export default function QueriesIndexPage() {
         <p className="text-xs uppercase tracking-widest text-zinc-500">Archive</p>
         <h1 className="mt-1 font-serif text-3xl text-zinc-50">Killer queries</h1>
         <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
-          Hand-picked queries that demonstrate what the Studio Pro archive can answer
+          Hand-picked queries that demonstrate what the CineCanon archive can answer
           once the data is in shape. Each cross-cuts crew, gear, productions, or scenes
           in a way that would be tedious-to-impossible elsewhere on the open web.
         </p>

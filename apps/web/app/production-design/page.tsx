@@ -25,7 +25,7 @@ export default async function ProductionDesignPage() {
 
   return (
     <>
-      <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/production-design'), name: 'Production design — Studio Pro' }} />
+      <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/production-design'), name: 'Production design — CineCanon' }} />
       <PageHero
         eyebrow="Department"
         title="Production design"

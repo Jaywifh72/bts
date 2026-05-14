@@ -22,7 +22,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
     title: `Shot on ${fmt.label}`,
     description: fmt.description,
     openGraph: {
-      title: `Shot on ${fmt.label} | Studio Pro`,
+      title: `Shot on ${fmt.label} | CineCanon`,
       description: fmt.description,
       type: 'website',
     },
@@ -37,7 +37,7 @@ export default async function FormatPage(props: Props) {
   const productions = await listProductionsByFormatPatterns(db, fmt.patterns);
 
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
-    { name: 'Studio Pro', path: '/' },
+    { name: 'CineCanon', path: '/' },
     { name: 'Formats', path: '/format' },
     { name: fmt.label, path: `/format/${fmt.slug}` },
   ]);

@@ -9,7 +9,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 export const metadata: Metadata = {
   title: 'Ask anything',
   description:
-    'Natural-language search over Studio Pro\'s curated cinematography database. Ask questions like "Roger Deakins shot in 2.39:1 anamorphic before 2010" and get filtered, semantically-ranked results.',
+    'Natural-language search over CineCanon\'s curated cinematography database. Ask questions like "Roger Deakins shot in 2.39:1 anamorphic before 2010" and get filtered, semantically-ranked results.',
 };
 
 const EMBED_ENDPOINT = 'https://api.openai.com/v1/embeddings';

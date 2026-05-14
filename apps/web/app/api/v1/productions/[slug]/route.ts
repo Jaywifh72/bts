@@ -14,7 +14,7 @@ import { siteUrl } from '@/lib/site';
  * stable JSON. CC-BY attribution; rate-limited only by edge cache.
  *
  * Goal: rental house quoting tools, on-set apps, and journalists can
- * embed Studio Pro data programmatically — and cite us back.
+ * embed CineCanon data programmatically — and cite us back.
  *
  * Stable contract:
  *   - All keys snake_case (matches DB column names)
@@ -51,7 +51,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ slug: st
     post_houses: postHouses,
     _meta: {
       license: 'CC-BY 4.0',
-      attribution: `Data courtesy of Studio Pro (${siteUrl()})`,
+      attribution: `Data courtesy of CineCanon (${siteUrl()})`,
       api_version: 'v1',
     },
   } satisfies ProductionApiResponse;

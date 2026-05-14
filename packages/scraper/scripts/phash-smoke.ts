@@ -1,7 +1,7 @@
 // Probe the actual response Jimp is seeing.
 {
   const res = await fetch('https://image.tmdb.org/t/p/w1280/xJHokMbljvjADYdit5fK5VQsXEG.jpg', {
-    headers: { Accept: 'image/jpeg', 'User-Agent': 'StudioProBot/1.0 (phash)' },
+    headers: { Accept: 'image/jpeg', 'User-Agent': 'CineCanonBot/1.0 (phash)' },
   });
   const buf = Buffer.from(await res.arrayBuffer());
   console.log(`probe: status=${res.status} content-type=${res.headers.get('content-type')} bytes=${buf.length} first12=${[...buf.subarray(0, 12)].map(b => b.toString(16).padStart(2, '0')).join(' ')}`);

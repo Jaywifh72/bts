@@ -13,7 +13,7 @@ import { db, sql } from '@bts/db';
  * `--dry-run` prints what would post without sending.
  */
 
-const SITE = process.env.PUBLIC_SITE_URL ?? 'https://studiopro.dev';
+const SITE = process.env.PUBLIC_SITE_URL ?? 'https://cinecanon.com';
 
 type PendingProduction = {
   id: number;
@@ -27,7 +27,7 @@ function formatPostText(p: PendingProduction): string {
   const url = `${SITE}/films/${p.slug}`;
   const yearTag = p.release_year ? ` (${p.release_year})` : '';
   // Bluesky 300 char limit, Mastodon 500 default. Keep tight for both.
-  const lead = `Now curated on Studio Pro: ${p.title}${yearTag}`;
+  const lead = `Now curated on CineCanon: ${p.title}${yearTag}`;
   const synopsis = p.synopsis ? `\n\n${p.synopsis.slice(0, 140)}${p.synopsis.length > 140 ? '…' : ''}` : '';
   return `${lead}${synopsis}\n\n${url}`;
 }

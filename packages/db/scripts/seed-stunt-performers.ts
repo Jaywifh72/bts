@@ -1,7 +1,7 @@
 // Phase-2 editorial seed for the stunt section: 15 marquee
 // performers and coordinators. Idempotent — uses ON CONFLICT (slug)
 // DO UPDATE so existing TMDb-imported rows get enriched without
-// being overwritten where Studio Pro doesn't have richer data.
+// being overwritten where CineCanon doesn't have richer data.
 //
 // Bios are brief original prose synthesizing widely-known industry
 // facts (which actor a performer doubled for, signature productions,

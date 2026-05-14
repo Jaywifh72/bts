@@ -128,7 +128,7 @@ export default async function ForDpsPage() {
         <p className="mb-2 text-[10px] uppercase tracking-widest text-zinc-400">
           About this page
         </p>
-        Studio Pro&apos;s editorial standard: every gear, lighting, color, and
+        CineCanon&apos;s editorial standard: every gear, lighting, color, and
         scene claim is cited with a confidence rating. Read{' '}
         <Link href="/methodology" className="text-amber-400 hover:underline">the methodology</Link> for the four-tier rubric, the
         link-rot policy, and the dispute resolution flow.

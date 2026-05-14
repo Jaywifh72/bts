@@ -48,7 +48,7 @@ export default async function ShotsPage() {
           '@context': 'https://schema.org',
           '@type': 'CollectionPage',
           '@id': absoluteUrl('/shots'),
-          name: 'Shots — Studio Pro',
+          name: 'Shots — CineCanon',
           mainEntity: keyframes.slice(0, 24).map((kf) =>
             buildImageJsonLd({
               url: kf.image_url,

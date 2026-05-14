@@ -4,7 +4,7 @@ import { LetterboxdImport } from '@/components/import/LetterboxdImport';
 export const metadata: Metadata = {
   title: 'Letterboxd import',
   description:
-    'Upload your Letterboxd watched.csv to see which of those films have curated BTS data on Studio Pro.',
+    'Upload your Letterboxd watched.csv to see which of those films have curated BTS data on CineCanon.',
 };
 
 export default function LetterboxdImportPage() {
@@ -12,7 +12,7 @@ export default function LetterboxdImportPage() {
     <article>
       <header className="mb-6">
         <p className="text-xs uppercase tracking-widest text-zinc-500">Import</p>
-        <h1 className="mt-1 font-serif text-3xl text-zinc-50">Letterboxd → Studio Pro</h1>
+        <h1 className="mt-1 font-serif text-3xl text-zinc-50">Letterboxd → CineCanon</h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
           Drop your <code>watched.csv</code> from the Letterboxd
           <a href="https://letterboxd.com/settings/data/" target="_blank" rel="noopener noreferrer" className="hover:text-amber-400"> data export</a>.

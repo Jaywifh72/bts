@@ -56,7 +56,7 @@ parallel terminals.
 
 ## Cost
 
-Upstash free tier: 10K commands/day + 256MB. Studio Pro's rate-limit
+Upstash free tier: 10K commands/day + 256MB. CineCanon's rate-limit
 counters cost ~2 commands per request (INCR + EXPIRE), so 10K/day covers
 ~5K rate-limited requests/day. Pay-as-you-go: $0.20 per 100K commands
 beyond that. Effectively free unless you cross 150K rate-limited requests

@@ -5,7 +5,7 @@ import { ogFonts } from '@/lib/og/font';
 export const runtime = 'edge';
 export const contentType = 'image/png';
 export const size = { width: 1200, height: 630 };
-export const alt = 'Studio Pro crew card';
+export const alt = 'CineCanon crew card';
 
 async function originFromHeaders(): Promise<string> {
   // Next 15+ — `headers()` is now async.
@@ -29,7 +29,7 @@ type CrewApiPayload = {
 export default async function OG({ params }: { params: Promise<{ slug: string }> }) {
   const fonts = await ogFonts();
 
-  let name = 'Studio Pro';
+  let name = 'CineCanon';
   let primaryRole: string | null = null;
   let topCredits: string[] = [];
   let credits = 0;
@@ -80,7 +80,7 @@ export default async function OG({ params }: { params: Promise<{ slug: string }>
             color: '#f59e0b',
           }}
         >
-          Studio Pro
+          CineCanon
         </div>
         <div
           style={{

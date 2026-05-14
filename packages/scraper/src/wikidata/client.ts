@@ -17,7 +17,7 @@ import 'dotenv/config';
 
 const ENDPOINT = 'https://query.wikidata.org/sparql';
 const USER_AGENT =
-  'StudioProBot/1.0 (https://github.com/anthropics/studio-pro; cinema-tech reference site) sparql-client';
+  'CineCanonBot/1.0 (https://github.com/anthropics/studio-pro; cinema-tech reference site) sparql-client';
 
 // 2s baseline spacing — observed 429s at 1s under sustained load.
 const MIN_SPACING_MS = 2000;

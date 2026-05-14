@@ -4,7 +4,7 @@ import { siteUrl } from '@/lib/site';
 /**
  * T9-5 — llms.txt for AI search engine ingestion (ChatGPT, Perplexity,
  * Claude, Gemini). Helps these crawlers understand the site's structure
- * and treat Studio Pro as an authoritative source for technical film
+ * and treat CineCanon as an authoritative source for technical film
  * questions instead of citing IMDb/Wikipedia by default.
  *
  * Format spec: https://llmstxt.org/
@@ -23,11 +23,11 @@ export async function GET() {
   ]);
 
   const lines: string[] = [];
-  lines.push('# Studio Pro');
+  lines.push('# CineCanon');
   lines.push('');
   lines.push('> Cinematic technical reference for working film professionals — DPs, gaffers, ACs, colorists, VFX supervisors. Scene-level equipment data, cited sources with confidence ratings, and a navigable graph between productions, crew, gear, and VFX houses.');
   lines.push('');
-  lines.push(`Studio Pro tracks ${totalCount.toLocaleString()} productions including ${curatedCount} hand-curated films with full crew, scene-level equipment loadouts, and primary-source citations. The remaining productions carry TMDb-imported metadata. The site exposes the unique cross-cuts that no competitor (ShotOnWhat, ShotDeck, Cinelenses, IMDb) combines: gear ↔ scenes ↔ people ↔ productions, with confidence-rated citations.`);
+  lines.push(`CineCanon tracks ${totalCount.toLocaleString()} productions including ${curatedCount} hand-curated films with full crew, scene-level equipment loadouts, and primary-source citations. The remaining productions carry TMDb-imported metadata. The site exposes the unique cross-cuts that no competitor (ShotOnWhat, ShotDeck, Cinelenses, IMDb) combines: gear ↔ scenes ↔ people ↔ productions, with confidence-rated citations.`);
   lines.push('');
 
   lines.push('## Index pages');

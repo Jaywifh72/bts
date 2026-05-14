@@ -3,7 +3,7 @@ import { test, expect } from '@playwright/test';
 test.describe('Smoke pack — top-level routes', () => {
   test('homepage renders with hero + nav', async ({ page }) => {
     await page.goto('/');
-    await expect(page.locator('h1')).toContainText('Studio Pro');
+    await expect(page.locator('h1')).toContainText('CineCanon');
     await expect(page.locator('nav[aria-label="Primary"]')).toBeVisible();
   });
 

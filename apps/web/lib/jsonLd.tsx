@@ -353,7 +353,7 @@ export function buildStuntSequenceJsonLd(s: StuntSequenceInput): JsonLdObject {
     },
     publisher: {
       '@type': 'Organization',
-      name: 'Studio Pro',
+      name: 'CineCanon',
       url: absoluteUrl('/'),
     },
     dateModified: s.dateModified ?? undefined,

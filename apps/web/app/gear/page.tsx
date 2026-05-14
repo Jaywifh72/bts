@@ -56,7 +56,7 @@ export default async function GearPage() {
         <p className="text-xs uppercase tracking-widest text-zinc-500">Archive</p>
         <h1 className="mt-1 font-serif text-4xl text-zinc-50">Gear</h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Studio Pro catalogues every camera, lens set, light, and filter
+          CineCanon catalogues every camera, lens set, light, and filter
           we have curated production data for — with manufacturer
           profiles, editorial notes on signature looks, and per-item
           specs sourced from manufacturer datasheets.

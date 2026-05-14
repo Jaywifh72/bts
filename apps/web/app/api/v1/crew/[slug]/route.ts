@@ -36,7 +36,7 @@ export async function GET(_req: NextRequest, props: { params: Promise<{ slug: st
       role_category: f.role_category,
     })),
     _meta: {
-      license: 'CC BY 4.0 - please cite "Studio Pro" with a link back',
+      license: 'CC BY 4.0 - please cite "CineCanon" with a link back',
     },
   } satisfies CrewApiResponse;
 

@@ -17,7 +17,7 @@ import { db, sql } from '@bts/db';
  */
 
 const SAVE_BASE = 'https://web.archive.org/save/';
-const USER_AGENT = 'StudioProBot/1.0 (cinema-tech reference; archival job)';
+const USER_AGENT = 'CineCanonBot/1.0 (cinema-tech reference; archival job)';
 const MIN_SPACING_MS = 6000;
 const MAX_RETRIES = 3;
 

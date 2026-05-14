@@ -38,7 +38,7 @@ export default async function SoundPage() {
           '@context': 'https://schema.org',
           '@type': 'CollectionPage',
           '@id': absoluteUrl('/sound'),
-          name: 'Sound — Studio Pro',
+          name: 'Sound — CineCanon',
           description:
             'Sound department: mixers, designers, foley artists, dialog editors, re-recording mixers, supervising sound editors.',
         }}
@@ -48,7 +48,7 @@ export default async function SoundPage() {
         title="Sound"
         accent="blue"
         description={
-          'Production sound mixers, sound designers, foley artists, dialog editors, re-recording mixers, and supervising sound editors. The department whose work goes unnamed by everyone except Studio Pro — every sound credit cited and rated.'
+          'Production sound mixers, sound designers, foley artists, dialog editors, re-recording mixers, and supervising sound editors. The department whose work goes unnamed by everyone except CineCanon — every sound credit cited and rated.'
         }
       />
 

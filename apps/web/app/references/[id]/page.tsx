@@ -14,7 +14,7 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   if (!data) return {};
   return {
     title: `${data.asset.title} — referenced by ${data.associations.length}`,
-    description: data.asset.caption ?? `Source cited by ${data.associations.length} entities across the Studio Pro archive.`,
+    description: data.asset.caption ?? `Source cited by ${data.associations.length} entities across the CineCanon archive.`,
   };
 }
 

@@ -11,11 +11,11 @@ export async function GET() {
   const base = siteUrl();
   return NextResponse.json(
     {
-      name: 'Studio Pro API',
+      name: 'CineCanon API',
       version: 'v1',
       description: 'Read-only API for cinematic technical metadata.',
       license: 'CC-BY 4.0',
-      attribution: `Data courtesy of Studio Pro (${base})`,
+      attribution: `Data courtesy of CineCanon (${base})`,
       endpoints: {
         production: {
           method: 'GET',

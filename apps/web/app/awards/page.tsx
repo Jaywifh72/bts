@@ -80,7 +80,7 @@ export default async function AwardsPage() {
 
   return (
     <>
-      <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/awards'), name: 'Awards — Studio Pro' }} />
+      <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/awards'), name: 'Awards — CineCanon' }} />
       <PageHero
         eyebrow="Cross-cut"
         title="Awards"

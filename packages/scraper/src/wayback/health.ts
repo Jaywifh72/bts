@@ -18,7 +18,7 @@ import { db, sql } from '@bts/db';
 
 const MIN_SPACING_MS = 1500;
 const TIMEOUT_MS = 15000;
-const USER_AGENT = 'StudioProBot/1.0 (link-health-check)';
+const USER_AGENT = 'CineCanonBot/1.0 (link-health-check)';
 
 let _lastStartedAt = 0;
 let _inflight: Promise<unknown> = Promise.resolve();

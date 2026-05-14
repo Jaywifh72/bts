@@ -131,7 +131,7 @@ export default async function StuntPeopleIndexPage() {
         </p>
         Phase 3 introduces the sequence-level rigging detail layer —
         named coordinator + performer + rig data tied to the films
-        you already see elsewhere on Studio Pro. Phase 4 ships the
+        you already see elsewhere on CineCanon. Phase 4 ships the
         lineage graph (who taught whom) on each performer's page.
       </aside>
     </>

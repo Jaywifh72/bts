@@ -36,7 +36,7 @@ import * as Sentry from '@sentry/nextjs';
 
 Sentry.init({
   dsn: process.env.NEXT_PUBLIC_SENTRY_DSN,
-  // Lower trace sampling — Studio Pro is read-heavy, 10% is enough.
+  // Lower trace sampling — CineCanon is read-heavy, 10% is enough.
   tracesSampleRate: 0.1,
   // Send replays only on errors, not on every session.
   replaysOnErrorSampleRate: 1.0,
@@ -74,7 +74,7 @@ curl -i "https://<your-domain>/api/v1/productions/__definitely-not-a-slug__"
 
 ## Cost
 
-Sentry free tier: 5K errors/month + 10K performance units. Studio Pro's
+Sentry free tier: 5K errors/month + 10K performance units. CineCanon's
 expected error volume is low (it's a read-mostly site); free tier is
 plenty until you're seeing real traffic.
 

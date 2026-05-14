@@ -95,7 +95,7 @@ export function parseFeed(xml: string): FeedItem[] {
   return items;
 }
 
-const USER_AGENT = 'StudioProBot/1.0 (https://studiopro.example.com; cinema-tech aggregator)';
+const USER_AGENT = 'CineCanonBot/1.0 (https://cinecanon.com; cinema-tech aggregator)';
 
 export async function fetchFeed(url: string): Promise<FeedItem[]> {
   const res = await fetch(url, {

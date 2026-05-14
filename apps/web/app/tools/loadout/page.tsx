@@ -8,7 +8,7 @@ import { PrintButton } from '@/components/tools/PrintButton';
 export const metadata: Metadata = {
   title: 'Loadout calculator',
   description:
-    'Build a camera + lens + filter + lighting kit from Studio Pro\'s curated equipment list. Share via URL, save as PDF.',
+    'Build a camera + lens + filter + lighting kit from CineCanon\'s curated equipment list. Share via URL, save as PDF.',
 };
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -80,7 +80,7 @@ export default async function LoadoutPage(props: Props) {
         <p className="text-xs uppercase tracking-widest text-zinc-500">Tools</p>
         <h1 className="mt-1 font-serif text-3xl text-zinc-50">Loadout calculator</h1>
         <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Build a kit from Studio Pro's curated equipment. State persists in
+          Build a kit from CineCanon's curated equipment. State persists in
           the URL — share the page to share the kit. Print-as-PDF turns the
           kit into a paper-sides one-pager.
         </p>
@@ -88,7 +88,7 @@ export default async function LoadoutPage(props: Props) {
 
       {/* Print header — only shows when printed */}
       <header className="mb-6 hidden print:block">
-        <h1 className="font-serif text-2xl">Studio Pro — Loadout</h1>
+        <h1 className="font-serif text-2xl">CineCanon — Loadout</h1>
         <p className="text-sm text-zinc-700">{new Date().toISOString().slice(0, 10)}</p>
       </header>
 

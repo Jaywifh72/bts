@@ -87,7 +87,7 @@ export default async function LoadoutPage(props: { params: Promise<{ slug: strin
         {/* Header */}
         <header className="mb-6 border-b border-zinc-800 pb-4 print:border-zinc-300">
           <p className="text-[10px] uppercase tracking-widest text-zinc-500 print:text-gray-500">
-            Studio Pro · Loadout sheet
+            CineCanon · Loadout sheet
           </p>
           <h1 className="mt-1 font-serif text-3xl text-zinc-100 print:text-black">
             {production.title}

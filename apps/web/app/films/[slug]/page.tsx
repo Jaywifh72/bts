@@ -169,7 +169,7 @@ export default async function FilmDetailPage(props: Props) {
   });
 
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
-    { name: 'Studio Pro', path: '/' },
+    { name: 'CineCanon', path: '/' },
     { name: 'Films', path: '/films' },
     { name: data.production.title, path: `/films/${data.production.slug}` },
   ]);

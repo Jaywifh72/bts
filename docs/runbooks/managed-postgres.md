@@ -2,7 +2,7 @@
 
 ## Decision: Neon vs Supabase
 
-Studio Pro needs **Postgres 16 + pgvector + pg_trgm**. Both Neon and
+CineCanon needs **Postgres 16 + pgvector + pg_trgm**. Both Neon and
 Supabase support that. Pick by use-case:
 
 | | Neon | Supabase |
@@ -14,9 +14,9 @@ Supabase support that. Pick by use-case:
 | Free tier | 0.5GB + 100h compute/mo | 500MB + 2GB egress/mo |
 | Realtime / auth / storage bundled | No (just Postgres) | Yes |
 | pgvector HNSW indexes | Supported | Supported |
-| Best for Studio Pro | **Yes — branch-per-PR + scale-to-zero** | Only if you want bundled auth |
+| Best for CineCanon | **Yes — branch-per-PR + scale-to-zero** | Only if you want bundled auth |
 
-**Recommendation: Neon.** Studio Pro is a static-mostly site with periodic
+**Recommendation: Neon.** CineCanon is a static-mostly site with periodic
 admin ingest jobs. Scale-to-zero matches that load profile; per-PR branches
 let Vercel preview deploys run against an isolated copy of the data.
 
@@ -111,7 +111,7 @@ data loss elsewhere.
 
 ## Cost
 
-For Studio Pro's expected shape (~5GB data, low query volume, periodic
+For CineCanon's expected shape (~5GB data, low query volume, periodic
 ingest spikes):
 - Neon free: 0.5GB — **not enough**, need paid tier
 - Neon Launch ($19/mo): 10GB storage + 300h compute — **fits**

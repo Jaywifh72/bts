@@ -30,7 +30,7 @@ export default async function EditingPage() {
           '@context': 'https://schema.org',
           '@type': 'CollectionPage',
           '@id': absoluteUrl('/editing'),
-          name: 'Editing — Studio Pro',
+          name: 'Editing — CineCanon',
         }}
       />
       <PageHero
