@@ -376,6 +376,44 @@ const EDITORIAL_JOBS: JobDef[] = [
     command: { args: ['tsx', 'scripts/seed-eca-awards.ts'], cwd: 'packages/db', bin: 'npx' },
     weight: 'fast',
   },
+  // ── Awards: hand-seeded org-recipient rows + auto-attribution backfills ──
+  // Idempotent. Safe to re-run after any awards data change.
+  {
+    id: 'seed:org-recipient-awards',
+    group: 'editorial',
+    label: 'Awards — VFX/stunt org recipients',
+    description:
+      'Seed hand-verified org-recipient awards: VES wins routed to VFX houses (Framestore, ILM, DNEG) and SAG/Taurus when documented for stunt companies. Idempotent — re-running on a healthy DB no-ops.',
+    command: { args: ['tsx', 'scripts/seed-org-recipient-awards.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'backfill:pre-2000-awards',
+    group: 'editorial',
+    label: 'Awards — pre-2000 backfill',
+    description:
+      'Hand-curated pre-2000 award rows for the marquee historic films (Apocalypse Now, Lawrence of Arabia, Barry Lyndon, etc.). 24 rows of Academy/BAFTA/Cannes/Venice provenance the public scrapers don’t reliably reach for older decades.',
+    command: { args: ['tsx', 'scripts/backfill-pre-2000-awards.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'backfill:award-recipients',
+    group: 'editorial',
+    label: 'Awards — auto-attribute single-recipient categories',
+    description:
+      'Generalised backfill that joins production_awards (cinematography / directing / editing / screenplay / score / costume / production-design) to crew_assignments and populates recipient_person_id where exactly one crew member matches the category. Multi-credit rows are logged and skipped (run the splitter pass below for those). Pre-0057 duplicate rows are deduplicated. Idempotent.',
+    command: { args: ['tsx', 'scripts/backfill-award-recipients.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'medium',
+  },
+  {
+    id: 'backfill:award-recipients-multi',
+    group: 'editorial',
+    label: 'Awards — split multi-credit categories',
+    description:
+      'Second-pass backfill: for productions where 2+ people qualify (Coen brothers, screenwriter teams, multi-DP films), insert one award row per credited recipient and drop the NULL-recipient orphan. Per-bucket cap on candidate count guards against noisy seed data. Idempotent.',
+    command: { args: ['tsx', 'scripts/backfill-award-recipients-multi.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'medium',
+  },
   {
     id: 'seed:camera-benchmarks',
     group: 'editorial',
