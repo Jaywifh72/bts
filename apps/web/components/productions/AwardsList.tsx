@@ -1,28 +1,17 @@
 import Link from 'next/link';
 import type { ProductionAward } from '@bts/db';
 import { SectionHeader } from '@/components/ui/SectionHeader';
-
-const ORG_LABELS: Record<string, string> = {
-  academy_awards: 'Academy Awards',
-  bafta: 'BAFTA',
-  cannes: 'Cannes',
-  golden_globes: 'Golden Globes',
-  critics_choice: 'Critics Choice',
-  asc_award: 'ASC Awards',
-  aso_award: 'ASO Awards',
-  csc_award: 'CSC Awards',
-  bsc_award: 'BSC Awards',
-  spirit_awards: 'Independent Spirit Awards',
-  venice: 'Venice Film Festival',
-  berlin: 'Berlin Film Festival',
-  ves_award: 'VES Awards',
-  eca: 'Emerging Cinematographer Awards',
-  other: 'Other',
-};
+import { orgLabel } from '@/lib/award-labels';
 
 /**
  * T2-6 — production awards section. Wins-first within year, most recent
  * year first. Self-hides when there are no awards.
+ *
+ * Recipient handling (post-migration 0057): each award row may attribute
+ * to at most one of person / VFX house / stunt company. We render
+ * whichever is present, linking to that entity's profile page. Rows with
+ * no recipient render as production-level (Best Picture, Best VFX team
+ * without a specified house lead, etc.).
  */
 export function AwardsList({ awards }: { awards: readonly ProductionAward[] }) {
   if (awards.length === 0) return null;
@@ -46,7 +35,7 @@ export function AwardsList({ awards }: { awards: readonly ProductionAward[] }) {
             >
               {a.is_winner ? 'WON' : 'NOM'}
             </span>
-            <span className="text-zinc-300">{ORG_LABELS[a.award_org] ?? a.award_org}</span>
+            <span className="text-zinc-300">{orgLabel(a.award_org)}</span>
             <span className="text-zinc-500">·</span>
             <span className="text-zinc-200">{a.category}</span>
             <span className="text-zinc-500">·</span>
@@ -59,6 +48,30 @@ export function AwardsList({ awards }: { awards: readonly ProductionAward[] }) {
                   className="text-zinc-300 hover:text-amber-400"
                 >
                   {a.recipient_display_name}
+                </Link>
+              </>
+            )}
+            {a.recipient_vfx_house_slug && a.recipient_vfx_house_name && (
+              <>
+                <span className="text-zinc-600">→</span>
+                <Link
+                  href={`/vfx/${a.recipient_vfx_house_slug}`}
+                  className="text-zinc-300 hover:text-amber-400"
+                  title="VFX house recipient"
+                >
+                  {a.recipient_vfx_house_name}
+                </Link>
+              </>
+            )}
+            {a.recipient_stunt_company_slug && a.recipient_stunt_company_name && (
+              <>
+                <span className="text-zinc-600">→</span>
+                <Link
+                  href={`/stunts/companies/${a.recipient_stunt_company_slug}`}
+                  className="text-zinc-300 hover:text-amber-400"
+                  title="Stunt company recipient"
+                >
+                  {a.recipient_stunt_company_name}
                 </Link>
               </>
             )}

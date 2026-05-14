@@ -20,12 +20,20 @@ export type ProductionAward = {
   is_winner: boolean;
   recipient_person_slug: string | null;
   recipient_display_name: string | null;
+  // 0057 — at most one of (person, vfx_house, stunt_company) is non-null per row.
+  recipient_vfx_house_slug: string | null;
+  recipient_vfx_house_name: string | null;
+  recipient_stunt_company_slug: string | null;
+  recipient_stunt_company_name: string | null;
   source_url: string | null;
 };
 
 /**
  * T2-6 — awards for a production. Sorted winners-first within year, most
- * recent year first. Joins to people for recipient slug/name when set.
+ * recent year first. Joins three potential recipient tables (people /
+ * vfx_houses / stunt_companies) so the UI can render whichever recipient
+ * is attributed, or fall back to a production-level chip when all three
+ * are null (Best Picture, etc.).
  */
 export async function getProductionAwards(
   db: SeedDb = defaultDb,
@@ -40,9 +48,15 @@ export async function getProductionAwards(
       a.is_winner,
       ppl.slug AS recipient_person_slug,
       ppl.display_name AS recipient_display_name,
+      vh.slug AS recipient_vfx_house_slug,
+      vh.name AS recipient_vfx_house_name,
+      sc.slug AS recipient_stunt_company_slug,
+      sc.name AS recipient_stunt_company_name,
       a.source_url
     FROM production_awards a
-    LEFT JOIN people ppl ON ppl.id = a.recipient_person_id
+    LEFT JOIN people          ppl ON ppl.id = a.recipient_person_id
+    LEFT JOIN vfx_houses      vh  ON vh.id  = a.recipient_vfx_house_id
+    LEFT JOIN stunt_companies sc  ON sc.id  = a.recipient_stunt_company_id
     WHERE a.production_id = ${productionId}
     ORDER BY a.year DESC, a.is_winner DESC, a.award_org, a.category
   `);
