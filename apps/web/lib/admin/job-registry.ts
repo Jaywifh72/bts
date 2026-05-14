@@ -423,6 +423,254 @@ const EDITORIAL_JOBS: JobDef[] = [
     command: { args: ['tsx', 'scripts/seed-camera-benchmarks.ts'], cwd: 'packages/db', bin: 'npx' },
     weight: 'fast',
   },
+
+  // ── Deep-dive film seeds ────────────────────────────────────────
+  // One card per hand-curated marquee production. Each seeds scenes,
+  // crew, formats, color pipelines, lighting, locations, post-houses,
+  // VFX credits, and awards for that single film. Idempotent (UPSERTs).
+  // Re-run after schema changes touch any of those tables.
+  {
+    id: 'seed:anora',
+    group: 'editorial',
+    label: 'Deep-dive — Anora (2024)',
+    description:
+      "Sean Baker's 5-Oscar sweep (Picture, Director, Original Screenplay, Actress, Editing) + Cannes Palme d'Or. Shot 35mm Kodak film by Drew Daniels.",
+    command: { args: ['tsx', 'scripts/seed-anora.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:blade-runner-2049',
+    group: 'editorial',
+    label: 'Deep-dive — Blade Runner 2049 (2017)',
+    description:
+      "Roger Deakins's first Oscar + Best VFX. Adds color pipeline, lighting setups, post-houses, BAFTA + ASC + the second Oscar (VFX) the prior audit missed.",
+    command: { args: ['tsx', 'scripts/seed-blade-runner-2049.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:children-of-men',
+    group: 'editorial',
+    label: 'Deep-dive — Children of Men (2006)',
+    description:
+      "Lubezki's first major Cinematography nomination. Car-ambush long-take built from six sections + four locations; Tim Webber's Framestore CG newborn.",
+    command: { args: ['tsx', 'scripts/seed-children-of-men.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:gravity',
+    group: 'editorial',
+    label: 'Deep-dive — Gravity (2013)',
+    description:
+      "7-Oscar sweep (Cinematography, VFX, Director, Editing, Sound × 2, Score). Lubezki's first Oscar + Webber's Light Box invention. Six prior-audit gaps filled.",
+    command: { args: ['tsx', 'scripts/seed-gravity.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:no-country-for-old-men',
+    group: 'editorial',
+    label: 'Deep-dive — No Country for Old Men (2007)',
+    description:
+      "Coen Brothers + Roger Deakins. 4 Oscars (Picture, Director, Adapted Screenplay, Supporting Actor). 35mm Panavision spherical, deliberate non-DI photochemical finish.",
+    command: { args: ['tsx', 'scripts/seed-no-country-for-old-men.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:parasite',
+    group: 'editorial',
+    label: 'Deep-dive — Parasite (2019)',
+    description:
+      "First non-English Best Picture winner. Bong Joon-ho's 4-Oscar sweep + Palme d'Or. Patches the prior 5-row audit (incl. a misattributed Cinematography row).",
+    command: { args: ['tsx', 'scripts/seed-parasite.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:the-brutalist',
+    group: 'editorial',
+    label: 'Deep-dive — The Brutalist (2024)',
+    description:
+      'Lol Crawley shot the first VistaVision narrative feature since 1961 (64-year gap). Won Cinematography + Actor + Score at the 2025 Oscars; Venice Silver Lion.',
+    command: { args: ['tsx', 'scripts/seed-the-brutalist.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:the-revenant',
+    group: 'editorial',
+    label: 'Deep-dive — The Revenant (2015)',
+    description:
+      "Lubezki's record-setting third consecutive Best Cinematography Oscar. ARRI ALEXA 65 shot with a strict no-electric-lighting rule (natural daylight + practical fire only).",
+    command: { args: ['tsx', 'scripts/seed-the-revenant.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:top-gun-maverick',
+    group: 'editorial',
+    label: 'Deep-dive — Top Gun: Maverick (2022)',
+    description:
+      "Most cinematographically-documented marquee release of the past decade. Miranda + Nowell's six-camera Sony VENICE Rialto rig + Light Iron / Company 3 pipeline + Tudhope's 2,400 invisible-VFX shots.",
+    command: { args: ['tsx', 'scripts/seed-top-gun-maverick.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+
+  // ── Cross-cutting editorial seeds ────────────────────────────────
+  // Tables shared across multiple films — re-run after adding new film
+  // seeds whose data overlaps these tables.
+  {
+    id: 'seed:color-pipelines',
+    group: 'editorial',
+    label: 'Color pipelines — marquee productions',
+    description:
+      'Camera-log → IDT → working-space → ODT → deliverable chains for ~10 marquee productions whose color science is well-documented in ASC/CML/trade-press sources.',
+    command: { args: ['tsx', 'scripts/seed-color-pipelines.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:dune2-colorpipeline',
+    group: 'editorial',
+    label: 'Color pipeline — Dune: Part Two',
+    description:
+      'E-24 demo seed: ALEXA 65 LogC3 → ARRI Wide Gamut 3 → ACEScct → Rec.709 SDR / Rec.2020 PQ HDR-10. Subsumed by `seed:color-pipelines`; kept for the targeted demo path.',
+    command: { args: ['tsx', 'scripts/seed-dune2-colorpipeline.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:lighting-setups',
+    group: 'editorial',
+    label: 'Lighting setups — per-scene plots',
+    description:
+      'Per-scene lighting plots for marquee scenes — setup_name + motivation + execution notes. Fixture-level rows (key / fill / back) are seeded by the film deep-dives.',
+    command: { args: ['tsx', 'scripts/seed-lighting-setups.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:poor-things-lighting',
+    group: 'editorial',
+    label: 'Lighting setup — Poor Things rooftops',
+    description:
+      "E-22 demo seed: one curated lighting setup on Poor Things' Lisbon rooftops scene. Idempotent UPSERT.",
+    command: { args: ['tsx', 'scripts/seed-poor-things-lighting.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:locations',
+    group: 'editorial',
+    label: 'Locations — geocoded shooting sites',
+    description:
+      'Fills production_locations for marquee films covered by the color/lighting seeds but missing from the geocoded dataset. WGS-84 coordinates to 6 decimals from public scout records / BTS interviews.',
+    command: { args: ['tsx', 'scripts/seed-locations.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:post-house-links',
+    group: 'editorial',
+    label: 'Post-house production links',
+    description:
+      'Wires post_houses (Light Iron, Company 3, Park Road, etc.) to the productions they finished. Bridges the gap between color-pipeline editorial notes and the 13-facility post_houses table.',
+    command: { args: ['tsx', 'scripts/seed-post-house-links.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:sequence-credits',
+    group: 'editorial',
+    label: 'Stunt — sequence credits',
+    description:
+      'Phase 12: credits for the 6 marquee stunt sequences. doubling_for_person_id ties a double to the actor they doubled so the sequence detail page renders both.',
+    command: { args: ['tsx', 'scripts/seed-sequence-credits.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:stunt-memberships-doubling',
+    group: 'editorial',
+    label: 'Stunt — company memberships + doubling',
+    description:
+      'Phase 8: places existing stunt-people rows into their companies (surfaces "prominent members" on each company page) + records the doubler ↔ doubled-actor ↔ production triple for marquee shows.',
+    command: { args: ['tsx', 'scripts/seed-stunt-memberships-doubling.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:stunt-doubling-expansion',
+    group: 'editorial',
+    label: 'Stunt — doubling expansion',
+    description:
+      "Phase 9: expands the doubling dataset beyond the 6-row Phase 8 proof. Adds the Avengers core-four primary doubles, Mad Max: Fury Road's lead, Matrix's Trinity double.",
+    command: { args: ['tsx', 'scripts/seed-stunt-doubling-expansion.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'seed:stunt-sequences-marquee',
+    group: 'editorial',
+    label: 'Stunt — marquee fight/action sequences',
+    description:
+      'Phase 11: six iconic close-quarters + rigged-fall set-pieces for productions already in the doubling dataset. Complements the prior vehicle-heavy sequence seeds.',
+    command: { args: ['tsx', 'scripts/seed-stunt-sequences-marquee.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+
+  // ── Backfills + curation (post-load operations) ──────────────────
+  {
+    id: 'backfill:claims',
+    group: 'editorial',
+    label: 'Claims — backfill from curated rows',
+    description:
+      'Generates rows in the claims/evidence graph from existing curated production data (formats, equipment usage, VFX credits, color pipelines, lighting, post-houses). Idempotent.',
+    command: { args: ['tsx', 'scripts/backfill-claims.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'medium',
+  },
+  {
+    id: 'backfill:entity-images',
+    group: 'editorial',
+    label: 'Entity images — website + Wikidata IDs',
+    description:
+      "Backfills `website` (or Wikidata domain fallback) for studios + post-houses + VFX-houses so the BrandLogo component can hot-link Google's favicon service. Company-side counterpart to TMDb profile_path for people.",
+    command: { args: ['tsx', 'scripts/backfill-entity-images.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'backfill:society-memberships',
+    group: 'editorial',
+    label: 'Society memberships — ASC / BSC / AFC etc.',
+    description:
+      'Hand-curated society memberships for the most-cited camera-department people. Public society directories only (ASC, BSC, AFC, ACS, CSC, AOP, IMAGO, etc.) — high-confidence E-E-A-T signal.',
+    command: { args: ['tsx', 'scripts/backfill-society-memberships.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
+  {
+    id: 'backfill:media-videos',
+    group: 'editorial',
+    label: 'Media — videos → media_assets',
+    description:
+      'Phase 23: backfills production_videos rows into the polymorphic media_assets + media_associations tables (kind=video). Idempotent natural-key URL upsert.',
+    command: { args: ['tsx', 'scripts/backfill-media-videos.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'medium',
+  },
+  {
+    id: 'backfill:media-keyframes',
+    group: 'editorial',
+    label: 'Media — keyframes → media_assets',
+    description:
+      'Phase 24: backfills production_keyframes into media_assets (kind=image) + media_associations (role=subject). Idempotent.',
+    command: { args: ['tsx', 'scripts/backfill-media-keyframes.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'medium',
+  },
+  {
+    id: 'backfill:media-references',
+    group: 'editorial',
+    label: 'Media — per-entity references → media_assets',
+    description:
+      'Phase 25: backfills the per-entity `references` jsonb arrays across editorial tables into media_assets + media_associations (role=reference). Deduplicates URLs shared across multiple entities.',
+    command: { args: ['tsx', 'scripts/backfill-media-references.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'medium',
+  },
+
+  // ── Equipment curation ───────────────────────────────────────────
+  {
+    id: 'curate:lens-specs-v2',
+    group: 'editorial',
+    label: 'Lens specs — v2 metadata patch',
+    description:
+      'E-21: patches equipment_items.specs JSONB with manufacturer-published numbers (image circle, weight, close focus, front diameter) for the highest-traffic lens series. Idempotent — merges over existing JSONB without stomping unrelated fields.',
+    command: { args: ['tsx', 'scripts/curate-lens-specs-v2.ts'], cwd: 'packages/db', bin: 'npx' },
+    weight: 'fast',
+  },
 ];
 
 // ── Social ─────────────────────────────────────────────────────────
