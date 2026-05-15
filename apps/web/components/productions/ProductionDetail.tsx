@@ -26,6 +26,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { SourcesList } from '@/components/ui/SourcesList';
 import { BookmarkButton } from '@/components/ui/BookmarkButton';
 import { posterUrl, backdropUrl } from '@/lib/tmdb-image';
+import { departmentLabel } from '@/lib/department-labels';
 
 type DetailData = NonNullable<Awaited<ReturnType<typeof getProductionWithFullDetail>>>;
 type VfxData = Awaited<ReturnType<typeof getProductionVfxData>>;
@@ -180,7 +181,7 @@ export function ProductionDetail({
         <div className="relative -mx-4 mb-8 aspect-[21/9] overflow-hidden bg-zinc-900 sm:-mx-6 lg:-mx-8">
           <Image
             src={heroSrc}
-            alt=""
+            alt={`${production.title} backdrop`}
             fill
             priority
             sizes="100vw"
@@ -196,7 +197,7 @@ export function ProductionDetail({
             className="relative hidden w-28 shrink-0 self-start overflow-hidden rounded border border-zinc-800 sm:block"
             style={{ aspectRatio: '2/3' }}
           >
-            <Image src={posterSrc} alt="" fill sizes="112px" className="object-cover" />
+            <Image src={posterSrc} alt={`${production.title} poster`} fill sizes="112px" className="object-cover" />
           </div>
         ) : null}
         <div className="flex-1">
@@ -409,7 +410,7 @@ export function ProductionDetail({
 
       {Object.entries(crewByCategory).map(([category, members]) => (
         <div key={category} className="mb-6">
-          <SectionHeader label="Department" heading={category.replace('_', ' ')} />
+          <SectionHeader label="Department" heading={departmentLabel(category)} />
           <ul className="space-y-1">
             {members.map((m, i) => (
               <li key={i} className="flex items-center gap-2 text-sm">

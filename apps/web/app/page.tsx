@@ -42,14 +42,23 @@ export default async function HomePage() {
   // E-49 — pin shot-of-the-day to today's UTC date so the value rotates
   // at midnight UTC for everyone.
   const todayKey = new Date().toISOString().slice(0, 10);
-  const [featured, totalCurated, totalAll, recentlyUpdated, shotOfTheDay, depthStats] = await Promise.all([
+  const [featured, totalCurated, totalAll, recentlyUpdatedRaw, shotOfTheDay, depthStats] = await Promise.all([
     listFeaturedProductions(db, 6),
     countProductions(db, { dataTier: 'curated' }),
     countProductions(db),
-    listRecentlyUpdatedProductions(db, 4),
+    // Over-fetch so we still have ≥ 4 after deduplicating against Featured.
+    listRecentlyUpdatedProductions(db, 10),
     getShotOfTheDay(db, todayKey),
     getEditorialDepthStats(db),
   ]);
+
+  // UX-audit 2026-05-15: Anora etc. were appearing in BOTH rails within
+  // 800px of scroll. Recently Updated explicitly excludes anything that's
+  // already on the Featured rail so the two sections show distinct content.
+  const featuredSlugs = new Set(featured.map((f) => f.slug));
+  const recentlyUpdated = recentlyUpdatedRaw
+    .filter((r) => !featuredSlugs.has(r.slug))
+    .slice(0, 4);
 
   return (
     <>
@@ -84,15 +93,27 @@ export default async function HomePage() {
             Ask →
           </button>
         </form>
-        <div className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-[11px] text-zinc-500">
-          <span>Try:</span>
-          <Link href="/ask?q=Roger+Deakins+photochemical+finishing" className="hover:text-amber-400">
+        {/* UX-audit 2026-05-15: chips used to be flat 11px grey text — */}
+        {/* read as a label, not a button. Now bordered + padded so the */}
+        {/* primary first-interaction affordance is obvious. */}
+        <div className="mt-3 flex flex-wrap items-center gap-2 text-xs">
+          <span className="text-[10px] uppercase tracking-widest text-zinc-500">Try</span>
+          <Link
+            href="/ask?q=Roger+Deakins+photochemical+finishing"
+            className="rounded-full border border-zinc-700 bg-zinc-900/60 px-2.5 py-1 text-zinc-300 hover:border-amber-600 hover:bg-amber-950/30 hover:text-amber-300 transition-colors"
+          >
             Deakins photochemical workflow
           </Link>
-          <Link href="/ask?q=ALEXA+65+anamorphic+features" className="hover:text-amber-400">
+          <Link
+            href="/ask?q=ALEXA+65+anamorphic+features"
+            className="rounded-full border border-zinc-700 bg-zinc-900/60 px-2.5 py-1 text-zinc-300 hover:border-amber-600 hover:bg-amber-950/30 hover:text-amber-300 transition-colors"
+          >
             ALEXA 65 anamorphic
           </Link>
-          <Link href="/ask?q=magic+hour+exterior+lighting+2023" className="hover:text-amber-400">
+          <Link
+            href="/ask?q=magic+hour+exterior+lighting+2023"
+            className="rounded-full border border-zinc-700 bg-zinc-900/60 px-2.5 py-1 text-zinc-300 hover:border-amber-600 hover:bg-amber-950/30 hover:text-amber-300 transition-colors"
+          >
             magic-hour 2023
           </Link>
         </div>

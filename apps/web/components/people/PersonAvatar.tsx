@@ -74,7 +74,12 @@ export function PersonAvatar({
       <div className={wrapCls}>
         <Image
           src={photo}
-          alt=""
+          // Used both as a standalone hero (size=xl on /crew/[slug]) and
+          // in compact lists where adjacent text already names the
+          // person. Setting the alt to the display name covers the
+          // hero case; in the list-row case it's a mild redundancy at
+          // worst, which a11y guidance prefers over silent images.
+          alt={displayName}
           fill
           sizes={`${sz.px}px`}
           className="object-cover"

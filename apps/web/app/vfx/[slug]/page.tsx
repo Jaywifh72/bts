@@ -121,7 +121,9 @@ export default async function VfxHousePage(props: Props) {
         {/* Editorial summary */}
         {paragraphs.length > 0 && (
           <section className="mb-10">
-            <SectionHeader label="About" heading={house.name} />
+            {/* Audit: heading used to repeat house.name (same as H1) — */}
+            {/* now describes the section body. */}
+            <SectionHeader label="About" heading="Overview" />
             <div className="mt-3 max-w-3xl space-y-4 text-sm leading-relaxed text-zinc-300">
               {paragraphs.map((p, i) => (
                 <p key={i}>{p}</p>
@@ -190,7 +192,13 @@ export default async function VfxHousePage(props: Props) {
         {/* Offices */}
         {offices.length > 0 && (
           <section className="mb-10">
-            <SectionHeader label="Locations" heading={`${offices.length} office${offices.length === 1 ? '' : 's'}`} />
+            {/* Audit: heading used to be the count ("8 offices") which */}
+            {/* read as a stat-as-heading. The count is sub-label info; */}
+            {/* the heading should describe the section's content. */}
+            <SectionHeader
+              label="Locations"
+              heading={`Offices · ${offices.length}`}
+            />
             <ul className="mt-3 grid grid-cols-2 gap-x-6 gap-y-1 text-sm sm:grid-cols-3 lg:grid-cols-4">
               {offices.map((o) => (
                 <li key={o.city} className="flex items-baseline gap-2">

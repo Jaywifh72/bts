@@ -133,7 +133,9 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
       {/* Filter form. Server-rendered: submit reloads with new query string. */}
       <section className="mb-10 rounded border border-zinc-800 bg-zinc-900/40 p-4">
         <h2 className="mb-3 font-serif text-base text-zinc-100">Find awards</h2>
-        <form method="get" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        {/* UX-audit 2026-05-15: action="#results" so a filter submit lands */}
+        {/* at the results section rather than scrolling to the top of the page. */}
+        <form method="get" action="#results" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
           <label className="block">
             <span className="text-[10px] uppercase tracking-wide text-zinc-500">Organisation</span>
             <select
@@ -213,9 +215,11 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
       </section>
 
       {/* Filter results — only when a filter is active; otherwise show the
-          per-org summary panels (familiar landing-state). */}
+          per-org summary panels (familiar landing-state). The id="results"
+          paired with form action="#results" above keeps the visitor's
+          scroll near the result list after a filter submit. */}
       {hasFilter ? (
-        <section className="mb-12">
+        <section id="results" className="scroll-mt-4 mb-12">
           <h2 className="mb-4 font-serif text-xl text-zinc-100">
             Results ({filtered.length}{filtered.length === 200 ? '+' : ''})
           </h2>
@@ -258,7 +262,10 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
           )}
         </section>
       ) : (
-        <section className="mb-12">
+        // Same id as the filtered-results branch — covers the case where
+        // the visitor submits an empty filter (no query string parsed
+        // into hasFilter=true): they still land at the panels section.
+        <section id="results" className="scroll-mt-4 mb-12">
           <h2 className="mb-4 font-serif text-xl text-zinc-100">By organisation</h2>
           <ul className="space-y-4">
             {byOrg.map((o) => (
