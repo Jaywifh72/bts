@@ -5,15 +5,20 @@ import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import { SearchBar } from './SearchBar';
 
+// UX-audit 2026-05-15 (IA-1): three discovery entries ("References /
+// Queries / Ask") had overlapping labels. Renamed for direct purpose:
+//   /references → "Sources"   (cross-cited bibliographic URLs)
+//   /queries    → "Demos"     (hand-picked killer-query showcase)
+//   /ask        stays "Ask"   (natural-language search)
 const links = [
   { href: '/films', label: 'Films' },
   { href: '/crew', label: 'Crew' },
   { href: '/gear', label: 'Gear' },
   { href: '/vfx', label: 'VFX' },
   { href: '/stunts', label: 'Stunts' },
-  { href: '/references', label: 'References' },
+  { href: '/references', label: 'Sources' },
   { href: '/tools', label: 'Tools' },
-  { href: '/queries', label: 'Queries' },
+  { href: '/queries', label: 'Demos' },
   { href: '/ask', label: 'Ask' },
 ] as const;
 

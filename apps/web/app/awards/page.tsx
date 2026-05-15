@@ -88,7 +88,11 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
             JOIN productions p ON p.id = a2.production_id
             WHERE a2.award_org::text = bo.award_org AND a2.is_winner = TRUE
             ORDER BY a2.year DESC, p.title
-            LIMIT 6
+            -- UX-audit (CO-4): 3 recent wins per org instead of 6 in the
+            -- default view. The filter form above gives a way to drill into
+            -- any org's full list. Cuts the default-view scroll from
+            -- ~3430px to ~2000px.
+            LIMIT 3
           ) w
         ) AS recent_winners
       FROM by_org bo
@@ -278,7 +282,17 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
                 </div>
                 {o.recent_winners.length > 0 && (
                   <div className="mt-3">
-                    <p className="text-[10px] uppercase tracking-wide text-zinc-500">Recent wins</p>
+                    <div className="flex items-baseline justify-between">
+                      <p className="text-[10px] uppercase tracking-wide text-zinc-500">Recent wins</p>
+                      {/* UX-audit (CO-4): direct path to the full list */}
+                      {/* via the filter form on the same page. */}
+                      <Link
+                        href={`/awards?org=${o.award_org}&wins=1#results`}
+                        className="text-[10px] uppercase tracking-wide text-amber-500/70 hover:text-amber-400"
+                      >
+                        See all {o.wins} →
+                      </Link>
+                    </div>
                     <ul className="mt-1 space-y-1">
                       {o.recent_winners.map((w, i) => (
                         <li key={`${o.award_org}-${i}`} className="text-sm">

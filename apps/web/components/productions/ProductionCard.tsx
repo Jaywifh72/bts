@@ -100,7 +100,11 @@ export function ProductionCard({
           )}
         </p>
         {synopsis && (
-          <p className="mt-2 line-clamp-2 text-xs text-zinc-400">{synopsis}</p>
+          // UX-audit 2026-05-15 (CO-2): clamp to 1 line so the technical-
+          // shorthand chips (FormatBadge + depth badges) below get the
+          // visual weight on a card-focused, working-pro audience. Full
+          // synopsis still available on /films/[slug].
+          <p className="mt-2 line-clamp-1 text-xs text-zinc-400">{synopsis}</p>
         )}
         {primaryAspectRatio && primaryAcquisitionFormat && (
           <div className="mt-2">

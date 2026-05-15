@@ -27,6 +27,7 @@ import { SourcesList } from '@/components/ui/SourcesList';
 import { BookmarkButton } from '@/components/ui/BookmarkButton';
 import { posterUrl, backdropUrl } from '@/lib/tmdb-image';
 import { departmentLabel } from '@/lib/department-labels';
+import { PageTOC } from '@/components/ui/PageTOC';
 
 type DetailData = NonNullable<Awaited<ReturnType<typeof getProductionWithFullDetail>>>;
 type VfxData = Awaited<ReturnType<typeof getProductionVfxData>>;
@@ -174,6 +175,46 @@ export function ProductionDetail({
     const years = Math.floor(days / 365);
     return `${years} year${years === 1 ? '' : 's'} ago`;
   }
+
+  // ── UX-audit P0: in-page TOC for the long detail page (30+ sections). ──
+  // Predicates mirror each section's self-hide condition so the TOC list
+  // never points at a hidden / absent block. Each section is wrapped in
+  // <section id="…" className="scroll-mt-24"> below so the chip-strip
+  // anchors land below the sticky TOC + global nav.
+  const hasStudios = studios.length > 0;
+  const hasCrew = Object.keys(crewByCategory).length > 0;
+  const hasVfx = vfx.credits.length > 0 || vfx.techniques.length > 0;
+  const hasClaims = claims.length > 0;
+  const hasAwards = awards.length > 0;
+  const hasReleaseDates = !!production.release_dates && production.release_dates.length > 0;
+  const hasLocations = locations.length > 0;
+  const hasKeyFrames = keyFrames.length > 0;
+  const hasLighting = lightingSetups.length > 0;
+  const hasColorPipeline = colorPipelines.length > 0;
+  const hasStuntSequences = stuntSequences.length > 0;
+  const hasStuntDept = stuntCrew.length > 0 || stuntDoubling.length > 0 || stuntCompanies.length > 0;
+  const hasPostHouses = postHouses.length > 0;
+  const hasVideos = videos.length > 0;
+  const hasScenes = scenes.length > 0;
+
+  const tocEntries: Array<{ id: string; label: string }> = [
+    { id: 'tech-panel', label: 'At a glance' },
+    hasStudios && { id: 'studios', label: 'Studios' },
+    hasCrew && { id: 'crew', label: 'Crew' },
+    hasVfx && { id: 'vfx', label: 'VFX' },
+    hasClaims && { id: 'claims', label: 'Claims' },
+    hasAwards && { id: 'awards', label: 'Awards' },
+    hasLocations && { id: 'locations', label: 'Locations' },
+    hasKeyFrames && { id: 'keyframes', label: 'Key frames' },
+    hasLighting && { id: 'lighting', label: 'Lighting' },
+    hasColorPipeline && { id: 'color-pipeline', label: 'Color' },
+    hasStuntSequences && { id: 'stunt-sequences', label: 'Stunt sequences' },
+    hasStuntDept && { id: 'stunts', label: 'Stunts' },
+    hasPostHouses && { id: 'post-houses', label: 'Post' },
+    hasVideos && { id: 'videos', label: 'Videos' },
+    hasScenes && { id: 'scenes', label: 'Scenes' },
+    hasReleaseDates && { id: 'release-dates', label: 'Releases' },
+  ].filter((e): e is { id: string; label: string } => Boolean(e));
 
   return (
     <article>
@@ -376,26 +417,31 @@ export function ProductionDetail({
         </div>
       )}
 
-      {/* T2-1: At-a-glance tech panel above the long department list */}
-      <TechPanel
-        crew={crew}
-        formats={formats}
-        scenes={scenes}
-        shootingWindow={{
-          start: production.principal_photography_start,
-          end: production.principal_photography_end,
-        }}
-        locations={Array.from(
-          new Set(
-            scenes
-              .map((s) => s.location)
-              .filter((l): l is string => Boolean(l)),
-          ),
-        )}
-      />
+      {/* UX-audit P0: in-page table of contents. Self-hides under 3 entries. */}
+      <PageTOC entries={tocEntries} />
 
-      {studios.length > 0 && (
-        <div className="mb-6">
+      {/* T2-1: At-a-glance tech panel above the long department list */}
+      <section id="tech-panel" className="scroll-mt-24">
+        <TechPanel
+          crew={crew}
+          formats={formats}
+          scenes={scenes}
+          shootingWindow={{
+            start: production.principal_photography_start,
+            end: production.principal_photography_end,
+          }}
+          locations={Array.from(
+            new Set(
+              scenes
+                .map((s) => s.location)
+                .filter((l): l is string => Boolean(l)),
+            ),
+          )}
+        />
+      </section>
+
+      {hasStudios && (
+        <section id="studios" className="scroll-mt-24 mb-6">
           <SectionHeader label="Production" heading="Studios" />
           <ul className="space-y-1">
             {studios.map((s, i) => (
@@ -405,74 +451,104 @@ export function ProductionDetail({
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
 
-      {Object.entries(crewByCategory).map(([category, members]) => (
-        <div key={category} className="mb-6">
-          <SectionHeader label="Department" heading={departmentLabel(category)} />
-          <ul className="space-y-1">
-            {members.map((m, i) => (
-              <li key={i} className="flex items-center gap-2 text-sm">
-                <Link
-                  href={`/crew/${m.person_slug}`}
-                  className="text-zinc-200 hover:text-amber-400"
-                >
-                  {m.credit_name_override ?? m.display_name}
-                </Link>
-                <span className="text-zinc-500">{m.role_name}</span>
-              </li>
-            ))}
-          </ul>
-        </div>
-      ))}
-
-      <VfxSection credits={vfx.credits} techniques={vfx.techniques} />
-
-      <ProductionClaims
-        claims={claims}
-        sourcesByClaimId={sourcesByClaimId}
-        evidenceByClaimId={evidenceByClaimId}
-      />
-
-      {/* T2-6 — awards (winners + nominees). Self-hides when none. */}
-      <AwardsList awards={awards} />
-
-      {/* T2-4 — regional release dates from TMDb. Most rows have an empty
-          array (we ingest on demand, not on every import); component
-          self-hides when nothing is set. */}
-      {production.release_dates && production.release_dates.length > 0 && (
-        <ReleaseDates rows={production.release_dates} />
+      {hasCrew && (
+        <section id="crew" className="scroll-mt-24">
+          {Object.entries(crewByCategory).map(([category, members]) => (
+            <div key={category} className="mb-6">
+              <SectionHeader label="Department" heading={departmentLabel(category)} />
+              <ul className="space-y-1">
+                {members.map((m, i) => (
+                  <li key={i} className="flex items-center gap-2 text-sm">
+                    <Link
+                      href={`/crew/${m.person_slug}`}
+                      className="text-zinc-200 hover:text-amber-400"
+                    >
+                      {m.credit_name_override ?? m.display_name}
+                    </Link>
+                    <span className="text-zinc-500">{m.role_name}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ))}
+        </section>
       )}
 
-      {/* E-23 + E-32 — geocoded shooting locations + per-location sun
-          planner. Self-hides when none seeded. */}
-      <ProductionLocations locations={locations} />
+      {hasVfx && (
+        <section id="vfx" className="scroll-mt-24">
+          <VfxSection credits={vfx.credits} techniques={vfx.techniques} />
+        </section>
+      )}
 
-      {/* T2-7 — hand-curated key frames. Self-hides when none. */}
-      <KeyFramesGallery frames={keyFrames} slug={production.slug} />
+      {hasClaims && (
+        <section id="claims" className="scroll-mt-24">
+          <ProductionClaims
+            claims={claims}
+            sourcesByClaimId={sourcesByClaimId}
+            evidenceByClaimId={evidenceByClaimId}
+          />
+        </section>
+      )}
 
-      {/* E-22 — per-scene lighting plot. Self-hides when no setups
-          have been curated for this production. */}
-      <LightingSetupsList setups={lightingSetups} />
+      {/* T2-6 — awards (winners + nominees). */}
+      {hasAwards && (
+        <section id="awards" className="scroll-mt-24">
+          <AwardsList awards={awards} />
+        </section>
+      )}
 
-      {/* E-24 — camera color science → IDT → working space → ODT →
-          deliverable. Self-hides when no pipeline curated. */}
-      <ColorPipelineList pipelines={colorPipelines} />
+      {/* T2-4 — regional release dates from TMDb. */}
+      {hasReleaseDates && (
+        <section id="release-dates" className="scroll-mt-24">
+          <ReleaseDates rows={production.release_dates!} />
+        </section>
+      )}
 
-      {/* Phase-3 stunt sequences — sequence-level rigging detail
-          surfaced as a compact list; each row links to a full
-          rigging-and-credits detail page. Self-hides when no
-          sequences are curated. */}
-      <StuntSequencesList sequences={stuntSequences} />
+      {/* E-23 + E-32 — geocoded shooting locations + per-location sun planner. */}
+      {hasLocations && (
+        <section id="locations" className="scroll-mt-24">
+          <ProductionLocations locations={locations} />
+        </section>
+      )}
+
+      {/* T2-7 — hand-curated key frames. */}
+      {hasKeyFrames && (
+        <section id="keyframes" className="scroll-mt-24">
+          <KeyFramesGallery frames={keyFrames} slug={production.slug} />
+        </section>
+      )}
+
+      {/* E-22 — per-scene lighting plot. */}
+      {hasLighting && (
+        <section id="lighting" className="scroll-mt-24">
+          <LightingSetupsList setups={lightingSetups} />
+        </section>
+      )}
+
+      {/* E-24 — camera color science → IDT → working space → ODT → deliverable. */}
+      {hasColorPipeline && (
+        <section id="color-pipeline" className="scroll-mt-24">
+          <ColorPipelineList pipelines={colorPipelines} />
+        </section>
+      )}
+
+      {/* Phase-3 stunt sequences — sequence-level rigging detail. */}
+      {hasStuntSequences && (
+        <section id="stunt-sequences" className="scroll-mt-24">
+          <StuntSequencesList sequences={stuntSequences} />
+        </section>
+      )}
 
       {/* Phase-9/10 stunt-department surface: department crew +
           doubling credits + contributing stunt companies. Self-hides
           when none of the four data sources have rows for this
           production. Same red-coded editorial neighbourhood as the
           sequences list above. */}
-      {(stuntCrew.length > 0 || stuntDoubling.length > 0 || stuntCompanies.length > 0) && (
-        <div className="mt-10">
+      {hasStuntDept && (
+        <section id="stunts" className="scroll-mt-24 mt-10">
           <SectionHeader
             label="Stunts"
             heading={(() => {
@@ -603,13 +679,12 @@ export function ProductionDetail({
               </ul>
             </div>
           )}
-        </div>
+        </section>
       )}
 
-      {/* T2-3 — post-production houses (DI / color / sound mix). Empty
-          for most films today; visible on curated rows where we know it. */}
-      {postHouses.length > 0 && (
-        <div className="mt-6">
+      {/* T2-3 — post-production houses (DI / color / sound mix). */}
+      {hasPostHouses && (
+        <section id="post-houses" className="scroll-mt-24 mt-6">
           <SectionHeader label="Post-production" heading="Lab & finishing" />
           <ul className="space-y-1 text-sm">
             {postHouses.map((p) => (
@@ -620,15 +695,24 @@ export function ProductionDetail({
               </li>
             ))}
           </ul>
-        </div>
+        </section>
       )}
 
-      <VideoGallery videos={videos} timestamps={videoTimestamps} />
-      <SceneList
-        rows={scenes}
-        productionSlug={production.slug}
-        citationsByUsage={citations.byEquipmentUsage}
-      />
+      {hasVideos && (
+        <section id="videos" className="scroll-mt-24">
+          <VideoGallery videos={videos} timestamps={videoTimestamps} />
+        </section>
+      )}
+
+      {hasScenes && (
+        <section id="scenes" className="scroll-mt-24">
+          <SceneList
+            rows={scenes}
+            productionSlug={production.slug}
+            citationsByUsage={citations.byEquipmentUsage}
+          />
+        </section>
+      )}
 
       {/* Other films in the same TMDb collection (e.g. Dune 1, Dune 2) */}
       {collectionMembers.length > 0 && production.tmdb_collection_name && (
