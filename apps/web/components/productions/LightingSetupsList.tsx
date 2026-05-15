@@ -76,9 +76,11 @@ export function LightingSetupsList({ setups }: { setups: readonly LightingSetup[
 
   return (
     <div className="mt-10">
+      {/* UX-audit IA-5: noun-first heading (matches "Offices · 8" pattern */}
+      {/* on /vfx/[slug]). Count is sub-label info, not the section name. */}
       <SectionHeader
         label="Lighting"
-        heading={`${setups.length} setup${setups.length === 1 ? '' : 's'} across ${byScene.size} scene${byScene.size === 1 ? '' : 's'}`}
+        heading={`Per-scene setups · ${setups.length} across ${byScene.size} ${byScene.size === 1 ? 'scene' : 'scenes'}`}
       />
       <p className="-mt-2 mb-3 max-w-2xl text-xs text-zinc-500">
         Per-scene lighting plots: fixture role (key / fill / back /

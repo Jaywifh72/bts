@@ -17,9 +17,10 @@ export function StuntSequencesList({ sequences }: { sequences: readonly StuntSeq
 
   return (
     <div className="mt-10">
+      {/* UX-audit IA-5: noun-first heading. Count is sub-label info. */}
       <SectionHeader
         label="Stunts"
-        heading={`${sequences.length} curated set-piece${sequences.length === 1 ? '' : 's'}`}
+        heading={`Curated set-pieces · ${sequences.length}`}
       />
       <p className="-mt-2 mb-3 max-w-2xl text-xs text-zinc-500">
         Sequence-level rigging detail — pole-cats, decelerators,
