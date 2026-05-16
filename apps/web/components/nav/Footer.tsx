@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CineCanonMark } from '@/components/brand/CineCanonMark';
 
 /**
  * Site-wide footer. Establishes that the site has an editorial point of view,
@@ -12,7 +13,10 @@ export function Footer() {
       <div className="mx-auto max-w-7xl px-6 py-8 text-xs text-zinc-400">
         <div className="flex flex-wrap gap-x-8 gap-y-3">
           <div>
-            <p className="font-serif text-sm text-zinc-300">CineCanon</p>
+            <div className="flex items-center gap-2">
+              <CineCanonMark size={24} title="" />
+              <p className="font-serif text-sm text-zinc-300">CineCanon</p>
+            </div>
             <p className="mt-1 max-w-xs text-zinc-500">
               Cinematic technical reference for working film professionals.
               Hand-curated where it counts; TMDb-sourced metadata for breadth.

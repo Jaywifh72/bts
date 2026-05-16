@@ -10,7 +10,17 @@
  * Renamed from `ConfidenceBadge` during the QA pass — the old name
  * collided with `ClaimConfidenceBadge`, which is a completely different
  * component (8-value enum badge for individual claim attributions).
+ *
+ * Brand-system pass — the leading 0/25/50/75/100 confidence glyph
+ * (CineCanon brand primitive) sits left of the score so the rigor tier
+ * is scannable at a glance across long lists. The glyph's level is
+ * bucketed from `score` via `confidenceLevelFromScore`; bucket
+ * boundaries match this file's tier-label ladder so the two never
+ * disagree.
  */
+import { ConfidenceMark } from '@/components/brand/ConfidenceMark';
+import { confidenceLevelFromScore } from '@/components/brand/confidence-paths';
+
 export type CitationRigorData = {
   score: number;
   total: number;
@@ -36,12 +46,19 @@ export function CitationRigorBadge({ data }: { data: CitationRigorData | null })
     data.manufacturer_count && `${data.manufacturer_count} manufacturer`,
     data.speculative_count && `${data.speculative_count} speculative`,
   ].filter(Boolean).join(' · ');
+  const level = confidenceLevelFromScore(data.score);
   return (
     <span
       className={`inline-flex items-center gap-2 rounded px-2 py-0.5 text-xs ${style.bg} ${style.text}`}
       title={`Citation rigor — ${tooltip}. Higher means more primary sources per claim.`}
       aria-label={`Citation confidence: ${style.label} (${data.score} of 100, ${data.total} sources)`}
     >
+      <ConfidenceMark
+        level={level}
+        subject="Citation rigor"
+        size="body"
+        title={tooltip || `${data.total} source${data.total === 1 ? '' : 's'}`}
+      />
       <span className="font-mono">{data.score}</span>
       <span className="text-[10px] uppercase tracking-wide">{style.label}</span>
     </span>

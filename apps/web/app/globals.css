@@ -3,6 +3,14 @@
 @tailwind utilities;
 
 @layer base {
+  /* CineCanon brand tokens. Locked palette — see
+     components/brand/README.md before adding variants. */
+  :root {
+    --cc-paper: #ECE6DC;
+    --cc-amber: #C97A3B;
+    --cc-ink:   #0E0E0E;
+  }
+
   html {
     @apply bg-zinc-950 text-zinc-50;
   }

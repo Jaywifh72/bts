@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400">
+  <!-- iOS home-screen icon. Apple doesn't auto-mask transparency, so
+       the ink background is required here. Adds ~10% breathing room
+       around the mark vs the favicon (Apple's HIG recommends a 12%
+       safe area; we achieve it by scaling the mark to 80% and recentering). -->
+  <rect width="400" height="400" fill="#0E0E0E"/>
+  <g transform="translate(40,40) scale(0.8)">
+    <path d="M 359.687 190.000 A 160 160 0 1 0 359.687 210.000 L 319.583 210.000 A 120 120 0 1 1 319.583 190.000 Z" fill="#ECE6DC"/>
+    <path d="M 299.820 194.000 A 100 100 0 1 0 299.820 206.000 L 279.775 206.000 A 80 80 0 1 1 279.775 194.000 Z" fill="#C97A3B"/>
+  </g>
+</svg>

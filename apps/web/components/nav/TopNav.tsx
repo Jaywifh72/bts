@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
 import { SearchBar } from './SearchBar';
+import { CineCanonMark } from '@/components/brand/CineCanonMark';
 
 // UX-audit second pass — top nav had grown to 9 entries plus 3 icons,
 // crowding the 1024px breakpoint. "Demos" (/queries) dropped from
@@ -84,8 +85,17 @@ export function TopNav() {
   return (
     <nav className="border-b border-zinc-800 bg-zinc-950" aria-label="Primary">
       <div className="mx-auto flex max-w-7xl items-center gap-3 px-4 py-3 sm:gap-8 sm:px-6 sm:py-4">
-        <Link href="/" className="font-serif text-lg text-zinc-50 hover:text-amber-400">
-          CineCanon
+        {/* Brand identity. Mark + serif wordmark sit side-by-side; the
+            wordmark provides the brand *name* (visible & SR-readable),
+            the mark provides identity. The mark's own aria-label is
+            suppressed via title="" because the adjacent text already
+            says CineCanon — no need to announce it twice. */}
+        <Link
+          href="/"
+          className="flex items-center gap-2 font-serif text-lg text-zinc-50 hover:text-amber-400"
+        >
+          <CineCanonMark size={28} title="" />
+          <span>CineCanon</span>
         </Link>
 
         {/* Desktop links */}
