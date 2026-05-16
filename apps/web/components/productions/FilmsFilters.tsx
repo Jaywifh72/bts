@@ -11,7 +11,7 @@ type Props = {
   decades: { decade: number; count: number }[];
   genres: { genre: string; count: number }[];
   current: {
-    decade?: number;
+    decades?: number[];
     genre?: string;
     tier?: 'curated' | 'imported' | 'all';
     sort?: 'recent' | 'oldest' | 'title' | 'popularity' | 'rating';
@@ -33,9 +33,14 @@ export function FilmsFilters({ decades, genres, current }: Props) {
     const form = e.currentTarget;
     const data = new FormData(form);
     const params = new URLSearchParams();
-    // Strip empty / default values so the URL stays clean.
-    for (const [key, value] of data.entries()) {
-      const v = String(value);
+    // Multi-decade — collect all checked boxes into a single comma-joined param.
+    const checkedDecades = data.getAll('decade').map((v) => String(v)).filter(Boolean);
+    if (checkedDecades.length > 0) {
+      params.set('decade', checkedDecades.join(','));
+    }
+    // Single-valued fields. Strip empty / default values so the URL stays clean.
+    for (const key of ['genre', 'tier', 'sort'] as const) {
+      const v = String(data.get(key) ?? '');
       if (!v) continue;
       if (key === 'tier' && v === 'all') continue;
       if (key === 'sort' && v === 'recent') continue;
@@ -47,6 +52,8 @@ export function FilmsFilters({ decades, genres, current }: Props) {
     });
   }
 
+  const checkedSet = new Set(current.decades ?? []);
+
   return (
     <form
       method="get"
@@ -56,19 +63,24 @@ export function FilmsFilters({ decades, genres, current }: Props) {
       className="mb-6 flex flex-wrap items-end gap-4 rounded border border-zinc-800 bg-zinc-900/40 p-3"
       aria-busy={isPending || undefined}
     >
-      <label className="flex flex-col gap-1 text-xs text-zinc-500">
-        Decade
-        <select name="decade" defaultValue={current.decade ?? ''} className={SELECT_CLASS}>
-          <option value="">all</option>
-          {decades.map((d) => (
-            <option key={d.decade} value={d.decade}>
-              {d.decade}s ({d.count})
-            </option>
-          ))}
-        </select>
-      </label>
+      <fieldset className="flex flex-wrap gap-x-3 gap-y-1 rounded border border-zinc-700 bg-zinc-950 px-2 py-1.5">
+        <legend className="px-1 text-xs text-zinc-300">Decade</legend>
+        {decades.map((d) => (
+          <label key={d.decade} className="flex items-center gap-1 text-sm text-zinc-300">
+            <input
+              type="checkbox"
+              name="decade"
+              value={d.decade}
+              defaultChecked={checkedSet.has(d.decade)}
+              className="accent-amber-600"
+            />
+            {d.decade}s
+            <span className="text-[10px] text-zinc-400">({d.count})</span>
+          </label>
+        ))}
+      </fieldset>
 
-      <label className="flex flex-col gap-1 text-xs text-zinc-500">
+      <label className="flex flex-col gap-1 text-xs text-zinc-300">
         Genre
         <select name="genre" defaultValue={current.genre ?? ''} className={SELECT_CLASS}>
           <option value="">all</option>
@@ -80,7 +92,7 @@ export function FilmsFilters({ decades, genres, current }: Props) {
         </select>
       </label>
 
-      <label className="flex flex-col gap-1 text-xs text-zinc-500">
+      <label className="flex flex-col gap-1 text-xs text-zinc-300">
         Data
         <select name="tier" defaultValue={current.tier ?? 'all'} className={SELECT_CLASS}>
           <option value="all">all</option>
@@ -89,7 +101,7 @@ export function FilmsFilters({ decades, genres, current }: Props) {
         </select>
       </label>
 
-      <label className="flex flex-col gap-1 text-xs text-zinc-500">
+      <label className="flex flex-col gap-1 text-xs text-zinc-300">
         Sort
         <select name="sort" defaultValue={current.sort ?? 'recent'} className={SELECT_CLASS}>
           <option value="recent">most recent</option>

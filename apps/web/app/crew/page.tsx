@@ -2,8 +2,12 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { db, listPeople, countPeople, listCrewCategoriesInUse } from '@bts/db';
 import { PersonCard } from '@/components/people/PersonCard';
+import { PersonTable } from '@/components/people/PersonTable';
 import { CrewFilters } from '@/components/people/CrewFilters';
 import { Pagination } from '@/components/ui/Pagination';
+import { PageHero } from '@/components/ui/PageHero';
+import { ViewToggle, parseView } from '@/components/ui/ViewToggle';
+import { CompareCheckbox, CompareDrawer } from '@/components/ui/Compare';
 
 export const metadata: Metadata = { title: 'Crew' };
 
@@ -14,7 +18,7 @@ export const revalidate = 3600;
 const PAGE_SIZE = 60;
 
 type Props = {
-  searchParams: Promise<{ category?: string; sort?: string; page?: string }>;
+  searchParams: Promise<{ category?: string; sort?: string; page?: string; view?: string }>;
 };
 
 function parseSort(v: string | undefined): 'name' | 'credits' {
@@ -26,6 +30,7 @@ export default async function CrewPage(props: Props) {
   const category = searchParams.category || undefined;
   const sort = parseSort(searchParams.sort);
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1);
+  const view = parseView(searchParams.view);
 
   const filters = {
     category,
@@ -49,37 +54,59 @@ export default async function CrewPage(props: Props) {
 
   return (
     <>
-      <div className="mb-6">
-        <p className="text-xs uppercase tracking-widest text-zinc-500">Archive</p>
-        <h1 className="mt-1 font-serif text-3xl text-zinc-50">Crew</h1>
-        <p className="mt-1 text-sm text-zinc-400">
-          {total.toLocaleString()} {total === 1 ? 'person' : 'people'}
-          {category ? ` in ${category.replace('_', ' ')}` : ''}
-        </p>
-      </div>
+      <PageHero
+        eyebrow="Archive"
+        title="Crew"
+        description={
+          <>
+            {total.toLocaleString()} {total === 1 ? 'person' : 'people'}
+            {category ? ` in ${category.replace('_', ' ')}` : ''}
+          </>
+        }
+      />
 
-      <CrewFilters categories={categories} current={{ category, sort }} />
+      <div className="mb-4 flex items-end gap-3">
+        <div className="flex-1">
+          <CrewFilters categories={categories} current={{ category, sort }} />
+        </div>
+        <ViewToggle basePath="/crew" currentParams={baseParams} active={view} />
+      </div>
 
       {rows.length === 0 ? (
         <div className="rounded border border-zinc-800 bg-zinc-900/40 p-8 text-center text-zinc-500">
           No crew matches these filters.
         </div>
+      ) : view === 'table' ? (
+        <PersonTable
+          rows={rows.map((row) => ({
+            slug: row.slug,
+            displayName: row.display_name,
+            primaryRole: row.primary_role,
+            nationality: row.nationality,
+            birthYear: row.birth_year,
+            creditCount: row.credit_count,
+          }))}
+        />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((row) => (
-            <PersonCard
-              key={row.slug}
-              slug={row.slug}
-              displayName={row.display_name}
-              nationality={row.nationality}
-              primaryRole={row.primary_role}
-              birthYear={row.birth_year}
-              profilePath={row.profile_path}
-              creditCount={row.credit_count}
-            />
+            <div key={row.slug} className="relative">
+              <CompareCheckbox slug={row.slug} label={row.display_name} />
+              <PersonCard
+                slug={row.slug}
+                displayName={row.display_name}
+                nationality={row.nationality}
+                primaryRole={row.primary_role}
+                birthYear={row.birth_year}
+                profilePath={row.profile_path}
+                creditCount={row.credit_count}
+              />
+            </div>
           ))}
         </div>
       )}
+
+      <CompareDrawer compareHref="/crew/compare" itemKindLabel="people" />
 
       <Pagination
         page={page}

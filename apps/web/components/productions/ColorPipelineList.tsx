@@ -11,38 +11,74 @@ const STAGE_LABELS: Array<{ key: keyof ColorPipelineRow; label: string }> = [
   { key: 'deliverable',   label: 'Deliverable' },
 ];
 
+/**
+ * UX-audit second pass — color pipeline rendered as a horizontal flow.
+ * The IDT → working → ODT chain is a sequence, not a key-value list.
+ * Each stage is a chip with the named transform; arrows between. Empty
+ * stages render dashed so the structural completeness of the chain is
+ * visible at a glance (a colorist scanning 12 dossiers can spot the one
+ * with no IDT documented).
+ *
+ * Mobile: chips stack vertically with down-arrows.
+ */
 function PipelineCard({ p }: { p: ColorPipelineRow }) {
-  const hasAny = STAGE_LABELS.some(({ key }) => p[key]);
   return (
     <div className="rounded border border-zinc-800 bg-zinc-900/40">
       <div className="border-b border-zinc-800 px-3 py-2">
         <div className="flex items-baseline gap-2">
           <span className="font-medium text-zinc-100">{p.pipeline_name}</span>
           {p.scene_slug ? (
-            <Link href={`#scene-${p.scene_slug}`} className="text-xs text-zinc-500 hover:text-amber-400">
+            <Link href={`#scene-${p.scene_slug}`} className="text-xs text-zinc-400 hover:text-amber-400">
               · {p.scene_title}
             </Link>
           ) : (
-            <span className="text-xs text-zinc-500">· production default</span>
+            <span className="text-xs text-zinc-400">· production default</span>
           )}
         </div>
       </div>
-      {hasAny && (
-        <div className="grid grid-cols-1 divide-y divide-zinc-800 sm:grid-cols-2 sm:divide-y-0 sm:divide-x">
-          {STAGE_LABELS.map(({ key, label }) => {
-            const v = p[key];
-            if (!v) return null;
-            return (
-              <div key={key} className="px-3 py-2">
-                <div className="text-[10px] uppercase tracking-wide text-zinc-500">{label}</div>
-                <div className="font-mono text-sm text-zinc-200">{String(v)}</div>
+
+      <ol
+        aria-label="ACES color pipeline, left to right"
+        className="flex flex-col items-stretch gap-2 p-3 sm:flex-row sm:items-end sm:gap-1 sm:overflow-x-auto"
+      >
+        {STAGE_LABELS.map(({ key, label }, i) => {
+          const v = p[key];
+          const filled = Boolean(v);
+          return (
+            <li
+              key={key}
+              className="flex flex-col items-stretch gap-1 sm:flex-row sm:items-end"
+            >
+              <div
+                className={`min-w-[10rem] rounded border px-3 py-2 ${
+                  filled
+                    ? 'border-amber-700/60 bg-amber-950/30'
+                    : 'border-dashed border-zinc-700 bg-zinc-900/40'
+                }`}
+              >
+                <div className={`text-[10px] uppercase tracking-wide ${filled ? 'text-amber-300' : 'text-zinc-400'}`}>
+                  {label}
+                </div>
+                <div className={`mt-0.5 font-mono text-sm ${filled ? 'text-zinc-100' : 'text-zinc-500 italic'}`}>
+                  {filled ? String(v) : 'undocumented'}
+                </div>
               </div>
-            );
-          })}
-        </div>
-      )}
+              {i < STAGE_LABELS.length - 1 && (
+                <div
+                  aria-hidden="true"
+                  className="flex items-center justify-center text-zinc-500 sm:px-1"
+                >
+                  <span className="sm:hidden">↓</span>
+                  <span className="hidden sm:inline">→</span>
+                </div>
+              )}
+            </li>
+          );
+        })}
+      </ol>
+
       {p.notes && (
-        <p className="border-t border-zinc-800 px-3 py-2 text-xs text-zinc-500">{p.notes}</p>
+        <p className="border-t border-zinc-800 px-3 py-2 text-xs text-zinc-400">{p.notes}</p>
       )}
     </div>
   );
@@ -61,6 +97,7 @@ export function ColorPipelineList({ pipelines }: { pipelines: readonly ColorPipe
         heading={overrides.length === 0
           ? 'Pipeline'
           : `Pipeline + ${overrides.length} scene override${overrides.length === 1 ? '' : 's'}`}
+        anchorId="color-pipeline"
       />
       <p className="-mt-2 mb-3 max-w-2xl text-xs text-zinc-500">
         Camera color science → IDT → working space → ODT → deliverable.

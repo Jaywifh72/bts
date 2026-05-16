@@ -1,3 +1,4 @@
+import Link from 'next/link';
 import type { ProductionLocation } from '@bts/db';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { sunEvents, fmtTime } from '@/lib/sun';
@@ -59,6 +60,14 @@ export function ProductionLocations({ locations }: { locations: readonly Product
                     <span className="rounded bg-zinc-800 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-400">
                       Studio
                     </span>
+                  )}
+                  {hasCoords && !loc.is_studio && (
+                    <Link
+                      href={`/locations/${loc.id}`}
+                      className="ml-auto text-xs text-amber-400 hover:underline"
+                    >
+                      Sun planner <span aria-hidden="true">→</span>
+                    </Link>
                   )}
                 </div>
                 <p className="mt-0.5 text-xs text-zinc-500">

@@ -12,6 +12,10 @@ import { orgLabel } from '@/lib/award-labels';
  * whichever is present, linking to that entity's profile page. Rows with
  * no recipient render as production-level (Best Picture, Best VFX team
  * without a specified house lead, etc.).
+ *
+ * UX-audit C6: brought to parity with the `/awards` index per-row source
+ * affordance — `[src] ↗` chip with sr-only context and a non-color
+ * status glyph (✓ WON / ○ NOM) on top of the existing amber/zinc hue.
  */
 export function AwardsList({ awards }: { awards: readonly ProductionAward[] }) {
   if (awards.length === 0) return null;
@@ -27,22 +31,23 @@ export function AwardsList({ awards }: { awards: readonly ProductionAward[] }) {
           <li key={a.id} className="flex flex-wrap items-baseline gap-x-2">
             <span
               className={`inline-block w-1 self-stretch rounded ${a.is_winner ? 'bg-amber-500' : 'bg-zinc-700'}`}
-              aria-hidden
+              aria-hidden="true"
             />
             <span
-              className={`font-mono text-xs ${a.is_winner ? 'text-amber-400' : 'text-zinc-500'}`}
-              title={a.is_winner ? 'Won' : 'Nominated'}
+              className={`font-mono text-xs ${a.is_winner ? 'text-amber-400' : 'text-zinc-400'}`}
             >
+              <span className="sr-only">Status: </span>
+              <span aria-hidden="true">{a.is_winner ? '✓ ' : '○ '}</span>
               {a.is_winner ? 'WON' : 'NOM'}
             </span>
             <span className="text-zinc-300">{orgLabel(a.award_org)}</span>
-            <span className="text-zinc-500">·</span>
+            <span aria-hidden="true" className="text-zinc-400">·</span>
             <span className="text-zinc-200">{a.category}</span>
-            <span className="text-zinc-500">·</span>
-            <span className="font-mono text-xs text-zinc-500">{a.year}</span>
+            <span aria-hidden="true" className="text-zinc-400">·</span>
+            <span className="font-mono text-xs text-zinc-400">{a.year}</span>
             {a.recipient_person_slug && a.recipient_display_name && (
               <>
-                <span className="text-zinc-600">→</span>
+                <span aria-hidden="true" className="text-zinc-400">→</span>
                 <Link
                   href={`/crew/${a.recipient_person_slug}`}
                   className="text-zinc-300 hover:text-amber-400"
@@ -53,11 +58,11 @@ export function AwardsList({ awards }: { awards: readonly ProductionAward[] }) {
             )}
             {a.recipient_vfx_house_slug && a.recipient_vfx_house_name && (
               <>
-                <span className="text-zinc-600">→</span>
+                <span aria-hidden="true" className="text-zinc-400">→</span>
                 <Link
                   href={`/vfx/${a.recipient_vfx_house_slug}`}
                   className="text-zinc-300 hover:text-amber-400"
-                  title="VFX house recipient"
+                  aria-label={`${a.recipient_vfx_house_name} (VFX house)`}
                 >
                   {a.recipient_vfx_house_name}
                 </Link>
@@ -65,11 +70,11 @@ export function AwardsList({ awards }: { awards: readonly ProductionAward[] }) {
             )}
             {a.recipient_stunt_company_slug && a.recipient_stunt_company_name && (
               <>
-                <span className="text-zinc-600">→</span>
+                <span aria-hidden="true" className="text-zinc-400">→</span>
                 <Link
                   href={`/stunts/companies/${a.recipient_stunt_company_slug}`}
                   className="text-zinc-300 hover:text-amber-400"
-                  title="Stunt company recipient"
+                  aria-label={`${a.recipient_stunt_company_name} (stunt company)`}
                 >
                   {a.recipient_stunt_company_name}
                 </Link>
@@ -80,10 +85,11 @@ export function AwardsList({ awards }: { awards: readonly ProductionAward[] }) {
                 href={a.source_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-xs text-zinc-600 hover:text-amber-400"
-                aria-label="Source"
+                className="ml-auto font-mono text-[10px] text-amber-400 hover:text-amber-300"
+                title="View cited source"
               >
-                ↗
+                <span className="sr-only">Cited source (opens in new tab): </span>
+                [src] <span aria-hidden="true">↗</span>
               </a>
             )}
           </li>

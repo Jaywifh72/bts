@@ -83,6 +83,31 @@ export default async function LoadoutPage(props: { params: Promise<{ slug: strin
         </Link>
         <PrintButton />
       </div>
+      {/* UX-audit Move 1 — printed sheet is intended to be taped to the
+          camera truck wall; the QR gets a gaffer back to the live web
+          dossier in one tap when claims have been updated since printing.
+          Public film URL, no PII; hosted QR endpoint, no dependency. */}
+      <div className="mb-6 hidden items-center justify-end gap-3 print:flex">
+        <div className="text-right">
+          <p className="text-[9px] uppercase tracking-widest text-gray-500">
+            Live dossier
+          </p>
+          <p className="font-mono text-[10px] text-gray-700">
+            {absoluteUrl(`/films/${production.slug}`).replace(/^https?:\/\//, '')}
+          </p>
+          <p className="mt-1 text-[9px] text-gray-500">
+            Scan after printing — citations may have been updated.
+          </p>
+        </div>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src={`https://api.qrserver.com/v1/create-qr-code/?size=120x120&format=svg&data=${encodeURIComponent(absoluteUrl(`/films/${production.slug}`))}`}
+          alt={`QR code linking to ${production.title} on CineCanon`}
+          width={120}
+          height={120}
+          className="shrink-0"
+        />
+      </div>
       <div className="rounded border border-zinc-800 bg-zinc-950 p-8 print:border-0 print:bg-white print:p-0 print:text-black">
         {/* Header */}
         <header className="mb-6 border-b border-zinc-800 pb-4 print:border-zinc-300">

@@ -25,6 +25,7 @@ import {
   getSourcesForClaims,
   getEvidenceForClaims,
   listVideoTimestampAnnotationsForProduction,
+  getSimilarKeyFramesForProduction,
 } from '@bts/db';
 import { ProductionDetail } from '@/components/productions/ProductionDetail';
 import { JsonLd, buildMovieJsonLd, buildBreadcrumbJsonLd } from '@/lib/jsonLd';
@@ -113,6 +114,10 @@ export default async function FilmDetailPage(props: Props) {
     getStuntCompaniesForProduction(db, data.production.id),
     getStuntCrewForProduction(db, data.production.id),
   ]);
+  // UX-audit second pass — visually-similar shots from other films,
+  // pivoting off this production's representative keyframe. Returns
+  // empty when no embeddings are populated; the rail self-hides.
+  const similarShots = await getSimilarKeyFramesForProduction(db, data.production.slug, 8);
   const collectionMembers = collectionMembersRaw ?? [];
   const visibleClaimIds = claims.slice(0, 12).map((claim) => claim.id);
   const [sourcesByClaimId, evidenceByClaimId] = await Promise.all([
@@ -178,7 +183,7 @@ export default async function FilmDetailPage(props: Props) {
     <>
       <JsonLd data={jsonLd} />
       <JsonLd data={breadcrumbJsonLd} />
-      <ProductionDetail data={data} vfx={vfx} videos={videos} videoTimestamps={videoTimestamps} collectionMembers={collectionMembers} similar={similar} postHouses={postHouses} keyFrames={keyFrames} citations={citations} awards={awards} confidence={confidence} semanticSimilar={semanticSimilar} locations={locations} lightingSetups={lightingSetups} colorPipelines={colorPipelines} claims={claims} sourcesByClaimId={sourcesByClaimId} evidenceByClaimId={evidenceByClaimId} stuntSequences={stuntSequences} stuntDoubling={stuntDoubling} stuntCompanies={stuntCompanies} stuntCrew={stuntCrew} />
+      <ProductionDetail data={data} vfx={vfx} videos={videos} videoTimestamps={videoTimestamps} collectionMembers={collectionMembers} similar={similar} postHouses={postHouses} keyFrames={keyFrames} citations={citations} awards={awards} confidence={confidence} semanticSimilar={semanticSimilar} locations={locations} lightingSetups={lightingSetups} colorPipelines={colorPipelines} claims={claims} sourcesByClaimId={sourcesByClaimId} evidenceByClaimId={evidenceByClaimId} stuntSequences={stuntSequences} stuntDoubling={stuntDoubling} stuntCompanies={stuntCompanies} stuntCrew={stuntCrew} similarShots={similarShots} />
     </>
   );
 }

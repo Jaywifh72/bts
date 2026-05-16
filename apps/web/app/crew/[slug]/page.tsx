@@ -15,13 +15,17 @@ import {
   getStuntLineage,
   getDoublingHistoryForPerson,
   getDoublingHistoryForActor,
+
   getStuntPersonReel,
+  getClaimsBundleForEntity,
 } from '@bts/db';
 import { FilmographyTable } from '@/components/people/FilmographyTable';
 import { EquipmentUsedTable } from '@/components/people/EquipmentUsedTable';
 import { CareerStats } from '@/components/people/CareerStats';
 import { PersonAvatar } from '@/components/people/PersonAvatar';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import { EntityProvenanceFooter } from '@/components/ui/EntityProvenanceFooter';
+import { EntityClaimsList } from '@/components/ui/EntityClaimsList';
 import { JsonLd, buildPersonJsonLd } from '@/lib/jsonLd';
 import { profileUrl, posterUrl } from '@/lib/tmdb-image';
 import { pickPrimaryRole } from '@/lib/primary-role';
@@ -78,6 +82,8 @@ export default async function CrewDetailPage(props: Props) {
     getAwardsForPerson(db, params.slug),
   ]);
   if (!person) notFound();
+  // F2 — fetch the polymorphic claims bundle for this person.
+  const claimsBundle = await getClaimsBundleForEntity(db, 'person', person.id, person.slug);
 
   // Resolve stunt-section relations for the stunt block. Only triggers
   // a roundtrip when at least one of the slug arrays is populated.
@@ -806,6 +812,25 @@ export default async function CrewDetailPage(props: Props) {
             </div>
           </div>
         )}
+        <EntityClaimsList
+          claims={claimsBundle.claims}
+          sourcesByClaimId={claimsBundle.sourcesByClaimId}
+          evidenceByClaimId={claimsBundle.evidenceByClaimId}
+          eyebrow="Claims"
+          heading="Source-backed facts about this person"
+          anchorId="claims"
+        />
+        <div className="mt-12 border-t border-zinc-800 pt-6">
+          <EntityProvenanceFooter
+            entitySlug={person.slug}
+            pageUrl={`/crew/${person.slug}`}
+            lastVerifiedAt={person.last_verified_at}
+            dataTier={person.data_tier}
+            curatedBy={person.curated_by}
+            curatedByUrl={person.curated_by_url}
+            lastCuratedReview={person.last_curated_review}
+          />
+        </div>
       </article>
     </>
   );

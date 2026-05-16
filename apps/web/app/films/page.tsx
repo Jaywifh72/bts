@@ -9,8 +9,12 @@ import {
   getProductionDepthFlags,
 } from '@bts/db';
 import { ProductionCard } from '@/components/productions/ProductionCard';
+import { ProductionTable } from '@/components/productions/ProductionTable';
 import { FilmsFilters } from '@/components/productions/FilmsFilters';
 import { Pagination } from '@/components/ui/Pagination';
+import { PageHero } from '@/components/ui/PageHero';
+import { ViewToggle, parseView } from '@/components/ui/ViewToggle';
+import { CompareCheckbox, CompareDrawer } from '@/components/ui/Compare';
 
 export const metadata: Metadata = { title: 'Films' };
 
@@ -28,6 +32,7 @@ type Props = {
     sort?: string;
     page?: string;
     studio?: string;
+    view?: string;
   }>;
 };
 
@@ -43,15 +48,28 @@ function parseTier(v: string | undefined): 'curated' | 'imported' | 'all' {
 
 export default async function FilmsPage(props: Props) {
   const searchParams = await props.searchParams;
-  const decade = searchParams.decade ? parseInt(searchParams.decade, 10) : undefined;
+  // Multi-decade: accept comma-separated `?decade=2010,2020`. Single value
+  // remains supported for back-compat with deep links. Canonical form is
+  // sorted ascending and de-duplicated so `?decade=2020,2010` and
+  // `?decade=2010,2020,2010` collapse to the same cache key.
+  const decadesParam = Array.from(
+    new Set(
+      (searchParams.decade ?? '')
+        .split(',')
+        .map((s) => parseInt(s.trim(), 10))
+        .filter((n) => Number.isFinite(n) && n > 0),
+    ),
+  ).sort((a, b) => a - b);
+  const decades = decadesParam.length > 0 ? decadesParam : undefined;
   const genre = searchParams.genre || undefined;
   const studioSlug = searchParams.studio || undefined;
   const tier = parseTier(searchParams.tier);
   const sort = parseSort(searchParams.sort);
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1);
+  const view = parseView(searchParams.view);
 
   const filters = {
-    decade: Number.isFinite(decade) ? decade : undefined,
+    decades,
     genre,
     studioSlug,
     dataTier: tier,
@@ -60,7 +78,7 @@ export default async function FilmsPage(props: Props) {
     offset: (page - 1) * PAGE_SIZE,
   };
 
-  const [rows, total, decades, genres] = await Promise.all([
+  const [rows, total, decadeOptions, genres] = await Promise.all([
     listProductions(db, filters),
     countProductions(db, filters),
     listDecadesInUse(db),
@@ -75,7 +93,7 @@ export default async function FilmsPage(props: Props) {
 
   // Build base href for pagination preserving filter params (everything except page).
   const baseParams = new URLSearchParams();
-  if (decade) baseParams.set('decade', String(decade));
+  if (decades) baseParams.set('decade', decades.join(','));
   if (genre) baseParams.set('genre', genre);
   if (studioSlug) baseParams.set('studio', studioSlug);
   if (tier !== 'all') baseParams.set('tier', tier);
@@ -85,56 +103,90 @@ export default async function FilmsPage(props: Props) {
   const csvParams = new URLSearchParams();
   if (tier !== 'all') csvParams.set('tier', tier);
   if (genre) csvParams.set('genre', genre);
-  if (decade) csvParams.set('decade', String(decade));
+  if (decades) csvParams.set('decade', decades.join(','));
   const csvHref = `/api/export/films.csv${csvParams.toString() ? `?${csvParams.toString()}` : ''}`;
 
   return (
     <>
-      <div className="mb-6 flex items-baseline justify-between gap-3">
-        <div>
-          <p className="text-xs uppercase tracking-widest text-zinc-500">Archive</p>
-          <h1 className="mt-1 font-serif text-3xl text-zinc-50">Films</h1>
-          <p className="mt-1 text-sm text-zinc-400">
+      <PageHero
+        eyebrow="Archive"
+        title="Films"
+        description={
+          <>
             {total.toLocaleString()} {total === 1 ? 'production' : 'productions'}
             {tier !== 'all' && ` · ${tier}`}
             {studioSlug && ` · studio: ${studioSlug}`}
-          </p>
-        </div>
-        <a
-          href={csvHref}
-          className="shrink-0 rounded border border-zinc-800 px-3 py-1 text-xs text-zinc-400 hover:border-amber-700/60 hover:text-amber-400"
-          aria-label="Export current view as CSV"
-          download
-        >
-          Export CSV ↓
-        </a>
-      </div>
+          </>
+        }
+        actions={
+          <a
+            href={csvHref}
+            className="rounded border border-zinc-800 px-3 py-1 text-xs text-zinc-400 hover:border-amber-700/60 hover:text-amber-400"
+            aria-label="Export current view as CSV"
+            download
+          >
+            Export CSV ↓
+          </a>
+        }
+      />
 
-      <FilmsFilters decades={decades} genres={genres} current={{ decade, genre, tier, sort }} />
+      <div className="mb-4 flex items-end gap-3">
+        <div className="flex-1">
+          <FilmsFilters decades={decadeOptions} genres={genres} current={{ decades, genre, tier, sort }} />
+        </div>
+        <ViewToggle basePath="/films" currentParams={baseParams} active={view} />
+      </div>
 
       {rows.length === 0 ? (
         <div className="rounded border border-zinc-800 bg-zinc-900/40 p-8 text-center text-zinc-500">
           No films match these filters.
         </div>
+      ) : view === 'table' ? (
+        <ProductionTable
+          rows={rows.map((row) => ({
+            slug: row.slug,
+            title: row.title,
+            type: row.type,
+            releaseYear: row.release_year,
+            primaryAspectRatio: row.primary_aspect_ratio,
+            primaryAcquisitionFormat: row.primary_acquisition_format,
+            dataTier: row.data_tier,
+            voteAverage: row.vote_average,
+            depth: depthMap.get(row.slug),
+          }))}
+          currentSort={sort}
+          buildSortHref={(target) => {
+            const params = new URLSearchParams(baseParams);
+            if (target === 'recent') params.delete('sort');
+            else params.set('sort', target);
+            params.set('view', 'table');
+            params.delete('page');
+            return `/films${params.toString() ? `?${params.toString()}` : ''}`;
+          }}
+        />
       ) : (
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
           {rows.map((row) => (
-            <ProductionCard
-              key={row.slug}
-              slug={row.slug}
-              title={row.title}
-              type={row.type}
-              releaseYear={row.release_year}
-              synopsis={row.synopsis}
-              primaryAspectRatio={row.primary_aspect_ratio}
-              primaryAcquisitionFormat={row.primary_acquisition_format}
-              posterPath={row.poster_path}
-              dataTier={row.data_tier}
-              depth={depthMap.get(row.slug)}
-            />
+            <div key={row.slug} className="relative">
+              <CompareCheckbox slug={row.slug} label={row.title} />
+              <ProductionCard
+                slug={row.slug}
+                title={row.title}
+                type={row.type}
+                releaseYear={row.release_year}
+                synopsis={row.synopsis}
+                primaryAspectRatio={row.primary_aspect_ratio}
+                primaryAcquisitionFormat={row.primary_acquisition_format}
+                posterPath={row.poster_path}
+                dataTier={row.data_tier}
+                depth={depthMap.get(row.slug)}
+              />
+            </div>
           ))}
         </div>
       )}
+
+      <CompareDrawer compareHref="/films/compare" itemKindLabel="films" />
 
       <Pagination
         page={page}

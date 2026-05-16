@@ -14,8 +14,7 @@ import { TechPanel } from './TechPanel';
 import { ReleaseDates } from './ReleaseDates';
 import { KeyFramesGallery } from './KeyFramesGallery';
 import { AwardsList } from './AwardsList';
-import { CorrectionForm } from '@/components/ui/CorrectionForm';
-import { CitationRigorBadge } from '@/components/ui/CitationRigorBadge';
+import { EntityProvenanceFooter } from '@/components/ui/EntityProvenanceFooter';
 import { ProductionLocations } from './ProductionLocations';
 import type { KeyFrame, ProductionAward, ProductionLocation, LightingSetup, ColorPipelineRow, StuntSequenceRow, ProductionDoublingRow, ProductionStuntCompanyRow, ProductionStuntCrewRow } from '@bts/db';
 import { LightingSetupsList } from './LightingSetupsList';
@@ -120,6 +119,7 @@ export function ProductionDetail({
   stuntDoubling,
   stuntCompanies,
   stuntCrew,
+  similarShots,
 }: {
   data: DetailData;
   vfx: VfxData;
@@ -143,6 +143,16 @@ export function ProductionDetail({
   stuntDoubling: readonly ProductionDoublingRow[];
   stuntCompanies: readonly ProductionStuntCompanyRow[];
   stuntCrew: readonly ProductionStuntCrewRow[];
+  similarShots?: ReadonlyArray<{
+    id: number;
+    image_url: string;
+    caption: string | null;
+    production_slug: string;
+    production_title: string;
+    scene_slug: string | null;
+    scene_title: string | null;
+    similarity: number;
+  }>;
 }) {
   const { production, formats, studios, crew, scenes } = data;
 
@@ -164,17 +174,6 @@ export function ProductionDetail({
 
   const isMetadataOnly =
     production.data_tier === 'imported' && crew.length === 0 && scenes.length === 0;
-
-  function formatRelativeTime(iso: string): string {
-    const ms = Date.now() - new Date(iso).getTime();
-    const days = Math.floor(ms / 86_400_000);
-    if (days < 1) return 'today';
-    if (days < 30) return `${days} day${days === 1 ? '' : 's'} ago`;
-    const months = Math.floor(days / 30);
-    if (months < 12) return `${months} month${months === 1 ? '' : 's'} ago`;
-    const years = Math.floor(days / 365);
-    return `${years} year${years === 1 ? '' : 's'} ago`;
-  }
 
   // ── UX-audit P0: in-page TOC for the long detail page (30+ sections). ──
   // Predicates mirror each section's self-hide condition so the TOC list
@@ -294,115 +293,61 @@ export function ProductionDetail({
             </div>
           )}
 
-          {(citations.sources.length > 0 || confidence) && (
-            <div className="mt-3 flex flex-wrap items-center gap-2">
-              {/* E-48 — citation-rigor badge. Self-hides when confidence
-                  is null (no attributions). */}
-              <CitationRigorBadge data={confidence} />
-              {citations.sources.length > 0 && (
-                <a
-                  href="#sources"
-                  className="text-xs text-zinc-500 hover:text-amber-400"
-                >
-                  {citations.sources.length} source{citations.sources.length === 1 ? '' : 's'} ↓
-                </a>
-              )}
-            </div>
-          )}
-
-          {/* External links + tools */}
-          <div className="mt-3 flex flex-wrap gap-3 text-xs text-zinc-500">
-            {production.imdb_id && (
-              <a
-                href={`https://www.imdb.com/title/${production.imdb_id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-amber-400"
-              >
-                IMDb ↗
-              </a>
-            )}
-            {production.tmdb_id && (
-              <a
-                href={`https://www.themoviedb.org/movie/${production.tmdb_id}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-amber-400"
-              >
-                TMDb ↗
-              </a>
-            )}
-            {/* E-44 — IMSDb script link-out. URL pattern uses the
-                title with spaces collapsed. We don't pre-validate the
-                URL exists — IMSDb returns a friendly 404 if the script
-                isn't there, which is no worse than IMDb's own
-                "title not found" UX. */}
-            {imsdbUrl(production.title) && (
-              <a
-                href={imsdbUrl(production.title)!}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hover:text-amber-400"
-                title="Search IMSDb for the screenplay"
-              >
-                Script (IMSDb) ↗
-              </a>
-            )}
-            {scenes.length > 0 && (
-              <Link
-                href={`/films/${production.slug}/loadout`}
-                className="rounded border border-amber-700 px-2 py-0.5 text-amber-400 hover:bg-amber-900/30"
-              >
-                Loadout sheet (PDF)
-              </Link>
-            )}
-            {/* T7-4 — replaces the T1-4 mailto: link with a real form
-                that drops into the corrections queue. */}
-            <CorrectionForm
-              productionSlug={production.slug}
-              pageUrl={`/films/${production.slug}`}
-            />
-          </div>
-
-          {/* T1-3: data freshness signal */}
-          {production.last_verified_at && (
-            <p className="mt-2 text-[10px] uppercase tracking-widest text-zinc-600">
-              Verified {formatRelativeTime(production.last_verified_at)}
-            </p>
-          )}
-
-          {/* 0054 — editorial byline on curated dossiers (E-E-A-T). */}
-          {production.data_tier === 'curated' && production.curated_by && (
-            <p className="mt-1 text-[11px] uppercase tracking-wide text-amber-500/70">
-              <span className="text-zinc-500">Curated by</span>{' '}
-              {production.curated_by_url ? (
-                <a
-                  href={production.curated_by_url}
-                  className="text-amber-400 hover:underline"
-                  rel="author"
-                >
-                  {production.curated_by}
-                </a>
-              ) : (
-                <span className="text-amber-400">{production.curated_by}</span>
-              )}
-              {production.last_curated_review && (
-                <>
-                  {' · '}
-                  <span className="text-zinc-500">
-                    Last reviewed {formatRelativeTime(production.last_curated_review)}
-                  </span>
-                </>
-              )}
-              {' · '}
-              <a
-                href="/methodology"
-                className="text-zinc-500 hover:text-amber-400"
-              >
-                Methodology
-              </a>
-            </p>
-          )}
+          <EntityProvenanceFooter
+            entitySlug={production.slug}
+            pageUrl={`/films/${production.slug}`}
+            confidence={confidence}
+            sourcesCount={citations.sources.length}
+            sourcesAnchorId="sources"
+            lastVerifiedAt={production.last_verified_at}
+            dataTier={production.data_tier}
+            curatedBy={production.curated_by}
+            curatedByUrl={production.curated_by_url}
+            lastCuratedReview={production.last_curated_review}
+            extraLinks={
+              <>
+                {production.imdb_id && (
+                  <a
+                    href={`https://www.imdb.com/title/${production.imdb_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-amber-400"
+                  >
+                    IMDb ↗
+                  </a>
+                )}
+                {production.tmdb_id && (
+                  <a
+                    href={`https://www.themoviedb.org/movie/${production.tmdb_id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-amber-400"
+                  >
+                    TMDb ↗
+                  </a>
+                )}
+                {imsdbUrl(production.title) && (
+                  <a
+                    href={imsdbUrl(production.title)!}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="hover:text-amber-400"
+                    title="Search IMSDb for the screenplay"
+                  >
+                    Script (IMSDb) ↗
+                  </a>
+                )}
+                {scenes.length > 0 && (
+                  <Link
+                    href={`/films/${production.slug}/loadout`}
+                    className="rounded border border-amber-700 px-2 py-0.5 text-amber-400 hover:bg-amber-900/30"
+                  >
+                    Loadout sheet (PDF)
+                  </Link>
+                )}
+              </>
+            }
+          />
         </div>
       </header>
 
@@ -442,12 +387,12 @@ export function ProductionDetail({
 
       {hasStudios && (
         <section id="studios" className="scroll-mt-24 mb-6">
-          <SectionHeader label="Production" heading="Studios" />
+          <SectionHeader label="Production" heading="Studios" anchorId="studios" />
           <ul className="space-y-1">
             {studios.map((s, i) => (
               <li key={i} className="flex items-center gap-2 text-sm">
                 <span className="text-zinc-200">{s.name}</span>
-                <span className="text-xs text-zinc-500">{s.role.replace('_', ' ')}</span>
+                <span className="text-xs text-zinc-400">{s.role.replace('_', ' ')}</span>
               </li>
             ))}
           </ul>
@@ -462,13 +407,24 @@ export function ProductionDetail({
               <ul className="space-y-1">
                 {members.map((m, i) => (
                   <li key={i} className="flex items-center gap-2 text-sm">
+                    {/* Migration 0059 — is_primary surfaces the canonical
+                        lead per role with a typography-weight + chip;
+                        secondary credits render zinc-300. */}
                     <Link
                       href={`/crew/${m.person_slug}`}
-                      className="text-zinc-200 hover:text-amber-400"
+                      className={`hover:text-amber-400 ${m.is_primary ? 'font-semibold text-zinc-50' : 'text-zinc-300'}`}
                     >
                       {m.credit_name_override ?? m.display_name}
                     </Link>
-                    <span className="text-zinc-500">{m.role_name}</span>
+                    <span className="text-zinc-400">{m.role_name}</span>
+                    {m.is_primary && (
+                      <span
+                        className="rounded border border-amber-700/60 bg-amber-950/30 px-1 py-px text-[9px] uppercase tracking-wide text-amber-300"
+                        title="Primary lead in this role"
+                      >
+                        primary
+                      </span>
+                    )}
                   </li>
                 ))}
               </ul>
@@ -685,15 +641,37 @@ export function ProductionDetail({
       {/* T2-3 — post-production houses (DI / color / sound mix). */}
       {hasPostHouses && (
         <section id="post-houses" className="scroll-mt-24 mt-6">
-          <SectionHeader label="Post-production" heading="Lab & finishing" />
+          <SectionHeader label="Post-production" heading="Lab & finishing" anchorId="post-houses" />
+          {/* UX-audit second pass — sound/post role chips link to the
+              relevant department dossier so the asymmetry with the
+              VFX section (which links every house to its detail page)
+              is reduced. The post-house slug isn't a routable detail
+              page yet — when it is, replace the role-chip link with
+              one wrapping the house name. */}
           <ul className="space-y-1 text-sm">
-            {postHouses.map((p) => (
-              <li key={`${p.slug}:${p.role}`} className="flex items-center gap-3">
-                <span className="text-zinc-200">{p.name}</span>
-                <span className="text-xs text-zinc-500">{p.role.replace(/_/g, ' ')}</span>
-                {p.notes && <span className="text-xs text-zinc-600">— {p.notes}</span>}
-              </li>
-            ))}
+            {postHouses.map((p) => {
+              const roleHref =
+                p.role === 'sound_mix' || p.role === 'sound_design' ? '/sound'
+                : p.role === 'color_grading' || p.role === 'di' || p.role === 'finishing' || p.role === 'imax_remaster' || p.role === 'mastering' ? '/for-colorists'
+                : null;
+              return (
+                <li key={`${p.slug}:${p.role}`} className="flex items-center gap-3">
+                  <span className="font-medium text-zinc-100">{p.name}</span>
+                  {roleHref ? (
+                    <Link
+                      href={roleHref}
+                      className="rounded border border-zinc-700 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-zinc-300 hover:border-amber-700/60 hover:text-amber-400"
+                      title={`Browse ${p.role.replace(/_/g, ' ')} dossier`}
+                    >
+                      {p.role.replace(/_/g, ' ')} <span aria-hidden="true">↗</span>
+                    </Link>
+                  ) : (
+                    <span className="text-xs text-zinc-400">{p.role.replace(/_/g, ' ')}</span>
+                  )}
+                  {p.notes && <span className="text-xs text-zinc-400">— {p.notes}</span>}
+                </li>
+              );
+            })}
           </ul>
         </section>
       )}
@@ -839,6 +817,52 @@ export function ProductionDetail({
               </Link>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* UX-audit second pass — visually-similar shots rail. Pulls
+          via cosine on production_keyframes.embedding from a different
+          production. Self-hides when no embeddings are populated for
+          this production. */}
+      {similarShots && similarShots.length > 0 && (
+        <div className="mt-8 border-t border-zinc-800 pt-6">
+          <SectionHeader label="Related" heading="Visually similar shots" anchorId="similar-shots" />
+          <p className="-mt-2 mb-3 max-w-2xl text-xs text-zinc-400">
+            By SigLIP embedding cosine-similarity against this production's representative keyframe.
+            Click through to the matched film for the scene context.
+          </p>
+          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {similarShots.map((s) => (
+              <li key={s.id}>
+                <Link
+                  href={`/films/${s.production_slug}#keyframes`}
+                  className="group block overflow-hidden rounded border border-zinc-800 bg-zinc-950 hover:border-amber-700/60"
+                  title={`${s.production_title}${s.caption ? ' — ' + s.caption : ''}`}
+                >
+                  <div className="relative aspect-[16/9]">
+                    {s.image_url && (
+                      <Image
+                        src={s.image_url}
+                        alt={`Keyframe from ${s.production_title}${s.caption ? ': ' + s.caption : ''}`}
+                        fill
+                        sizes="(min-width: 640px) 22vw, 50vw"
+                        className="object-cover transition-transform group-hover:scale-105"
+                      />
+                    )}
+                  </div>
+                  <div className="border-t border-zinc-800 px-2 py-1.5">
+                    <p className="line-clamp-1 text-xs font-medium text-zinc-100 group-hover:text-amber-400">
+                      {s.production_title}
+                    </p>
+                    <p className="mt-0.5 text-[10px] text-zinc-400">
+                      <span className="font-mono text-amber-300">{(s.similarity * 100).toFixed(0)}%</span>
+                      {s.scene_title && <span className="ml-1 text-zinc-500">· {s.scene_title}</span>}
+                    </p>
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
         </div>
       )}
 

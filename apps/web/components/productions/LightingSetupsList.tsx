@@ -81,6 +81,7 @@ export function LightingSetupsList({ setups }: { setups: readonly LightingSetup[
       <SectionHeader
         label="Lighting"
         heading={`Per-scene setups · ${setups.length} across ${byScene.size} ${byScene.size === 1 ? 'scene' : 'scenes'}`}
+        anchorId="lighting"
       />
       <p className="-mt-2 mb-3 max-w-2xl text-xs text-zinc-500">
         Per-scene lighting plots: fixture role (key / fill / back /
