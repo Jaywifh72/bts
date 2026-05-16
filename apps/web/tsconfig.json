@@ -13,6 +13,7 @@
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "noEmit": true,
+    "declaration": false,
     "strict": true,
     "incremental": true,
     "paths": {
