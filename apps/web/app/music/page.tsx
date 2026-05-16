@@ -1,8 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { db, listPeople, listProductions } from '@bts/db';
-import { PageHero } from '@/components/ui/PageHero';
-import { CrossCutLink } from '@/components/role/RolePage';
+import { db, listPeople, countPeople, listProductions, listScoringStages } from '@bts/db';
+import { DepartmentIndex } from '@/components/role/DepartmentIndex';
 import { JsonLd } from '@/lib/jsonLd';
 import { siteUrl, absoluteUrl } from '@/lib/site';
 
@@ -15,62 +14,102 @@ export const metadata: Metadata = {
 export const revalidate = 86400;
 
 export default async function MusicPage() {
-  const [composers, curated] = await Promise.all([
+  const [composers, totalPeople, curated, stages] = await Promise.all([
     listPeople(db, { category: 'music', sort: 'credits', withCreditsOnly: true, limit: 15 }),
+    countPeople(db, { category: 'music', withCreditsOnly: true }),
     listProductions(db, { dataTier: 'curated', limit: 6 }),
+    // F3a — scoring stages from migration 0062. Renders empty until
+    // curators seed the table.
+    listScoringStages(db, { withCreditsOnly: true, limit: 12 }),
   ]);
+
+  const topCredits = composers[0]?.credit_count ?? 0;
 
   return (
     <>
       <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/music'), name: 'Music — CineCanon' }} />
-      <PageHero
-        eyebrow="Department"
+      <DepartmentIndex
         title="Music"
         accent="amber"
         description="Composers and music supervisors. The score, the licensed cue, and the diegetic source — credited and cross-referenced."
+        stats={[
+          { label: 'People in archive', value: totalPeople.toLocaleString() },
+          { label: 'Top-credited count', value: topCredits.toLocaleString() },
+          { label: 'Curated dossiers', value: curated.length },
+          { label: 'Discipline', value: 'Music' },
+        ]}
+        glossary={[
+          { term: 'Composer', def: 'Writes original music for the picture. Score credit. May or may not orchestrate or conduct.' },
+          { term: 'Music Supervisor', def: 'Sources and clears licensed songs (needle drops). The credit you want for "the soundtrack is great."' },
+          { term: 'Orchestrator', def: 'Translates the composer\'s sketches into full orchestral parts. Often does not write themes; the craft is voicing and ensemble balance.' },
+          { term: 'Score vs Soundtrack', def: 'Score = the original-music cue list (Composer credit). Soundtrack = the full audio program including licensed songs and source music (Music Supervisor credit).' },
+          { term: 'Scoring stage', def: 'Recording venue used for the score sessions — e.g. Newman Stage (Fox), Eastwood Stage (Warner), Abbey Road, AIR Lyndhurst. Often documented per credit.' },
+          { term: 'Diegetic / Non-diegetic', def: 'Diegetic = sound originating in the story world (a character\'s radio). Non-diegetic = score the audience hears but characters don\'t.' },
+        ]}
+        crossCuts={[
+          { href: '/ask?q=Hans+Zimmer+films+citations', title: 'Hans Zimmer filmography' },
+          { href: '/ask?q=Mica+Levi+composer+features', title: 'Mica Levi feature scores' },
+          { href: '/ask?q=Daniel+Blumberg+The+Brutalist+score', title: 'Daniel Blumberg, The Brutalist' },
+          { href: '/ask?q=Carter+Burwell+Coen+collaborator', title: 'Carter Burwell × Coen filmography' },
+        ]}
+        people={composers}
+        films={curated}
+        allCrewHref="/crew?category=music"
+        vendors={
+          stages.length > 0 ? (
+            <section className="mb-12">
+              <div className="mb-4 flex items-baseline justify-between">
+                <h2 className="font-serif text-xl text-zinc-100">
+                  Scoring stages
+                  <span className="ml-2 text-sm font-normal text-zinc-400">
+                    by film-score credit count
+                  </span>
+                </h2>
+                <Link href="/ask?q=scoring+stage+credits" className="text-xs text-zinc-400 hover:text-amber-400">
+                  Cross-cut <span aria-hidden="true">→</span>
+                </Link>
+              </div>
+              <div
+                tabIndex={0}
+                role="region"
+                aria-label="Scoring stages by credit count"
+                className="overflow-x-auto rounded border border-zinc-800 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-zinc-950"
+              >
+                <table className="w-full text-sm">
+                  <thead className="border-b border-zinc-800 bg-zinc-900/60 text-[10px] uppercase tracking-wide text-zinc-300">
+                    <tr>
+                      <th scope="col" className="px-3 py-2 text-left font-normal">Stage</th>
+                      <th scope="col" className="px-3 py-2 text-left font-normal">Facility</th>
+                      <th scope="col" className="px-3 py-2 text-left font-normal">Location</th>
+                      <th scope="col" className="px-3 py-2 text-right font-normal">Orchestra</th>
+                      <th scope="col" className="px-3 py-2 text-right font-normal">Productions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {stages.map((s) => (
+                      <tr key={s.slug} className="border-b border-zinc-900 hover:bg-zinc-900/40">
+                        <td className="px-3 py-2 font-medium text-zinc-100">{s.name}</td>
+                        <td className="px-3 py-2 text-zinc-300">
+                          {s.facility_name ?? <span className="text-zinc-500">—</span>}
+                        </td>
+                        <td className="px-3 py-2 text-zinc-400">
+                          {[s.city, s.country].filter(Boolean).join(' · ') || <span className="text-zinc-500">—</span>}
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono tabular-nums text-zinc-400">
+                          {s.capacity_orchestra ?? <span className="text-zinc-500">—</span>}
+                        </td>
+                        <td className="px-3 py-2 text-right font-mono tabular-nums text-amber-400">
+                          {s.production_count}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </section>
+          ) : null
+        }
       />
-      <section className="mb-12">
-        <h2 className="mb-4 font-serif text-xl text-zinc-100">Cross-cuts</h2>
-        <ul className="grid gap-3 sm:grid-cols-2">
-          <CrossCutLink href="/ask?q=Hans+Zimmer+films+citations" title="Hans Zimmer filmography" />
-          <CrossCutLink href="/ask?q=Mica+Levi+composer+features" title="Mica Levi feature scores" />
-          <CrossCutLink href="/ask?q=Daniel+Blumberg+The+Brutalist+score" title="Daniel Blumberg, The Brutalist" />
-          <CrossCutLink href="/ask?q=Carter+Burwell+Coen+collaborator" title="Carter Burwell × Coen filmography" />
-        </ul>
-      </section>
-      {composers.length > 0 && (
-        <section className="mb-12">
-          <div className="mb-4 flex items-baseline justify-between">
-            <h2 className="font-serif text-xl text-zinc-100">Most-cited composers</h2>
-            <Link href="/crew?category=music" className="text-xs text-zinc-500 hover:text-amber-400">All music →</Link>
-          </div>
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {composers.map((p) => (
-              <li key={p.slug}>
-                <Link href={`/crew/${p.slug}`} className="block rounded border border-zinc-800 bg-zinc-900/40 p-3 hover:border-amber-700/60">
-                  <p className="font-serif text-base text-zinc-100">{p.display_name}</p>
-                  <p className="mt-1 text-xs text-zinc-500">{p.credit_count ?? 0} credits · {p.primary_role ?? 'Composer'}</p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
-      {curated.length > 0 && (
-        <section className="mb-12">
-          <h2 className="mb-4 font-serif text-xl text-zinc-100">Curated dossiers</h2>
-          <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-            {curated.map((f) => (
-              <li key={f.slug}>
-                <Link href={`/films/${f.slug}`} className="block rounded border border-zinc-800 bg-zinc-900/40 p-3 hover:border-amber-700/60">
-                  <p className="font-serif text-base text-zinc-100">{f.title}</p>
-                  <p className="mt-1 text-xs text-zinc-500">{f.release_year}</p>
-                </Link>
-              </li>
-            ))}
-          </ul>
-        </section>
-      )}
     </>
   );
 }
