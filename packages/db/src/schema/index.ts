@@ -21,3 +21,5 @@ export * from './evidence.ts';
 export * from './stunts.ts';
 export * from './jobs.ts';
 export * from './media.ts';
+export * from './societies.ts';
+export * from './scoring-stages.ts';
