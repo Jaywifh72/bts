@@ -31,13 +31,20 @@ type SearchParams = {
   category?: string;
   recipient?: string;
   wins?: string;
+  group?: string;
 };
 
+type GroupBy = 'none' | 'org' | 'year' | 'recipient' | 'category';
+
+function parseGroup(v: string | undefined): GroupBy {
+  return v === 'org' || v === 'year' || v === 'recipient' || v === 'category' ? v : 'none';
+}
+
 const RECIPIENT_LABELS: Record<AwardRecipientType, string> = {
-  person: 'Person (DP, director, etc.)',
+  person: 'Person — cinematographer, director, editor',
   vfx_house: 'VFX house',
   stunt_company: 'Stunt company',
-  production: 'Production (Best Picture, etc.)',
+  production: 'Production — Best Picture, Best International Feature',
 };
 
 const RECIPIENT_PATH: Record<AwardRecipientType, string> = {
@@ -65,6 +72,7 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
   const category = (sp.category ?? '').trim();
   const recipient = parseRecipient(sp.recipient);
   const winnersOnly = sp.wins === '1';
+  const group = parseGroup(sp.group);
 
   const [byOrg, stats, years, filtered] = await Promise.all([
     // Existing summary: counts per org + recent wins for the per-org panel.
@@ -116,6 +124,28 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
 
   const hasFilter = org !== 'all' || year !== 'all' || category !== '' || recipient !== 'all' || winnersOnly;
 
+  // Group-by aggregation (UX-audit P0-3). App-layer roll-up over the
+  // already-filtered 200-row cap; cheap and avoids a second query.
+  type GroupRow = { key: string; label: string; total: number; wins: number };
+  function groupRows(by: Exclude<GroupBy, 'none'>): GroupRow[] {
+    const map = new Map<string, GroupRow>();
+    for (const a of filtered) {
+      let key: string;
+      let label: string;
+      switch (by) {
+        case 'org':       key = a.award_org;  label = orgLabel(a.award_org); break;
+        case 'year':      key = String(a.year); label = String(a.year); break;
+        case 'recipient': key = a.recipient_name ?? a.production_title; label = key; break;
+        case 'category':  key = a.category; label = a.category; break;
+      }
+      const row = map.get(key) ?? { key, label, total: 0, wins: 0 };
+      row.total += 1;
+      if (a.is_winner) row.wins += 1;
+      map.set(key, row);
+    }
+    return [...map.values()].sort((a, b) => b.total - a.total || a.label.localeCompare(b.label));
+  }
+
   return (
     <>
       <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/awards'), name: 'Awards — CineCanon' }} />
@@ -139,9 +169,15 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
         <h2 className="mb-3 font-serif text-base text-zinc-100">Find awards</h2>
         {/* UX-audit 2026-05-15: action="#results" so a filter submit lands */}
         {/* at the results section rather than scrolling to the top of the page. */}
-        <form method="get" action="#results" className="grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+        <form
+          method="get"
+          action="#results"
+          role="search"
+          aria-label="Filter awards"
+          className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6"
+        >
           <label className="block">
-            <span className="text-[10px] uppercase tracking-wide text-zinc-500">Organisation</span>
+            <span className="text-[10px] uppercase tracking-wide text-zinc-300">Organisation</span>
             <select
               name="org"
               defaultValue={org}
@@ -154,7 +190,7 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
             </select>
           </label>
           <label className="block">
-            <span className="text-[10px] uppercase tracking-wide text-zinc-500">Year</span>
+            <span className="text-[10px] uppercase tracking-wide text-zinc-300">Year</span>
             <select
               name="year"
               defaultValue={year === 'all' ? '' : String(year)}
@@ -167,7 +203,7 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
             </select>
           </label>
           <label className="block sm:col-span-2 lg:col-span-1">
-            <span className="text-[10px] uppercase tracking-wide text-zinc-500">Category contains</span>
+            <span className="text-[10px] uppercase tracking-wide text-zinc-300">Category contains</span>
             <input
               name="category"
               defaultValue={category}
@@ -176,7 +212,7 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
             />
           </label>
           <label className="block">
-            <span className="text-[10px] uppercase tracking-wide text-zinc-500">Recipient type</span>
+            <span className="text-[10px] uppercase tracking-wide text-zinc-300">Recipient type</span>
             <select
               name="recipient"
               defaultValue={recipient}
@@ -186,7 +222,21 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
               <option value="person">Person</option>
               <option value="vfx_house">VFX house</option>
               <option value="stunt_company">Stunt company</option>
-              <option value="production">Production (no specific recipient)</option>
+              <option value="production">Production — no individual recipient</option>
+            </select>
+          </label>
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-wide text-zinc-300">Group by</span>
+            <select
+              name="group"
+              defaultValue={group}
+              className="mt-1 block w-full rounded border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm focus:border-amber-500 focus:outline-none"
+            >
+              <option value="none">none</option>
+              <option value="org">organisation</option>
+              <option value="year">year</option>
+              <option value="recipient">recipient</option>
+              <option value="category">category</option>
             </select>
           </label>
           <div className="flex items-end gap-2">
@@ -206,10 +256,11 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
             >
               Filter
             </button>
-            {hasFilter && (
+            {(hasFilter || group !== 'none') && (
               <Link
                 href="/awards"
-                className="text-xs text-zinc-500 hover:text-amber-400"
+                aria-label="Clear all award filters"
+                className="text-xs text-zinc-400 hover:text-amber-400"
               >
                 Reset
               </Link>
@@ -222,21 +273,33 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
           per-org summary panels (familiar landing-state). The id="results"
           paired with form action="#results" above keeps the visitor's
           scroll near the result list after a filter submit. */}
-      {hasFilter ? (
+      {hasFilter || group !== 'none' ? (
         <section id="results" className="scroll-mt-4 mb-12">
           <h2 className="mb-4 font-serif text-xl text-zinc-100">
             Results ({filtered.length}{filtered.length === 200 ? '+' : ''})
+            {group !== 'none' && <span className="ml-2 text-sm text-zinc-500">grouped by {group}</span>}
           </h2>
           {filtered.length === 0 ? (
             <p className="text-sm text-zinc-500">No awards match these filters. Try widening org / year, or remove the wins-only toggle.</p>
+          ) : group !== 'none' ? (
+            <ul className="space-y-1.5 text-sm">
+              {groupRows(group).map((g) => (
+                <li key={g.key} className="flex items-baseline gap-x-3 rounded border border-zinc-800 bg-zinc-900/40 px-3 py-2">
+                  <span className="flex-1 text-zinc-200">{g.label}</span>
+                  <span className="font-mono text-xs text-amber-400">{g.wins} <span className="text-zinc-500">wins</span></span>
+                  <span className="font-mono text-xs text-zinc-400">{g.total} <span className="text-zinc-500">entries</span></span>
+                </li>
+              ))}
+            </ul>
           ) : (
             <ul className="space-y-1.5 text-sm">
               {filtered.map((a) => (
                 <li key={a.id} className="flex flex-wrap items-baseline gap-x-2 rounded border border-zinc-800 bg-zinc-900/40 px-3 py-2">
                   <span
-                    className={`font-mono text-xs ${a.is_winner ? 'text-amber-400' : 'text-zinc-500'}`}
-                    title={a.is_winner ? 'Won' : 'Nominated'}
+                    className={`font-mono text-xs ${a.is_winner ? 'text-amber-400' : 'text-zinc-400'}`}
                   >
+                    <span className="sr-only">Status: </span>
+                    <span aria-hidden="true">{a.is_winner ? '✓ ' : '○ '}</span>
                     {a.is_winner ? 'WON' : 'NOM'}
                   </span>
                   <span className="text-zinc-300">{orgLabel(a.award_org)}</span>
@@ -254,11 +317,24 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
                       <Link
                         href={`${RECIPIENT_PATH[a.recipient_kind]}/${a.recipient_slug}`}
                         className="text-amber-400/80 hover:text-amber-400"
+                        aria-label={`${a.recipient_name} (${RECIPIENT_LABELS[a.recipient_kind]})`}
                         title={RECIPIENT_LABELS[a.recipient_kind]}
                       >
                         {a.recipient_name}
                       </Link>
                     </>
+                  )}
+                  {a.source_url && (
+                    <a
+                      href={a.source_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="ml-auto font-mono text-[10px] text-amber-400 hover:text-amber-300"
+                      title="View cited source"
+                    >
+                      <span className="sr-only">Cited source (opens in new tab): </span>
+                      [src] <span aria-hidden="true">↗</span>
+                    </a>
                   )}
                 </li>
               ))}
@@ -283,7 +359,7 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
                 {o.recent_winners.length > 0 && (
                   <div className="mt-3">
                     <div className="flex items-baseline justify-between">
-                      <p className="text-[10px] uppercase tracking-wide text-zinc-500">Recent wins</p>
+                      <p className="text-[10px] uppercase tracking-wide text-zinc-300">Recent wins</p>
                       {/* UX-audit (CO-4): direct path to the full list */}
                       {/* via the filter form on the same page. */}
                       <Link

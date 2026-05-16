@@ -5,6 +5,7 @@ import { db, searchProductionsCombined } from '@bts/db';
 import { extractFilters, MissingApiKeyError, type SearchFilters } from '@/lib/nl-extract';
 import { posterUrl } from '@/lib/tmdb-image';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import { PageHero } from '@/components/ui/PageHero';
 
 export const metadata: Metadata = {
   title: 'Ask anything',
@@ -26,7 +27,24 @@ async function embedThemes(text: string, key: string): Promise<number[] | null> 
   return json.data[0]?.embedding ?? null;
 }
 
-type Props = { searchParams: Promise<{ q?: string }> };
+type Props = { searchParams: Promise<{ q?: string; omit?: string }> };
+
+type FilterKey = 'director' | 'dp' | 'year' | 'aspect_ratio' | 'format_keyword' | 'themes';
+
+function parseOmit(raw: string | undefined): Set<FilterKey> {
+  if (!raw) return new Set();
+  const allowed = new Set<FilterKey>(['director', 'dp', 'year', 'aspect_ratio', 'format_keyword', 'themes']);
+  return new Set(
+    raw.split(',').map((s) => s.trim()).filter((s): s is FilterKey => allowed.has(s as FilterKey)),
+  );
+}
+
+function buildOmitHref(q: string, omit: Set<FilterKey>, add: FilterKey): string {
+  const next = new Set(omit);
+  next.add(add);
+  const omitParam = [...next].join(',');
+  return `/ask?q=${encodeURIComponent(q)}${omitParam ? `&omit=${omitParam}` : ''}`;
+}
 
 const EXAMPLES = [
   'Films Roger Deakins shot in 2.39:1 anamorphic',
@@ -39,6 +57,7 @@ const EXAMPLES = [
 export default async function AskPage(props: Props) {
   const searchParams = await props.searchParams;
   const query = searchParams.q?.trim() ?? '';
+  const omit = parseOmit(searchParams.omit);
   const key = process.env.OPENAI_API_KEY;
 
   let filters: SearchFilters | null = null;
@@ -51,6 +70,14 @@ export default async function AskPage(props: Props) {
     } else {
       try {
         filters = await extractFilters(query);
+        // UX-audit E3: honor `omit=` so the user can refine the interpreted
+        // filter set without rewriting their natural-language query.
+        if (omit.has('director'))       filters = { ...filters, director: null };
+        if (omit.has('dp'))             filters = { ...filters, dp: null };
+        if (omit.has('year'))           filters = { ...filters, year_min: null, year_max: null };
+        if (omit.has('aspect_ratio'))   filters = { ...filters, aspect_ratio: null };
+        if (omit.has('format_keyword')) filters = { ...filters, format_keyword: null };
+        if (omit.has('themes'))         filters = { ...filters, themes: '' };
         let queryEmbedding: number[] | null = null;
         if (filters.themes.trim()) {
           queryEmbedding = await embedThemes(filters.themes, key);
@@ -69,16 +96,18 @@ export default async function AskPage(props: Props) {
 
   return (
     <article>
-      <header className="mb-6">
-        <p className="text-xs uppercase tracking-widest text-zinc-500">Search</p>
-        <h1 className="mt-1 font-serif text-3xl text-zinc-50">Ask anything</h1>
-        <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          Natural-language query. GPT-4o-mini extracts structural filters
-          (director, DP, year, aspect ratio, format), then{' '}
-          <code className="text-zinc-300">text-embedding-3-small</code> ranks the
-          filtered set by tonal similarity to your query.
-        </p>
-      </header>
+      <PageHero
+        eyebrow="Search"
+        title="Ask anything"
+        description={
+          <>
+            Natural-language query. GPT-4o-mini extracts structural filters
+            (director, DP, year, aspect ratio, format), then{' '}
+            <code className="text-zinc-300">text-embedding-3-small</code> ranks the
+            filtered set by tonal similarity to your query.
+          </>
+        }
+      />
 
       <form method="get" className="mb-4 flex flex-wrap gap-2" role="search" aria-label="Natural language search">
         <input
@@ -123,21 +152,65 @@ export default async function AskPage(props: Props) {
       )}
 
       {filters && !errorMsg && (
-        <div className="mb-4 rounded border border-zinc-800 bg-zinc-900/40 p-3 text-xs">
-          <p className="mb-1 uppercase tracking-wide text-zinc-500">Interpreted as</p>
-          <dl className="grid grid-cols-[max-content_1fr] gap-x-4 gap-y-0.5 text-zinc-400">
-            {filters.director && (<><dt className="text-zinc-500">Director</dt><dd>{filters.director}</dd></>)}
-            {filters.dp && (<><dt className="text-zinc-500">DP</dt><dd>{filters.dp}</dd></>)}
-            {(filters.year_min || filters.year_max) && (
-              <>
-                <dt className="text-zinc-500">Year</dt>
-                <dd>{filters.year_min ?? '–'} → {filters.year_max ?? '–'}</dd>
-              </>
+        <div className="mb-4 rounded border border-zinc-800 bg-zinc-900/40 p-3">
+          <p className="mb-2 text-xs uppercase tracking-wide text-zinc-300">
+            Interpreted as
+            <span className="ml-2 text-[10px] normal-case tracking-normal text-zinc-400">
+              (click × to drop a filter and re-query)
+            </span>
+          </p>
+          <ul className="flex flex-wrap gap-1.5 text-xs">
+            {filters.director && (
+              <FilterChip
+                label="Director"
+                value={filters.director}
+                href={buildOmitHref(query, omit, 'director')}
+              />
             )}
-            {filters.aspect_ratio && (<><dt className="text-zinc-500">Aspect</dt><dd>{filters.aspect_ratio}</dd></>)}
-            {filters.format_keyword && (<><dt className="text-zinc-500">Format</dt><dd>{filters.format_keyword}</dd></>)}
-            {filters.themes && (<><dt className="text-zinc-500">Themes</dt><dd className="italic">{filters.themes}</dd></>)}
-          </dl>
+            {filters.dp && (
+              <FilterChip
+                label="DP"
+                value={filters.dp}
+                href={buildOmitHref(query, omit, 'dp')}
+              />
+            )}
+            {(filters.year_min || filters.year_max) && (
+              <FilterChip
+                label="Year"
+                value={`${filters.year_min ?? '–'} → ${filters.year_max ?? '–'}`}
+                href={buildOmitHref(query, omit, 'year')}
+              />
+            )}
+            {filters.aspect_ratio && (
+              <FilterChip
+                label="Aspect"
+                value={filters.aspect_ratio}
+                href={buildOmitHref(query, omit, 'aspect_ratio')}
+              />
+            )}
+            {filters.format_keyword && (
+              <FilterChip
+                label="Format"
+                value={filters.format_keyword}
+                href={buildOmitHref(query, omit, 'format_keyword')}
+              />
+            )}
+            {filters.themes && (
+              <FilterChip
+                label="Themes"
+                value={filters.themes}
+                href={buildOmitHref(query, omit, 'themes')}
+                italic
+              />
+            )}
+          </ul>
+          {omit.size > 0 && (
+            <p className="mt-2 text-[10px] text-zinc-400">
+              <Link href={`/ask?q=${encodeURIComponent(query)}`} className="text-amber-400 hover:underline">
+                Restore all filters →
+              </Link>
+            </p>
+          )}
         </div>
       )}
 
@@ -173,12 +246,21 @@ export default async function AskPage(props: Props) {
                     <h2 className="line-clamp-2 text-sm font-medium text-zinc-100 group-hover:text-amber-400">
                       {r.title}
                     </h2>
-                    <p className="mt-1 text-xs text-zinc-500">
+                    <p className="mt-1 text-xs text-zinc-400">
                       {r.release_year ?? '—'}
                       {r.similarity != null && (
-                        <span className="ml-1 font-mono text-zinc-600">
+                        <span className="ml-1 font-mono text-zinc-500">
                           · {(r.similarity * 100).toFixed(0)}%
                         </span>
+                      )}
+                    </p>
+                    <p className="mt-1">
+                      {r.data_tier === 'curated' ? (
+                        <span className="rounded border border-amber-700/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-400">
+                          curated
+                        </span>
+                      ) : (
+                        <span className="text-[10px] uppercase tracking-wide text-zinc-400">imported</span>
                       )}
                     </p>
                   </div>
@@ -190,10 +272,45 @@ export default async function AskPage(props: Props) {
       )}
 
       {query && !errorMsg && results.length === 0 && (
-        <div className="mt-4 rounded border border-zinc-800 bg-zinc-900/40 p-8 text-center text-zinc-500">
-          No films match these filters in the curated set.
+        <div className="mt-4 rounded border border-zinc-800 bg-zinc-900/40 p-8 text-center text-zinc-400">
+          <p>No films match these filters in the curated set.</p>
+          <p className="mt-3 text-sm">
+            For an exact-title lookup, try{' '}
+            <a
+              href={`/search?q=${encodeURIComponent(query)}`}
+              className="text-amber-400 hover:underline"
+            >
+              /search with this same query <span aria-hidden="true">→</span>
+            </a>
+          </p>
         </div>
       )}
     </article>
+  );
+}
+
+function FilterChip({
+  label,
+  value,
+  href,
+  italic = false,
+}: {
+  label: string;
+  value: string;
+  href: string;
+  italic?: boolean;
+}) {
+  return (
+    <li className="inline-flex items-center gap-1 rounded border border-zinc-700 bg-zinc-950 px-2 py-1">
+      <span className="text-[10px] uppercase tracking-wide text-zinc-400">{label}:</span>
+      <span className={italic ? 'italic text-zinc-300' : 'text-zinc-200'}>{value}</span>
+      <Link
+        href={href}
+        aria-label={`Drop ${label} filter and re-query`}
+        className="ml-1 text-zinc-400 hover:text-amber-400 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-1 focus:ring-offset-zinc-950 rounded"
+      >
+        <span aria-hidden="true">×</span>
+      </Link>
+    </li>
   );
 }

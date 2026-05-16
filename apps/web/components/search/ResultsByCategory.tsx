@@ -54,7 +54,7 @@ export function ResultsByCategory({ results }: { results: SearchResult[] }) {
               {meta.indexHref && (
                 <Link
                   href={meta.indexHref}
-                  className="text-xs text-zinc-500 hover:text-amber-400"
+                  className="text-xs text-zinc-400 hover:text-amber-400"
                 >
                   View all →
                 </Link>
@@ -70,10 +70,18 @@ export function ResultsByCategory({ results }: { results: SearchResult[] }) {
                     <div className="min-w-0 flex-1 truncate">
                       <span className="text-zinc-100">{r.display}</span>
                       {r.subtitle && (
-                        <span className="ml-2 text-xs text-zinc-500">{r.subtitle}</span>
+                        <span className="ml-2 text-xs text-zinc-400">{r.subtitle}</span>
+                      )}
+                      {r.data_tier === 'curated' && (
+                        <span className="ml-2 rounded border border-amber-700/60 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-amber-400">
+                          curated
+                        </span>
+                      )}
+                      {r.data_tier === 'imported' && (
+                        <span className="ml-2 text-[10px] uppercase tracking-wide text-zinc-400">imported</span>
                       )}
                     </div>
-                    <span className="shrink-0 font-mono text-[10px] text-zinc-600 tabular-nums">
+                    <span className="shrink-0 font-mono text-[10px] text-zinc-400 tabular-nums">
                       {r.score.toFixed(2)}
                     </span>
                   </Link>

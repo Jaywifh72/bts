@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import { db, search } from '@bts/db';
 import { ResultsByCategory } from '@/components/search/ResultsByCategory';
+import { PageHero } from '@/components/ui/PageHero';
 
 export const metadata: Metadata = {
   title: 'Search',
@@ -26,18 +27,17 @@ export default async function SearchPage(props: Props) {
 
   return (
     <div className="mx-auto max-w-3xl">
-      <header className="mb-6">
-        <h1 className="font-serif text-3xl text-zinc-100">
-          {isEmpty ? 'Search' : `Results for "${q}"`}
-        </h1>
-        {!isEmpty && (
-          <p className="mt-1 text-sm text-zinc-500">
-            {results.length === 0
+      <PageHero
+        eyebrow="Search"
+        title={isEmpty ? 'Search' : `Results for "${q}"`}
+        description={
+          !isEmpty
+            ? results.length === 0
               ? 'No matches.'
-              : `${results.length} match${results.length === 1 ? '' : 'es'} across films, crew, gear, scenes, videos, and VFX houses.`}
-          </p>
-        )}
-      </header>
+              : `${results.length} match${results.length === 1 ? '' : 'es'} across films, crew, gear, scenes, videos, and VFX houses.`
+            : undefined
+        }
+      />
 
       {isEmpty && (
         <div className="rounded border border-zinc-800 bg-zinc-900/40 p-6">
@@ -92,6 +92,23 @@ export default async function SearchPage(props: Props) {
       )}
 
       {results.length > 0 && <ResultsByCategory results={results} />}
+
+      {/* UX-audit E6: thin-result handoff to /ask. When lexical search matches
+          only 1–2 rows, the descriptive-query path (embeddings) is often what
+          the user actually wanted — surface it explicitly instead of forcing
+          them to scroll past the meagre list and notice on their own. */}
+      {results.length > 0 && results.length <= 2 && (
+        <div className="mt-6 rounded border border-zinc-800 bg-zinc-900/40 p-4 text-sm text-zinc-300">
+          Only {results.length} lexical match{results.length === 1 ? '' : 'es'}. For paraphrases
+          and descriptive queries, try{' '}
+          <a
+            href={`/ask?q=${encodeURIComponent(q)}`}
+            className="text-amber-400 hover:underline"
+          >
+            /ask with this same query <span aria-hidden="true">→</span>
+          </a>
+        </div>
+      )}
     </div>
   );
 }

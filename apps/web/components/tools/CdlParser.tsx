@@ -134,8 +134,12 @@ export function CdlParser() {
       </div>
 
       {error && (
-        <div className="rounded border border-red-800 bg-red-950/30 p-3 text-sm text-red-300">
-          Parse error: {error}
+        <div
+          role="alert"
+          aria-live="assertive"
+          className="rounded border border-red-800 bg-red-950/30 p-3 text-sm text-red-300"
+        >
+          <span aria-hidden="true">⚠ </span>Parse error: {error}
         </div>
       )}
 

@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { KILLER_QUERIES } from '@/lib/queries-index';
 
 export const metadata: Metadata = {
   title: 'Killer queries',
@@ -7,29 +8,7 @@ export const metadata: Metadata = {
     'Hand-picked queries that demonstrate what the CineCanon archive can answer once the data is in shape. Each one cross-cuts crews, gear, productions, or scenes in a way that would be tedious-to-impossible elsewhere.',
 };
 
-const QUERIES = [
-  {
-    slug: 'alexa65-sphero',
-    title: 'ALEXA 65 + Panavision Sphero anamorphic',
-    description:
-      'Every theatrical feature shot on the ARRI ALEXA 65 with Panavision Sphero anamorphic lenses, sorted by Director of Photography.',
-    crossCuts: ['Camera body', 'Lens series', 'DP attribution'],
-  },
-  {
-    slug: 'dune-part-two-lenses',
-    title: 'Greig Fraser’s lenses on Dune: Part Two',
-    description:
-      'Every lens series Greig Fraser specified on Dune: Part Two (2024), with the gear-detail page link and the scenes each lens covers.',
-    crossCuts: ['DP', 'Production', 'Lens series', 'Per-scene equipment'],
-  },
-  {
-    slug: 'magic-hour-2023',
-    title: 'Magic-hour exterior lighting (2023 features)',
-    description:
-      'All 2023 productions with at least one curated exterior magic-hour scene, with the lighting plot per scene.',
-    crossCuts: ['Year', 'Scene metadata', 'Lighting setup'],
-  },
-];
+const QUERIES = KILLER_QUERIES;
 
 export default function QueriesIndexPage() {
   return (

@@ -12,12 +12,19 @@ export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
   const q = req.nextUrl.searchParams.get('q')?.trim() ?? '';
+  // UX-audit Move 6 — prefix-mode filter so the ⌘K palette can route
+  // `@text` to people, `#text` to sources, etc. Falls back to multi-category
+  // when no `kind` filter is given.
+  const kindParam = req.nextUrl.searchParams.get('kind') ?? '';
   if (q.length < 2) {
     return NextResponse.json({ results: [] }, { headers: cacheHeaders() });
   }
-  // Cap each category at 3, total at 8.
-  const all = await search(db, q, 3);
-  const results = all.slice(0, 8).map((r) => ({
+  // Cap each category at 3 (8 total for the unfiltered case, 8 for filtered).
+  const all = await search(db, q, kindParam ? 8 : 3);
+  const filtered = kindParam
+    ? all.filter((r) => r.category === kindParam)
+    : all;
+  const results = filtered.slice(0, 8).map((r) => ({
     category: r.category,
     display: r.display,
     subtitle: r.subtitle,

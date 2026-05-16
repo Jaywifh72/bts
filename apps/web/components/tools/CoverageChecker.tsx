@@ -176,7 +176,7 @@ export function CoverageChecker({ lenses }: { lenses: LensCoverageItem[] }) {
 
         {/* Result card */}
         {v && (
-          <div className={`rounded border p-4 text-sm ${verdictColor}`}>
+          <div role="status" aria-live="polite" className={`rounded border p-4 text-sm ${verdictColor}`}>
             <div className="font-medium">
               {v.kind === 'covers' && '✓ Covers full sensor'}
               {v.kind === 'covers-aspect' && '⚠ Covers only at this aspect'}

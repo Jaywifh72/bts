@@ -111,16 +111,16 @@ export function AcesPicker() {
       </div>
 
       {/* Pipeline diagram */}
-      <div className="overflow-x-auto">
+      <div role="status" aria-live="polite" aria-label="ACES pipeline result" className="overflow-x-auto">
         <div className="flex min-w-max items-stretch gap-2 rounded border border-zinc-800 bg-zinc-900/40 p-3">
           {steps.map((s, i) => (
             <div key={s.label} className="flex items-stretch gap-2">
               <div className={`flex flex-col justify-between rounded border px-3 py-2 min-w-[140px] ${s.accent ? 'border-amber-700 bg-amber-950/30' : 'border-zinc-700 bg-zinc-950'}`}>
-                <div className="text-[10px] uppercase tracking-wide text-zinc-500">{s.label}</div>
+                <div className="text-[10px] uppercase tracking-wide text-zinc-300">{s.label}</div>
                 <div className={`mt-1 font-mono text-xs ${s.accent ? 'text-amber-300' : 'text-zinc-200'}`}>{s.value}</div>
               </div>
               {i < steps.length - 1 && (
-                <div className="flex items-center text-zinc-600">→</div>
+                <div aria-hidden="true" className="flex items-center text-zinc-400">→</div>
               )}
             </div>
           ))}

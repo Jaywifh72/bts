@@ -28,13 +28,23 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const dataTier = searchParams.get('tier') === 'curated' ? 'curated' as const : undefined;
   const genre = searchParams.get('genre') ?? undefined;
-  const decade = searchParams.get('decade');
-  const decadeNum = decade ? Number(decade.replace(/[^\d]/g, '')) : undefined;
+  // Multi-decade support (UX-audit P0-3). Single-value back-compat handled by
+  // the same parser — a lone "2010" becomes [2010]. Canonicalized for
+  // cache-key parity with the /films page.
+  const decadeParam = searchParams.get('decade') ?? '';
+  const decades = Array.from(
+    new Set(
+      decadeParam
+        .split(',')
+        .map((s) => parseInt(s.trim(), 10))
+        .filter((n) => Number.isFinite(n) && n > 0),
+    ),
+  ).sort((a, b) => a - b);
 
   const rows = await listProductions(db, {
     dataTier,
     genre,
-    decade: decadeNum && Number.isFinite(decadeNum) ? decadeNum : undefined,
+    decades: decades.length > 0 ? decades : undefined,
     limit: 2000,
     sort: 'recent',
   });

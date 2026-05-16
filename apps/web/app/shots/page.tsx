@@ -131,16 +131,13 @@ export default async function ShotsPage() {
         </section>
       )}
 
-      <aside className="mt-12 rounded border border-zinc-800 bg-zinc-900/40 p-4 text-xs leading-relaxed text-zinc-500">
-        <p className="mb-2 text-[10px] uppercase tracking-widest text-zinc-400">
-          Roadmap
+      <aside className="mt-12 rounded border border-zinc-800 bg-zinc-900/40 p-4 text-xs leading-relaxed text-zinc-400">
+        <p className="mb-2 text-[10px] uppercase tracking-widest text-zinc-300">
+          Reverse-search by reference still
         </p>
-        Palette grouping (find shots with this 5-hex swatch), SigLIP-embedding
-        visual reverse-search, and a per-shot &ldquo;more like this&rdquo;
-        rail are queued. See{' '}
-        <Link href="/lookbook" className="text-amber-400 hover:underline">
-          /lookbook
-        </Link>{' '}for the embedding-powered version.
+        For visual-similarity search (upload a frame and find shots that
+        share the same palette / composition / light), use{' '}
+        <Link href="/lookbook" className="text-amber-400 hover:underline">/lookbook</Link>.
       </aside>
     </>
   );

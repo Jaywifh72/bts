@@ -6,10 +6,15 @@ import {
   countProductions,
   listRecentlyUpdatedProductions,
   getShotOfTheDay,
+  getShotsOfTheDay,
   getEditorialDepthStats,
+  listRecentlyResolvedCorrections,
+  listRecentCitations,
 } from '@bts/db';
+import Image from 'next/image';
 import { ProductionCard } from '@/components/productions/ProductionCard';
 import { ShotOfTheDayCard } from '@/components/productions/ShotOfTheDayCard';
+import { formatRelativeTime } from '@/lib/format-time';
 
 export const metadata: Metadata = {
   title: 'CineCanon — Cinematic Technical Reference',
@@ -20,29 +25,26 @@ export const metadata: Metadata = {
 // safe upper bound for cache freshness.
 export const revalidate = 3600;
 
-const queries = [
-  {
-    href: '/queries/alexa65-sphero',
-    title: 'ALEXA 65 + Panavision Sphero',
-    description: 'Every feature shot on this combination, by DP.',
-  },
-  {
-    href: '/queries/dune-part-two-lenses',
-    title: 'Greig Fraser on Dune: Part Two',
-    description: 'Every lens used on the production.',
-  },
-  {
-    href: '/queries/magic-hour-2023',
-    title: 'Magic-Hour Lighting, 2023',
-    description: 'Every exterior magic-hour scene, by fixture.',
-  },
-] as const;
+import { KILLER_QUERIES } from '@/lib/queries-index';
+
+// UX-audit G9 — homepage rail is the first three entries of the canonical
+// `/queries` list (single source of truth). Add a new query → it can land
+// on the homepage by being one of the first three in `lib/queries-index`.
+const queries = KILLER_QUERIES.slice(0, 3).map((q) => ({
+  href: `/queries/${q.slug}`,
+  title: q.title,
+  description: q.description,
+}));
 
 export default async function HomePage() {
   // E-49 — pin shot-of-the-day to today's UTC date so the value rotates
   // at midnight UTC for everyone.
   const todayKey = new Date().toISOString().slice(0, 10);
-  const [featured, totalCurated, totalAll, recentlyUpdatedRaw, shotOfTheDay, depthStats] = await Promise.all([
+  const [
+    featured, totalCurated, totalAll, recentlyUpdatedRaw,
+    shotOfTheDay, depthStats,
+    recentCorrections, recentCitations, shotWall,
+  ] = await Promise.all([
     listFeaturedProductions(db, 6),
     countProductions(db, { dataTier: 'curated' }),
     countProductions(db),
@@ -50,6 +52,10 @@ export default async function HomePage() {
     listRecentlyUpdatedProductions(db, 10),
     getShotOfTheDay(db, todayKey),
     getEditorialDepthStats(db),
+    // Homepage Move 3 — archive-this-week rail.
+    listRecentlyResolvedCorrections(db, 5),
+    listRecentCitations(db, 5),
+    getShotsOfTheDay(db, todayKey, 8),
   ]);
 
   // UX-audit 2026-05-15: Anora etc. were appearing in BOTH rails within
@@ -119,61 +125,174 @@ export default async function HomePage() {
         </div>
       </div>
 
-      {/* "Why this is different" — the moat made legible. */}
-      <div className="mb-12 grid gap-3 sm:grid-cols-3">
-        <Link
-          href="/about#confidence"
-          className="group rounded border border-zinc-800 bg-zinc-900/40 p-4 hover:border-amber-700/60 transition-colors"
-        >
-          <p className="text-[10px] uppercase tracking-[0.2em] text-amber-500/80">
-            Cited &amp; graded
-          </p>
-          <h3 className="mt-1 font-serif text-base text-zinc-100 group-hover:text-amber-400">
-            Every claim has provenance
-          </h3>
-          <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
-            Primary, secondary, manufacturer, speculative — confidence rated
-            per source. No mystery facts.
-          </p>
-        </Link>
-        <Link
-          href="/references"
-          className="group rounded border border-zinc-800 bg-zinc-900/40 p-4 hover:border-amber-700/60 transition-colors"
-        >
-          <p className="text-[10px] uppercase tracking-[0.2em] text-amber-500/80">
-            Reference graph
-          </p>
-          <h3 className="mt-1 font-serif text-base text-zinc-100 group-hover:text-amber-400">
-            One URL, back-cited everywhere
-          </h3>
-          <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
-            Every source URL is canonical. Click a citation to see every film,
-            crew member, sequence, and bulletin that depends on it.
-          </p>
-        </Link>
-        <Link
-          href="/tools"
-          className="group rounded border border-zinc-800 bg-zinc-900/40 p-4 hover:border-amber-700/60 transition-colors"
-        >
-          <p className="text-[10px] uppercase tracking-[0.2em] text-amber-500/80">
-            Pro-grade tools
-          </p>
-          <h3 className="mt-1 font-serif text-base text-zinc-100 group-hover:text-amber-400">
-            CDL, ACES, frame-lines, loadout
-          </h3>
-          <p className="mt-1.5 text-xs leading-relaxed text-zinc-500">
-            Working calculators that read against the curated archive.
-            Bookmark-and-share, not vapor.
-          </p>
-        </Link>
-      </div>
+      {/* UX-audit second pass (Move 3) — replaced three marketing tiles
+          with a real archive-this-week rail. A returning DP lands here
+          and immediately sees what changed since their last visit. */}
+      <section className="mb-12">
+        <div className="mb-4 flex items-baseline justify-between">
+          <h2 className="font-serif text-xl text-zinc-50">
+            Archive this week
+            <span className="ml-2 text-sm font-normal text-zinc-400">
+              {totalAll.toLocaleString()} productions · {totalCurated} curated dossiers
+            </span>
+          </h2>
+          <Link href="/admin" className="text-xs text-zinc-500 hover:text-amber-400">
+            Coverage dashboard <span aria-hidden="true">→</span>
+          </Link>
+        </div>
+        <div className="grid gap-3 lg:grid-cols-3">
+          {/* Column 1 — recently resolved corrections */}
+          <div className="rounded border border-zinc-800 bg-zinc-900/40 p-4">
+            <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-amber-300">
+              Corrections resolved
+            </p>
+            {recentCorrections.length === 0 ? (
+              <p className="text-xs text-zinc-400">
+                No corrections resolved recently. Spot something wrong on any page?{' '}
+                <span className="text-zinc-300">Use the "Report claim error" link in the page footer.</span>
+              </p>
+            ) : (
+              <ul className="space-y-2 text-xs">
+                {recentCorrections.map((c) => (
+                  <li key={c.id} className="border-l-2 border-amber-700/40 pl-2.5">
+                    {c.production_slug && c.production_title ? (
+                      <Link
+                        href={`/films/${c.production_slug}`}
+                        className="font-medium text-zinc-100 hover:text-amber-400"
+                      >
+                        {c.production_title}
+                      </Link>
+                    ) : (
+                      <span className="font-medium text-zinc-100">Site-wide</span>
+                    )}
+                    <p className="mt-0.5 line-clamp-2 text-zinc-400">{c.message}</p>
+                    <p className="mt-0.5 text-[10px] uppercase tracking-wide text-zinc-500">
+                      <time dateTime={c.resolved_at}>{formatRelativeTime(c.resolved_at)}</time>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
 
-      {/* E-49 — daily-rotating shot of the day. Self-hides when no
-          keyframes are seeded, and (via the client component) also
-          self-hides if the image source 404s. */}
-      {shotOfTheDay && (
+          {/* Column 2 — recently attached citations */}
+          <div className="rounded border border-zinc-800 bg-zinc-900/40 p-4">
+            <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-amber-300">
+              Citations attached
+            </p>
+            {recentCitations.length === 0 ? (
+              <p className="text-xs text-zinc-400">
+                No new source citations in the last cycle. The bibliography is at{' '}
+                <Link href="/references" className="text-amber-400 hover:underline">/references</Link>.
+              </p>
+            ) : (
+              <ul className="space-y-2 text-xs">
+                {recentCitations.map((c) => (
+                  <li key={`${c.claim_id}-${c.source_id}`} className="border-l-2 border-amber-700/40 pl-2.5">
+                    <p className="line-clamp-1 font-medium text-zinc-100">
+                      {c.source_publication ? (
+                        <span className="text-zinc-400">{c.source_publication} · </span>
+                      ) : null}
+                      {c.source_title}
+                    </p>
+                    <p className="mt-0.5 line-clamp-2 text-zinc-400">
+                      <span className="text-zinc-500">→ </span>{c.claim_statement}
+                    </p>
+                    <p className="mt-0.5 flex items-center gap-1.5 text-[10px] uppercase tracking-wide text-zinc-500">
+                      <span className="rounded border border-zinc-700 px-1 py-px text-zinc-300">
+                        {c.confidence}
+                      </span>
+                      <time dateTime={c.attached_at}>{formatRelativeTime(c.attached_at)}</time>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+
+          {/* Column 3 — productions touched */}
+          <div className="rounded border border-zinc-800 bg-zinc-900/40 p-4">
+            <p className="mb-2 text-[10px] uppercase tracking-[0.2em] text-amber-300">
+              Productions touched
+            </p>
+            {recentlyUpdatedRaw.length === 0 ? (
+              <p className="text-xs text-zinc-400">No edits in the recent window.</p>
+            ) : (
+              <ul className="space-y-2 text-xs">
+                {recentlyUpdatedRaw.slice(0, 5).map((r) => (
+                  <li key={r.slug} className="border-l-2 border-amber-700/40 pl-2.5">
+                    <Link
+                      href={`/films/${r.slug}`}
+                      className="font-medium text-zinc-100 hover:text-amber-400"
+                    >
+                      {r.title}
+                    </Link>{' '}
+                    <span className="text-zinc-500">{r.release_year ? `(${r.release_year})` : ''}</span>
+                    <p className="mt-0.5 text-[10px] uppercase tracking-wide text-zinc-500">
+                      <time dateTime={r.last_verified_at ?? ''}>
+                        {r.last_verified_at ? formatRelativeTime(r.last_verified_at) : '—'}
+                      </time>
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </section>
+
+      {/* UX-audit second pass — Shot-of-the-day now a wall, not a single.
+          Daily-rotating window of 8 keyframes so a returning visitor sees
+          a fresh strip without fully shuffling the archive. Falls back to
+          the single hero card when fewer than 4 keyframes are seeded. */}
+      {shotWall.length >= 4 ? (
+        <section className="mb-12">
+          <div className="mb-3 flex items-baseline justify-between">
+            <h2 className="font-serif text-xl text-zinc-50">
+              Frames of the day
+              <span className="ml-2 text-sm font-normal text-zinc-400">
+                rotating wall · {shotWall.length} shots
+              </span>
+            </h2>
+            <Link href="/shots" className="text-xs text-zinc-500 hover:text-amber-400">
+              Browse all frames <span aria-hidden="true">→</span>
+            </Link>
+          </div>
+          <ul className="grid grid-cols-2 gap-2 sm:grid-cols-4">
+            {shotWall.map((s) => (
+              <li key={s.id}>
+                <Link
+                  href={`/films/${s.production_slug}#keyframes`}
+                  className="group block overflow-hidden rounded border border-zinc-800 bg-zinc-950 hover:border-amber-700/60"
+                  title={`${s.production_title}${s.caption ? ' — ' + s.caption : ''}`}
+                >
+                  <div className="relative aspect-[16/9]">
+                    {s.image_url && (
+                      <Image
+                        src={s.image_url}
+                        alt={`Keyframe from ${s.production_title}${s.caption ? ': ' + s.caption : ''}`}
+                        fill
+                        sizes="(min-width: 640px) 22vw, 50vw"
+                        className="object-cover transition-transform group-hover:scale-105"
+                      />
+                    )}
+                  </div>
+                  <div className="border-t border-zinc-800 px-2 py-1.5">
+                    <p className="line-clamp-1 text-xs font-medium text-zinc-100 group-hover:text-amber-400">
+                      {s.production_title}
+                    </p>
+                    {s.caption && (
+                      <p className="line-clamp-1 text-[10px] text-zinc-400">{s.caption}</p>
+                    )}
+                  </div>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </section>
+      ) : shotOfTheDay ? (
         <ShotOfTheDayCard shot={shotOfTheDay} todayKey={todayKey} />
-      )}
+      ) : null}
 
       {/* Phase 29 — editorial-depth tile grid. Surfaces every
           curated technical-reference neighbourhood with its headline

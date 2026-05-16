@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { siteUrl } from '@/lib/site';
+import { getCoverageSummary } from '@/lib/admin/health-queries';
 
 export const metadata: Metadata = {
   title: 'Methodology',
@@ -31,7 +32,13 @@ const REVISIONS = [
   },
 ];
 
-export default function MethodologyPage() {
+export default async function MethodologyPage() {
+  // UX-audit second pass — public coverage gauges. The admin /health
+  // page surfaces these numbers behind auth; mirroring them here is the
+  // single biggest trust-building move on the methodology surface. The
+  // reader can audit dataset completeness, not just per-claim grade.
+  const coverage = await getCoverageSummary();
+
   return (
     <article className="prose prose-invert prose-zinc max-w-3xl">
       <header className="not-prose mb-10 border-b border-zinc-800 pb-6">
@@ -45,6 +52,63 @@ export default function MethodologyPage() {
           page.
         </p>
       </header>
+
+      {/* Public coverage gauges — moved out from behind admin auth. */}
+      <section className="not-prose mb-12">
+        <div className="mb-3 flex items-baseline justify-between">
+          <h2 id="coverage" className="font-serif text-2xl text-zinc-100">
+            Coverage gauges
+            <span className="ml-2 text-sm font-normal text-zinc-400">live</span>
+          </h2>
+          <p className="text-[10px] uppercase tracking-wide text-zinc-400">
+            Editorial completeness · revalidates every 24 hours
+          </p>
+        </div>
+        <p className="mb-4 max-w-2xl text-sm leading-relaxed text-zinc-300">
+          Provenance is per-claim, but completeness is per-table. These gauges
+          show, for each rows-with-editorial-text-required table, how many rows
+          actually carry the editorial content. A 22% gauge means 78% of those
+          rows are TMDb-import-only — flagged inline, but worth knowing in
+          aggregate.
+        </p>
+        <ul className="space-y-2">
+          {coverage.map((c) => (
+            <li
+              key={c.table_name}
+              className="flex items-center gap-3 rounded border border-zinc-800 bg-zinc-900/40 px-3 py-2"
+            >
+              <span className="w-36 shrink-0 text-sm text-zinc-200">
+                {c.table_label}
+              </span>
+              <div className="relative h-3 flex-1 overflow-hidden rounded bg-zinc-800">
+                <div
+                  aria-hidden="true"
+                  className={`h-full ${
+                    c.percent_complete >= 75 ? 'bg-emerald-500/70'
+                    : c.percent_complete >= 50 ? 'bg-amber-500/70'
+                    : c.percent_complete >= 25 ? 'bg-orange-500/70'
+                    : 'bg-red-500/60'
+                  }`}
+                  style={{ width: `${c.percent_complete}%` }}
+                />
+              </div>
+              <span className="w-14 shrink-0 text-right font-mono text-sm tabular-nums text-zinc-100">
+                {c.percent_complete}%
+              </span>
+              <span className="w-24 shrink-0 text-right font-mono text-[10px] uppercase tracking-wide text-zinc-400">
+                {(c.total - c.missing).toLocaleString()} / {c.total.toLocaleString()}
+              </span>
+            </li>
+          ))}
+        </ul>
+        <p className="mt-3 text-xs text-zinc-400">
+          Coverage updates as curators flip rows to <code className="rounded bg-zinc-900 px-1 py-0.5 text-amber-300">data_tier='curated'</code>{' '}
+          and attach editorial text. The gauge above is intentionally honest about
+          where the archive is thin — see the{' '}
+          <Link href="/about" className="text-amber-400 hover:underline">about page</Link>{' '}
+          for the curation roadmap.
+        </p>
+      </section>
 
       <h2 id="curation" className="font-serif text-2xl text-zinc-100">Two tiers of curation</h2>
       <p>
