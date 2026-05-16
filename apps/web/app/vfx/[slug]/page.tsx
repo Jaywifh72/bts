@@ -2,10 +2,12 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { db, listVfxHouses, getVfxHouseWithFilmography, getAwardsForVfxHouse } from '@bts/db';
+import { db, listVfxHouses, getVfxHouseWithFilmography, getAwardsForVfxHouse, getClaimsBundleForEntity } from '@bts/db';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Badge } from '@/components/ui/Badge';
 import { BookmarkButton } from '@/components/ui/BookmarkButton';
+import { EntityProvenanceFooter } from '@/components/ui/EntityProvenanceFooter';
+import { EntityClaimsList } from '@/components/ui/EntityClaimsList';
 import { VfxFilmography } from '@/components/vfx/VfxFilmography';
 import { BrandLogo } from '@/components/ui/BrandLogo';
 import { OrgRecipientAwardsList } from '@/components/awards/OrgRecipientAwardsList';
@@ -46,6 +48,7 @@ export default async function VfxHousePage(props: Props) {
   ]);
   if (!data) notFound();
   const { house, filmography, techniques, offices, highlights } = data;
+  const claimsBundle = await getClaimsBundleForEntity(db, 'vfx_house', house.id, house.slug);
 
   const totalShots = house.total_shots != null ? Math.round(house.total_shots) : null;
 
@@ -284,6 +287,25 @@ export default async function VfxHousePage(props: Props) {
             )}
           </div>
         </footer>
+        <EntityClaimsList
+          claims={claimsBundle.claims}
+          sourcesByClaimId={claimsBundle.sourcesByClaimId}
+          evidenceByClaimId={claimsBundle.evidenceByClaimId}
+          eyebrow="Claims"
+          heading="Source-backed facts about this VFX house"
+          anchorId="claims"
+        />
+        <div className="mt-8 border-t border-zinc-800 pt-6">
+          <EntityProvenanceFooter
+            entitySlug={house.slug}
+            pageUrl={`/vfx/${house.slug}`}
+            lastVerifiedAt={house.last_verified_at}
+            dataTier={house.data_tier}
+            curatedBy={house.curated_by}
+            curatedByUrl={house.curated_by_url}
+            lastCuratedReview={house.last_curated_review}
+          />
+        </div>
       </article>
     </>
   );

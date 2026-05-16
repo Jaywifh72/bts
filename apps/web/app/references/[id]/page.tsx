@@ -3,6 +3,8 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { db, getMediaAssetById, type HydratedAssociation } from '@bts/db';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import { BookmarkButton } from '@/components/ui/BookmarkButton';
+import { EntityProvenanceFooter } from '@/components/ui/EntityProvenanceFooter';
 
 interface Props { params: Promise<{ id: string }> }
 
@@ -88,9 +90,18 @@ export default async function ReferenceDetailPage(props: Props) {
             {associations.length} associations · {byType.size} entity types
           </span>
         </div>
-        <h1 className="mt-2 font-serif text-3xl text-zinc-50 leading-tight">
-          {asset.title}
-        </h1>
+        <div className="mt-2 flex items-start justify-between gap-3">
+          <h1 className="font-serif text-3xl text-zinc-50 leading-tight">
+            {asset.title}
+          </h1>
+          <BookmarkButton
+            kind="reference"
+            slug={String(asset.id)}
+            title={asset.title}
+            subtitle={asset.publication ?? undefined}
+            href={`/references/${asset.id}`}
+          />
+        </div>
         <p className="mt-3">
           <a
             href={asset.url}
@@ -179,6 +190,16 @@ export default async function ReferenceDetailPage(props: Props) {
         Variety article?", which is how working researchers actually
         navigate a source dataset.
       </aside>
+      <div className="mt-8 border-t border-zinc-800 pt-6">
+        <EntityProvenanceFooter
+          pageUrl={`/references/${asset.id}`}
+          lastVerifiedAt={asset.last_verified_at ?? null}
+          dataTier={asset.data_tier ?? null}
+          curatedBy={asset.curated_by ?? null}
+          curatedByUrl={asset.curated_by_url ?? null}
+          lastCuratedReview={asset.last_curated_review ?? null}
+        />
+      </div>
     </article>
   );
 }

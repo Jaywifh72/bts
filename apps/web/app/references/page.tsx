@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { db, listMostCitedAssets, countMostCitedAssets, type MediaAssetKind } from '@bts/db';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Pagination } from '@/components/ui/Pagination';
+import { PageHero, PageHeroStat } from '@/components/ui/PageHero';
 
 export const metadata: Metadata = {
   title: 'References',
@@ -65,33 +66,19 @@ export default async function ReferencesIndexPage(props: Props) {
 
   return (
     <>
-      {/* Hero */}
-      <div className="relative mb-12 overflow-hidden border-b border-zinc-800 pb-10">
-        <div
-          aria-hidden
-          className="absolute inset-x-0 top-0 h-32 bg-gradient-to-b from-amber-950/30 via-zinc-950/0 to-transparent"
-        />
-        <div className="relative">
-          <p className="text-xs uppercase tracking-[0.25em] text-amber-500/80">Archive · References</p>
-          <h1 className="mt-2 font-serif text-5xl text-zinc-50 leading-none">
-            Sources cited across the archive
-          </h1>
-          <p className="mt-3 max-w-2xl text-sm leading-relaxed text-zinc-400">
-            Every URL in the archive — Variety, fxguide, SAG-AFTRA
-            bulletins, Wikipedia, behind-the-scenes interviews —
-            stored once, attached to as many entities as cite it.
-            This page surfaces the most-shared sources first; click
-            through to see every film, person, sequence, or bulletin
-            that depends on a given source.
-          </p>
-
-          <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
-            <Stat label="Cited sources" value={total} />
-            <Stat label="Total citations (top page)" value={grandTotalAssociations} />
-            <Stat label="Top source's associations" value={assets[0]?.association_count ?? 0} />
+      <PageHero
+        eyebrow="Archive · References"
+        title="Sources cited across the archive"
+        accent="amber"
+        description="Every URL in the archive — Variety, fxguide, SAG-AFTRA bulletins, Wikipedia, behind-the-scenes interviews — stored once, attached to as many entities as cite it. This page surfaces the most-shared sources first; click through to see every film, person, sequence, or bulletin that depends on a given source."
+        stats={
+          <div className="grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-3">
+            <PageHeroStat label="Cited sources" value={total.toLocaleString()} />
+            <PageHeroStat label="Total citations (top page)" value={grandTotalAssociations.toLocaleString()} />
+            <PageHeroStat label="Top source's associations" value={(assets[0]?.association_count ?? 0).toLocaleString()} />
           </div>
-        </div>
-      </div>
+        }
+      />
 
       {/* Filter pills */}
       <nav
@@ -140,7 +127,7 @@ export default async function ReferencesIndexPage(props: Props) {
                   href={`/references/${a.id}`}
                   className="group flex items-baseline gap-3 rounded border border-zinc-800 bg-zinc-900/40 p-3 hover:border-amber-700/50 hover:bg-amber-950/10 transition-colors"
                 >
-                  <span className="shrink-0 font-mono text-[10px] text-zinc-600 sm:w-7 sm:text-right">
+                  <span className="shrink-0 font-mono text-[10px] text-zinc-400 sm:w-7 sm:text-right">
                     {(page - 1) * PAGE_SIZE + i + 1}.
                   </span>
                   <span className="min-w-0 flex-1">
@@ -152,16 +139,32 @@ export default async function ReferencesIndexPage(props: Props) {
                         {a.title}
                       </span>
                     </span>
-                    <span className="mt-1 flex flex-wrap gap-x-3 text-[10px] uppercase tracking-wide text-zinc-500">
+                    <span className="mt-1 flex flex-wrap gap-x-3 text-[10px] uppercase tracking-wide text-zinc-300">
                       {a.publication && <span>{a.publication}</span>}
+                      {a.published_at && (
+                        <span>
+                          Pub.{' '}
+                          <time dateTime={a.published_at}>
+                            {a.published_at.slice(0, 4)}
+                          </time>
+                        </span>
+                      )}
                       <span>{a.entity_type_count} entity type{a.entity_type_count === 1 ? '' : 's'}</span>
+                      {a.last_cited_at && (
+                        <span>
+                          Last cited{' '}
+                          <time dateTime={a.last_cited_at}>
+                            {a.last_cited_at.slice(0, 10)}
+                          </time>
+                        </span>
+                      )}
                     </span>
                   </span>
                   <span className="shrink-0 text-right">
-                    <span className="font-mono text-amber-500/90">
+                    <span className="font-mono text-amber-400">
                       {a.association_count.toLocaleString()}
                     </span>
-                    <span className="ml-1 text-[10px] uppercase tracking-wide text-zinc-500">×</span>
+                    <span className="ml-1 text-[10px] uppercase tracking-wide text-zinc-400">×</span>
                   </span>
                 </Link>
               </li>
@@ -177,7 +180,7 @@ export default async function ReferencesIndexPage(props: Props) {
         buildHref={(p) => buildHref({ kind: kindParam, page: p })}
       />
 
-      <aside className="mt-12 rounded border border-zinc-800 bg-zinc-900/40 p-4 text-xs leading-relaxed text-zinc-500">
+      <aside className="mt-12 rounded border border-zinc-800 bg-zinc-900/40 p-4 text-xs leading-relaxed text-zinc-400">
         <p className="mb-2 text-[10px] uppercase tracking-widest text-zinc-400">
           About this index
         </p>
@@ -192,11 +195,3 @@ export default async function ReferencesIndexPage(props: Props) {
   );
 }
 
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div>
-      <div className="font-serif text-2xl text-zinc-50">{value.toLocaleString()}</div>
-      <div className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</div>
-    </div>
-  );
-}

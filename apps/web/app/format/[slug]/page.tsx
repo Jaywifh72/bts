@@ -5,6 +5,10 @@ import { notFound } from 'next/navigation';
 import { db, listProductionsByFormatPatterns } from '@bts/db';
 import { FORMAT_TAXONOMY, getFormatBySlug } from '@/lib/formats';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import { BookmarkButton } from '@/components/ui/BookmarkButton';
+import { EntityProvenanceFooter } from '@/components/ui/EntityProvenanceFooter';
+import { EntityClaimsList } from '@/components/ui/EntityClaimsList';
+import { getClaimsBundleForEntity } from '@bts/db';
 import { JsonLd, buildBreadcrumbJsonLd } from '@/lib/jsonLd';
 import { posterUrl } from '@/lib/tmdb-image';
 
@@ -34,7 +38,11 @@ export default async function FormatPage(props: Props) {
   const fmt = getFormatBySlug(params.slug);
   if (!fmt) notFound();
 
-  const productions = await listProductionsByFormatPatterns(db, fmt.patterns);
+  const [productions, claimsBundle] = await Promise.all([
+    listProductionsByFormatPatterns(db, fmt.patterns),
+    // F2 — format entities are slug-keyed (no row id); pass 0 and match on entity_slug.
+    getClaimsBundleForEntity(db, 'format', 0, fmt.slug),
+  ]);
 
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: 'CineCanon', path: '/' },
@@ -47,8 +55,16 @@ export default async function FormatPage(props: Props) {
       <JsonLd data={breadcrumbJsonLd} />
       <article>
         <header className="mb-6">
-          <p className="text-xs uppercase tracking-widest text-zinc-500">Shot on</p>
-          <h1 className="mt-1 font-serif text-4xl text-zinc-50">{fmt.label}</h1>
+          <p className="text-xs uppercase tracking-widest text-zinc-400">Shot on</p>
+          <div className="mt-1 flex items-start justify-between gap-3">
+            <h1 className="font-serif text-4xl text-zinc-50">{fmt.label}</h1>
+            <BookmarkButton
+              kind="format"
+              slug={fmt.slug}
+              title={fmt.label}
+              href={`/format/${fmt.slug}`}
+            />
+          </div>
           <p className="mt-3 max-w-2xl text-sm text-zinc-400">{fmt.description}</p>
         </header>
 
@@ -100,6 +116,17 @@ export default async function FormatPage(props: Props) {
             })}
           </ul>
         )}
+        <EntityClaimsList
+          claims={claimsBundle.claims}
+          sourcesByClaimId={claimsBundle.sourcesByClaimId}
+          evidenceByClaimId={claimsBundle.evidenceByClaimId}
+          eyebrow="Claims"
+          heading="Source-backed facts about this format"
+          anchorId="claims"
+        />
+        <div className="mt-12 border-t border-zinc-800 pt-6">
+          <EntityProvenanceFooter entitySlug={fmt.slug} pageUrl={`/format/${fmt.slug}`} />
+        </div>
       </article>
     </>
   );

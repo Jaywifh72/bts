@@ -54,7 +54,7 @@ export default async function DecadesPage() {
       <PageHero
         eyebrow="Atlas"
         title="By decade"
-        accent="purple"
+        accent="zinc"
         description="A century of cinematography on one page. Each decade links to the curated dossiers that anchor it — and the technologies, schools, and signature DPs that defined its look."
       />
 
@@ -63,14 +63,19 @@ export default async function DecadesPage() {
           {rows.map((d) => (
             <li
               key={d.decade}
-              className="rounded border border-zinc-800 bg-zinc-900/40 p-4"
+              className="rounded border border-zinc-800 bg-zinc-900/40 p-4 hover:border-amber-700/60 transition-colors"
             >
-              <div className="flex items-baseline justify-between gap-3">
-                <h3 className="font-serif text-2xl text-zinc-100">{d.decade}s</h3>
-                <p className="text-xs text-zinc-500">
-                  {d.total} films · {d.curated} curated
-                </p>
-              </div>
+              <Link href={`/decades/${d.decade}`} className="block">
+                <div className="flex items-baseline justify-between gap-3">
+                  <h3 className="font-serif text-2xl text-zinc-100">
+                    {d.decade}s
+                    <span aria-hidden="true" className="ml-2 text-sm font-normal text-zinc-500 group-hover:text-amber-400">→</span>
+                  </h3>
+                  <p className="text-xs text-zinc-400">
+                    {d.total} films · {d.curated} curated
+                  </p>
+                </div>
+              </Link>
               {d.exemplars.length > 0 && (
                 <ul className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs">
                   {d.exemplars.map((e) => (
@@ -84,10 +89,10 @@ export default async function DecadesPage() {
               )}
               <p className="mt-3 text-[11px]">
                 <Link
-                  href={`/films?decade=${d.decade}s`}
+                  href={`/decades/${d.decade}`}
                   className="text-amber-400 hover:underline"
                 >
-                  Browse all {d.total} {d.decade}s films →
+                  Open the {d.decade}s dossier <span aria-hidden="true">→</span>
                 </Link>
               </p>
             </li>

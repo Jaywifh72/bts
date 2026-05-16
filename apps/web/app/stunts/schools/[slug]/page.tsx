@@ -4,6 +4,10 @@ import Link from 'next/link';
 import { db, listStuntSchools, getStuntSchoolBySlug } from '@bts/db';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { BrandLogo } from '@/components/ui/BrandLogo';
+import { BookmarkButton } from '@/components/ui/BookmarkButton';
+import { EntityProvenanceFooter } from '@/components/ui/EntityProvenanceFooter';
+import { EntityClaimsList } from '@/components/ui/EntityClaimsList';
+import { getClaimsBundleForEntity } from '@bts/db';
 import { JsonLd, buildOrganizationJsonLd } from '@/lib/jsonLd';
 
 interface Props { params: Promise<{ slug: string }> }
@@ -36,6 +40,9 @@ export default async function StuntSchoolPage(props: Props) {
   const params = await props.params;
   const s = await getStuntSchoolBySlug(db, params.slug);
   if (!s) notFound();
+
+  // F2 — polymorphic claims. StuntSchoolRow doesn't carry id.
+  const claimsBundle = await getClaimsBundleForEntity(db, 'stunt_school', 0, s.slug);
 
   const jsonLd = buildOrganizationJsonLd({
     slug: `stunt-school-${s.slug}`,
@@ -77,11 +84,20 @@ export default async function StuntSchoolPage(props: Props) {
                 className="shrink-0"
               />
               <div className="min-w-0 flex-1">
-                <h1 className="font-serif text-4xl text-zinc-50">{s.name}</h1>
+                <div className="flex items-start justify-between gap-3">
+                  <h1 className="font-serif text-4xl text-zinc-50">{s.name}</h1>
+                  <BookmarkButton
+                    kind="stunt-school"
+                    slug={s.slug}
+                    title={s.name}
+                    subtitle={s.headquarters ?? s.country ?? undefined}
+                    href={`/stunts/schools/${s.slug}`}
+                  />
+                </div>
                 {s.tagline && (
                   <p className="mt-1 text-sm text-zinc-400">{s.tagline}</p>
                 )}
-                <p className="mt-2 text-xs uppercase tracking-wide text-zinc-500">
+                <p className="mt-2 text-xs uppercase tracking-wide text-zinc-400">
                   Training school
                   {(s.headquarters ?? s.country) ? ` · ${s.headquarters ?? s.country}` : ''}
                   {s.founded_year ? ` · Est. ${s.founded_year}` : ''}
@@ -185,11 +201,30 @@ export default async function StuntSchoolPage(props: Props) {
                 rel="noopener noreferrer"
                 className="text-zinc-300 hover:text-amber-400"
               >
-                Official website ↗
+                Official website <span aria-hidden="true">↗</span>
               </a>
             )}
           </div>
         </footer>
+        <EntityClaimsList
+          claims={claimsBundle.claims}
+          sourcesByClaimId={claimsBundle.sourcesByClaimId}
+          evidenceByClaimId={claimsBundle.evidenceByClaimId}
+          eyebrow="Claims"
+          heading="Source-backed facts about this school"
+          anchorId="claims"
+        />
+        <div className="mt-8 border-t border-zinc-800 pt-6">
+          <EntityProvenanceFooter
+            entitySlug={s.slug}
+            pageUrl={`/stunts/schools/${s.slug}`}
+            lastVerifiedAt={s.last_verified_at}
+            dataTier={s.data_tier}
+            curatedBy={s.curated_by}
+            curatedByUrl={s.curated_by_url}
+            lastCuratedReview={s.last_curated_review}
+          />
+        </div>
       </article>
     </>
   );

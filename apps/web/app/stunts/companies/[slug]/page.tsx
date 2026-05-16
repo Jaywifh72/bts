@@ -12,6 +12,10 @@ import {
 } from '@bts/db';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { BrandLogo } from '@/components/ui/BrandLogo';
+import { BookmarkButton } from '@/components/ui/BookmarkButton';
+import { EntityProvenanceFooter } from '@/components/ui/EntityProvenanceFooter';
+import { EntityClaimsList } from '@/components/ui/EntityClaimsList';
+import { getClaimsBundleForEntity } from '@bts/db';
 import { PersonAvatar } from '@/components/people/PersonAvatar';
 import { OrgRecipientAwardsList } from '@/components/awards/OrgRecipientAwardsList';
 import { JsonLd, buildOrganizationJsonLd } from '@/lib/jsonLd';
@@ -47,6 +51,10 @@ export default async function StuntCompanyPage(props: Props) {
   const params = await props.params;
   const c = await getStuntCompanyBySlug(db, params.slug);
   if (!c) notFound();
+
+  // F2 — polymorphic claims. The StuntCompanyRow doesn't include id, so
+  // we pass 0 and rely on the entity_slug fallback in claim_entities.
+  const claimsBundle = await getClaimsBundleForEntity(db, 'stunt_company', 0, c.slug);
 
   // Phase-8 — pull members + productions in parallel with the
   // existing company fetch so the page renders in one DB roundtrip
@@ -97,11 +105,20 @@ export default async function StuntCompanyPage(props: Props) {
                 className="shrink-0"
               />
               <div className="min-w-0 flex-1">
-                <h1 className="font-serif text-4xl text-zinc-50">{c.name}</h1>
+                <div className="flex items-start justify-between gap-3">
+                  <h1 className="font-serif text-4xl text-zinc-50">{c.name}</h1>
+                  <BookmarkButton
+                    kind="stunt-company"
+                    slug={c.slug}
+                    title={c.name}
+                    subtitle={c.headquarters ?? c.country ?? undefined}
+                    href={`/stunts/companies/${c.slug}`}
+                  />
+                </div>
                 {c.tagline && (
                   <p className="mt-1 text-sm text-zinc-400">{c.tagline}</p>
                 )}
-                <p className="mt-2 text-xs uppercase tracking-wide text-zinc-500">
+                <p className="mt-2 text-xs uppercase tracking-wide text-zinc-400">
                   Stunt company
                   {(c.headquarters ?? c.country) ? ` · ${c.headquarters ?? c.country}` : ''}
                   {c.founded_year ? ` · Est. ${c.founded_year}` : ''}
@@ -389,6 +406,25 @@ export default async function StuntCompanyPage(props: Props) {
             )}
           </div>
         </footer>
+        <EntityClaimsList
+          claims={claimsBundle.claims}
+          sourcesByClaimId={claimsBundle.sourcesByClaimId}
+          evidenceByClaimId={claimsBundle.evidenceByClaimId}
+          eyebrow="Claims"
+          heading="Source-backed facts about this company"
+          anchorId="claims"
+        />
+        <div className="mt-8 border-t border-zinc-800 pt-6">
+          <EntityProvenanceFooter
+            entitySlug={c.slug}
+            pageUrl={`/stunts/companies/${c.slug}`}
+            lastVerifiedAt={c.last_verified_at}
+            dataTier={c.data_tier}
+            curatedBy={c.curated_by}
+            curatedByUrl={c.curated_by_url}
+            lastCuratedReview={c.last_curated_review}
+          />
+        </div>
       </article>
     </>
   );

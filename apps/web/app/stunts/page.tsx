@@ -82,56 +82,9 @@ export default async function StuntsIndexPage() {
         }
       />
 
-      {/* Featured: most-doubled actors */}
-      {topDoubled.length > 0 && (
-        <section className="mb-14">
-          <SectionHeader
-            label="Featured"
-            heading="Most-doubled actors"
-          />
-          <p className="-mt-2 mb-5 max-w-2xl text-xs text-zinc-500">
-            Actors with the deepest documented stunt-doubling
-            coverage in the archive. Each row links to the actor's
-            crew page where their full doubling-by history renders.
-          </p>
-          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
-            {topDoubled.map((row) => (
-                <li key={row.actor_slug}>
-                  <Link
-                    href={`/crew/${row.actor_slug}`}
-                    className="group flex h-full gap-3 rounded border border-zinc-800 bg-zinc-900/40 p-3 hover:border-red-900/50 hover:bg-red-950/10 transition-colors"
-                  >
-                    <PersonAvatar
-                      slug={row.actor_slug}
-                      displayName={row.actor_name}
-                      profilePath={row.actor_profile_path}
-                      size="md"
-                    />
-                    <span className="min-w-0 flex-1">
-                      <span className="block truncate font-serif text-sm text-zinc-100 group-hover:text-amber-400">
-                        {row.actor_name}
-                      </span>
-                      <span className="block truncate text-[11px] text-zinc-500">
-                        Doubled by{' '}
-                        <span className="text-zinc-300">{row.primary_doubler_name}</span>
-                      </span>
-                      <span className="mt-0.5 inline-flex items-baseline gap-1 text-[10px] uppercase tracking-wide">
-                        <span className="font-mono text-amber-500/80">
-                          {row.doubling_count}
-                        </span>
-                        <span className="text-zinc-500">
-                          {row.doubling_count === 1 ? 'film' : 'films'}
-                        </span>
-                      </span>
-                    </span>
-                  </Link>
-                </li>
-              ))}
-          </ul>
-        </section>
-      )}
-
-      {/* Featured sequences */}
+      {/* UX-audit second pass — Marquee sequences leads (working
+          coordinator entry point); doubled-actors panel is moved below
+          as a "by-the-way" curiosity. */}
       {featuredSequences.length > 0 && (
         <section className="mb-14">
           <SectionHeader
@@ -188,6 +141,57 @@ export default async function StuntsIndexPage() {
                 </li>
               );
             })}
+          </ul>
+        </section>
+      )}
+
+      {/* Most-doubled actors — moved below sequences (working coord
+          entry point). This panel is curiosity / cross-cut material,
+          not a primary navigation surface. */}
+      {topDoubled.length > 0 && (
+        <section className="mb-14">
+          <SectionHeader
+            label="Cross-cut"
+            heading="Most-doubled actors"
+          />
+          <p className="-mt-2 mb-5 max-w-2xl text-xs text-zinc-500">
+            Actors with the deepest documented stunt-doubling
+            coverage in the archive. Each row links to the actor's
+            crew page where their full doubling-by history renders.
+          </p>
+          <ul className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+            {topDoubled.map((row) => (
+                <li key={row.actor_slug}>
+                  <Link
+                    href={`/crew/${row.actor_slug}`}
+                    className="group flex h-full gap-3 rounded border border-zinc-800 bg-zinc-900/40 p-3 hover:border-red-900/50 hover:bg-red-950/10 transition-colors"
+                  >
+                    <PersonAvatar
+                      slug={row.actor_slug}
+                      displayName={row.actor_name}
+                      profilePath={row.actor_profile_path}
+                      size="md"
+                    />
+                    <span className="min-w-0 flex-1">
+                      <span className="block truncate font-serif text-sm text-zinc-100 group-hover:text-amber-400">
+                        {row.actor_name}
+                      </span>
+                      <span className="block truncate text-[11px] text-zinc-500">
+                        Doubled by{' '}
+                        <span className="text-zinc-300">{row.primary_doubler_name}</span>
+                      </span>
+                      <span className="mt-0.5 inline-flex items-baseline gap-1 text-[10px] uppercase tracking-wide">
+                        <span className="font-mono text-amber-500/80">
+                          {row.doubling_count}
+                        </span>
+                        <span className="text-zinc-500">
+                          {row.doubling_count === 1 ? 'film' : 'films'}
+                        </span>
+                      </span>
+                    </span>
+                  </Link>
+                </li>
+              ))}
           </ul>
         </section>
       )}

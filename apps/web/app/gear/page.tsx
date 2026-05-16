@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { db, listManufacturers, getGearArchiveStats } from '@bts/db';
-import { ManufacturerCard } from '@/components/equipment/ManufacturerCard';
+import { PageHero, PageHeroStat } from '@/components/ui/PageHero';
 
 export const metadata: Metadata = {
   title: 'Gear',
@@ -24,15 +25,6 @@ const KIND_TAGLINE: Record<string, string> = {
   distributor: 'Regional and specialty distributors.',
 };
 
-function Stat({ label, value }: { label: string; value: number }) {
-  return (
-    <div>
-      <div className="font-serif text-2xl text-zinc-50">{value.toLocaleString()}</div>
-      <div className="text-[11px] uppercase tracking-wide text-zinc-500">{label}</div>
-    </div>
-  );
-}
-
 export default async function GearPage() {
   const [allRows, stats] = await Promise.all([
     listManufacturers(db, { withSeriesOnly: false }),
@@ -52,27 +44,23 @@ export default async function GearPage() {
 
   return (
     <>
-      <div className="mb-10 border-b border-zinc-800 pb-8">
-        <p className="text-xs uppercase tracking-widest text-zinc-500">Archive</p>
-        <h1 className="mt-1 font-serif text-4xl text-zinc-50">Gear</h1>
-        <p className="mt-2 max-w-2xl text-sm text-zinc-400">
-          CineCanon catalogues every camera, lens set, light, and filter
-          we have curated production data for — with manufacturer
-          profiles, editorial notes on signature looks, and per-item
-          specs sourced from manufacturer datasheets.
-        </p>
-
-        {/* Catalog stats */}
-        <div className="mt-6 grid grid-cols-2 gap-x-4 gap-y-3 sm:grid-cols-4 lg:grid-cols-7">
-          <Stat label="Manufacturers" value={stats.manufacturers} />
-          <Stat label="Rental houses" value={stats.rental_houses} />
-          <Stat label="Series" value={stats.series} />
-          <Stat label="Items" value={stats.items} />
-          <Stat label="Cameras" value={stats.cameras} />
-          <Stat label="Lenses" value={stats.lenses} />
-          <Stat label="Lights" value={stats.lighting} />
-        </div>
-      </div>
+      <PageHero
+        eyebrow="Archive"
+        title="Gear"
+        accent="amber"
+        description="Manufacturers, rental houses, and distributors with editorial notes on signature looks and curated per-item specs."
+        stats={
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4 lg:grid-cols-7">
+            <PageHeroStat label="Manufacturers" value={stats.manufacturers.toLocaleString()} />
+            <PageHeroStat label="Rental houses" value={stats.rental_houses.toLocaleString()} />
+            <PageHeroStat label="Series" value={stats.series.toLocaleString()} />
+            <PageHeroStat label="Items" value={stats.items.toLocaleString()} />
+            <PageHeroStat label="Cameras" value={stats.cameras.toLocaleString()} />
+            <PageHeroStat label="Lenses" value={stats.lenses.toLocaleString()} />
+            <PageHeroStat label="Lights" value={stats.lighting.toLocaleString()} />
+          </div>
+        }
+      />
 
       {KIND_ORDER.flatMap((kind) => {
         const group = byKind.get(kind);
@@ -81,21 +69,59 @@ export default async function GearPage() {
           <section key={kind} className="mb-10">
             <div className="mb-4">
               <h2 className="font-serif text-xl text-zinc-100">{KIND_LABELS[kind] ?? kind}</h2>
-              <p className="mt-0.5 text-xs text-zinc-500">{KIND_TAGLINE[kind]}</p>
+              <p className="mt-0.5 text-xs text-zinc-400">{KIND_TAGLINE[kind]}</p>
             </div>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {group.map((row) => (
-                <ManufacturerCard
-                  key={row.slug}
-                  slug={row.slug}
-                  name={row.name}
-                  kind={row.kind}
-                  country={row.country}
-                  description={row.tagline ?? row.description}
-                  website={row.website}
-                  seriesCount={row.series_count}
-                />
-              ))}
+            <div
+              tabIndex={0}
+              role="region"
+              aria-label={KIND_LABELS[kind] ?? kind}
+              className="scroll-hint-right overflow-x-auto rounded border border-zinc-800 focus:outline-none focus:ring-2 focus:ring-amber-400 focus:ring-offset-2 focus:ring-offset-zinc-950"
+            >
+              <table className="stack-on-mobile w-full text-sm">
+                <thead className="border-b border-zinc-800 bg-zinc-900/60 text-[10px] uppercase tracking-wide text-zinc-300">
+                  <tr>
+                    <th scope="col" className="px-3 py-2 text-left font-normal">Manufacturer</th>
+                    <th scope="col" className="px-3 py-2 text-left font-normal">Country</th>
+                    <th scope="col" className="px-3 py-2 text-left font-normal">Tagline</th>
+                    <th scope="col" className="px-3 py-2 text-right font-normal">Series</th>
+                    <th scope="col" className="px-3 py-2 text-left font-normal">Website</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {group.map((row) => (
+                    <tr key={row.slug} className="border-b border-zinc-900 align-top hover:bg-zinc-900/40">
+                      <td data-label="Manufacturer" className="px-3 py-2">
+                        <Link href={`/gear/${row.slug}`} className="font-medium text-zinc-100 hover:text-amber-400">
+                          {row.name}
+                        </Link>
+                      </td>
+                      <td data-label="Country" className="px-3 py-2 text-zinc-400">
+                        {row.country ?? <span className="text-zinc-500">—</span>}
+                      </td>
+                      <td data-label="Tagline" className="px-3 py-2 max-w-md text-xs text-zinc-300">
+                        {row.tagline ?? row.description ?? <span className="text-zinc-500">—</span>}
+                      </td>
+                      <td data-label="Series" className="px-3 py-2 text-right font-mono tabular-nums text-amber-300">
+                        {row.series_count > 0 ? row.series_count : <span className="text-zinc-500">—</span>}
+                      </td>
+                      <td data-label="Website" className="px-3 py-2 text-xs">
+                        {row.website ? (
+                          <a
+                            href={row.website}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-amber-400 hover:underline"
+                          >
+                            site <span aria-hidden="true">↗</span>
+                          </a>
+                        ) : (
+                          <span className="text-zinc-500">—</span>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
         )];
