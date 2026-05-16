@@ -66,11 +66,14 @@ import { users, accounts, sessions, verificationTokens } from '../../src/schema/
 import { getTableConfig } from 'drizzle-orm/pg-core';
 
 describe('auth schema', () => {
+  // Drizzle 0.45 note: `getTableConfig` returns column objects whose `.name`
+  // is the SQL column name (snake_case as defined in pgTable). Verify once
+  // by logging if tests behave unexpectedly.
   it('users table has uuid id, unique email, name/image/emailVerified columns', () => {
     const cfg = getTableConfig(users);
     expect(cfg.name).toBe('users');
-    const colNames = cfg.columns.map((c) => c.name).sort();
-    expect(colNames).toEqual(['created_at', 'email', 'email_verified', 'id', 'image', 'name'].sort());
+    const colNames = cfg.columns.map((c) => c.name);
+    expect(colNames).toEqual(expect.arrayContaining(['id', 'email', 'email_verified', 'name', 'image', 'created_at']));
     const id = cfg.columns.find((c) => c.name === 'id')!;
     expect(id.primary).toBe(true);
     const email = cfg.columns.find((c) => c.name === 'email')!;
@@ -233,8 +236,8 @@ describe('bookmarks schema', () => {
 
   it('has title, subtitle (nullable), href, added_at columns', () => {
     const cfg = getTableConfig(bookmarks);
-    const names = cfg.columns.map((c) => c.name).sort();
-    expect(names).toEqual(['added_at', 'href', 'kind', 'slug', 'subtitle', 'title', 'user_id'].sort());
+    const names = cfg.columns.map((c) => c.name);
+    expect(names).toEqual(expect.arrayContaining(['user_id', 'kind', 'slug', 'title', 'subtitle', 'href', 'added_at']));
     const subtitle = cfg.columns.find((c) => c.name === 'subtitle')!;
     expect(subtitle.notNull).toBe(false);
   });
@@ -270,6 +273,9 @@ export const bookmarks = pgTable(
   },
   (t) => ({
     pk: primaryKey({ columns: [t.userId, t.kind, t.slug] }),
+    // Drizzle 0.45: `.desc()` on a column in `.on()` is supported. If
+    // generate emits a plain index without DESC, fall back to:
+    //   .on(sql`${t.userId}, ${t.addedAt} desc`)
     userAddedIdx: index('bookmarks_user_added_idx').on(t.userId, t.addedAt.desc()),
   }),
 );
@@ -402,12 +408,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 - [ ] **Step 4: Mount the route handler**
 
 Create `apps/web/app/api/auth/[...nextauth]/route.ts`:
-
-```ts
-export { GET, POST } from '@/auth';
-```
-
-Wait — `handlers` from `auth.ts` is the named export. Use:
 
 ```ts
 import { handlers } from '@/auth';
@@ -989,13 +989,13 @@ describe('LocalStorageBookmarkStore', () => {
 });
 ```
 
-Note: `apps/web` may not have vitest set up yet. If not, add it:
+Note: `apps/web` doesn't have vitest set up yet. Add it (run unconditionally — `jsdom` is needed both for this test and for any future React component tests):
 
 ```bash
 cd C:/dev/bts && pnpm --filter @bts/web add -D vitest @vitest/coverage-v8 jsdom
 ```
 
-And create `apps/web/vitest.config.ts`:
+Create `apps/web/vitest.config.ts`:
 
 ```ts
 import { defineConfig } from 'vitest/config';
@@ -1003,7 +1003,11 @@ import path from 'node:path';
 
 export default defineConfig({
   resolve: { alias: { '@': path.resolve(__dirname, '.') } },
-  test: { environment: 'node', include: ['**/*.test.ts', '**/*.test.tsx'] },
+  test: {
+    environment: 'jsdom',  // default; server-action tests that mock everything still work in jsdom
+    include: ['**/*.test.ts', '**/*.test.tsx'],
+    exclude: ['node_modules', 'tests/e2e/**'],  // keep Playwright e2e out
+  },
 });
 ```
 
@@ -1182,6 +1186,7 @@ import { revalidatePath } from 'next/cache';
 import { and, eq, desc } from 'drizzle-orm';
 import { db, bookmarks } from '@bts/db';
 import { auth } from '@/auth';
+import { ratelimit } from '@/lib/rate-limit';  // existing Upstash setup
 import type { Bookmark, BookmarkKind } from '@/lib/bookmarks/types';
 
 async function requireUserId(): Promise<string> {
@@ -1190,26 +1195,34 @@ async function requireUserId(): Promise<string> {
   return session.user.id;
 }
 
+async function rateLimitWrite(userId: string): Promise<void> {
+  // 30 writes/minute per user. If `apps/web/lib/rate-limit.ts` doesn't
+  // already expose a per-user limiter, add a named export `bookmarkWrites`
+  // configured as a sliding window of 30 in 60s on the existing Redis client.
+  const { success } = await ratelimit.bookmarkWrites.limit(`bookmarks:${userId}`);
+  if (!success) throw new Error('Rate limit exceeded');
+}
+
 export async function listBookmarksAction(): Promise<Bookmark[]> {
   const userId = await requireUserId();
   const rows = await db
     .select()
     .from(bookmarks)
-    .where(eq(bookmarks.userId, userId));
-  return rows
-    .sort((a, b) => b.addedAt.getTime() - a.addedAt.getTime())
-    .map((r) => ({
-      kind: r.kind as BookmarkKind,
-      slug: r.slug,
-      title: r.title,
-      subtitle: r.subtitle ?? undefined,
-      href: r.href,
-      addedAt: r.addedAt.toISOString(),
-    }));
+    .where(eq(bookmarks.userId, userId))
+    .orderBy(desc(bookmarks.addedAt));
+  return rows.map((r) => ({
+    kind: r.kind as BookmarkKind,
+    slug: r.slug,
+    title: r.title,
+    subtitle: r.subtitle ?? undefined,
+    href: r.href,
+    addedAt: r.addedAt.toISOString(),
+  }));
 }
 
 export async function addBookmarkAction(b: Omit<Bookmark, 'addedAt'>): Promise<void> {
   const userId = await requireUserId();
+  await rateLimitWrite(userId);
   await db.insert(bookmarks).values({
     userId, kind: b.kind, slug: b.slug, title: b.title,
     subtitle: b.subtitle, href: b.href,
@@ -1219,6 +1232,7 @@ export async function addBookmarkAction(b: Omit<Bookmark, 'addedAt'>): Promise<v
 
 export async function removeBookmarkAction(kind: BookmarkKind, slug: string): Promise<void> {
   const userId = await requireUserId();
+  await rateLimitWrite(userId);
   await db.delete(bookmarks).where(
     and(eq(bookmarks.userId, userId), eq(bookmarks.kind, kind), eq(bookmarks.slug, slug)),
   );
@@ -1228,6 +1242,8 @@ export async function removeBookmarkAction(kind: BookmarkKind, slug: string): Pr
 export async function mergeBookmarksAction(items: Omit<Bookmark, 'addedAt'>[]): Promise<void> {
   const userId = await requireUserId();
   if (items.length === 0) return;
+  // Merge is one logical action — single rate-limit hit regardless of count.
+  await rateLimitWrite(userId);
   await db.insert(bookmarks).values(
     items.map((b) => ({
       userId, kind: b.kind, slug: b.slug, title: b.title,
@@ -1319,37 +1335,33 @@ import { useEffect } from 'react';
 import { mergeBookmarksAction } from '@/app/actions/bookmarks';
 import type { Bookmark } from '@/lib/bookmarks/types';
 
-const SYNC_FLAG = 'cinecanon:bookmarks:synced-to-server';
 const STORAGE_KEY = 'cinecanon:bookmarks:v1';
 
+/**
+ * On every mount while logged-in, drain any localStorage bookmarks into
+ * the server set, then clear localStorage. Safe to re-run: merge is
+ * idempotent (`onConflictDoNothing`) and clearing localStorage means
+ * subsequent mounts do nothing. No sync flag needed.
+ */
 export function BookmarkSyncOnSignIn({ isLoggedIn }: { isLoggedIn: boolean }) {
   useEffect(() => {
-    if (!isLoggedIn) return;
-    if (typeof window === 'undefined') return;
-    if (window.localStorage.getItem(SYNC_FLAG)) return;
-
+    if (!isLoggedIn || typeof window === 'undefined') return;
     try {
       const raw = window.localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        const local: Bookmark[] = JSON.parse(raw);
-        if (Array.isArray(local) && local.length > 0) {
-          void mergeBookmarksAction(local.map(({ addedAt: _addedAt, ...rest }) => rest)).then(() => {
-            window.localStorage.removeItem(STORAGE_KEY);
-            window.localStorage.setItem(SYNC_FLAG, '1');
-            window.dispatchEvent(new CustomEvent('cinecanon:bookmarks-changed'));
-          });
-          return;
-        }
-      }
-      window.localStorage.setItem(SYNC_FLAG, '1');
+      if (!raw) return;
+      const local: Bookmark[] = JSON.parse(raw);
+      if (!Array.isArray(local) || local.length === 0) return;
+      void mergeBookmarksAction(local.map(({ addedAt: _addedAt, ...rest }) => rest))
+        .then(() => {
+          window.localStorage.removeItem(STORAGE_KEY);
+          window.dispatchEvent(new CustomEvent('cinecanon:bookmarks-changed'));
+        });
     } catch { /* ignore */ }
   }, [isLoggedIn]);
 
   return null;
 }
 ```
-
-Note: on sign-out, the next sign-in will re-trigger merge only if `SYNC_FLAG` is cleared. Add cleanup: when `signOut` happens, clear `SYNC_FLAG` — easiest place is server-side `signOut` callback, but for v1 we accept that re-sign-in won't re-merge (the local data is already on the server). This is the simplest correct behavior.
 
 - [ ] **Step 3: Mount in layout**
 
@@ -1371,39 +1383,35 @@ git commit -m "feat(web): useBookmarkStore hook + merge localStorage bookmarks o
 - Find: existing bookmark-toggle UI components (search the repo first).
 - Modify: that component to read `useSession()` and pass `isLoggedIn` to `useBookmarkStore()`.
 
-- [ ] **Step 1: Find the existing button**
+**Spec alignment note:** the spec says no `<SessionProvider>` in v1. We honor that here by passing `isLoggedIn` from server components down to the button as a prop — no client-side session hook needed. Server components that render bookmark buttons (film pages, crew pages, etc.) read `auth()` once and pass the boolean through.
 
-```bash
-cd C:/dev/bts && grep -r "toggleBookmark\|addBookmark" apps/web/components apps/web/app --include="*.tsx" -l
-```
+- [ ] **Step 1: Find the existing button(s)**
 
-There will likely be a `BookmarkButton` or `BookmarkToggle` component. If there isn't, create one at `apps/web/components/BookmarkButton.tsx`.
+Use the Grep tool with pattern `toggleBookmark|addBookmark|isBookmarked` in `apps/web/components` and `apps/web/app`, glob `*.tsx`. There is likely a `BookmarkButton`/`BookmarkToggle` component. If none exists, create one at `apps/web/components/BookmarkButton.tsx` and add it to film/crew/etc. detail pages.
 
 - [ ] **Step 2: Replace direct `lib/bookmarks` calls with the store hook**
-
-Pattern for the component:
 
 ```tsx
 'use client';
 import { useState, useEffect } from 'react';
-import { useSession } from 'next-auth/react';
 import { useBookmarkStore } from '@/lib/bookmarks/use-store';
 import type { Bookmark } from '@/lib/bookmarks/types';
 
-export function BookmarkButton(props: Omit<Bookmark, 'addedAt'>) {
-  const { data: session } = useSession();
-  const store = useBookmarkStore(!!session?.user);
+export function BookmarkButton({
+  isLoggedIn,
+  ...props
+}: Omit<Bookmark, 'addedAt'> & { isLoggedIn: boolean }) {
+  const store = useBookmarkStore(isLoggedIn);
   const [active, setActive] = useState(false);
 
-  useEffect(() => { void store.has(props.kind, props.slug).then(setActive); }, [store, props.kind, props.slug]);
+  useEffect(() => {
+    void store.has(props.kind, props.slug).then(setActive);
+  }, [store, props.kind, props.slug]);
 
   return (
     <button
       type="button"
-      onClick={async () => {
-        const next = await store.toggle(props);
-        setActive(next);
-      }}
+      onClick={async () => setActive(await store.toggle(props))}
       aria-pressed={active}
       aria-label={active ? `Remove ${props.title} from bookmarks` : `Bookmark ${props.title}`}
       className={active ? 'text-amber-400' : 'text-zinc-500 hover:text-amber-400'}
@@ -1414,15 +1422,93 @@ export function BookmarkButton(props: Omit<Bookmark, 'addedAt'>) {
 }
 ```
 
-(`useSession` requires a `<SessionProvider>` — add it in `apps/web/app/layout.tsx` wrapping `children`. The spec said v1 wouldn't include it, but BookmarkButton needs reactive session state to swap stores. Wrap it now.)
-
-Add to `apps/web/app/layout.tsx`:
+- [ ] **Step 3: Update server pages that render the button** to pass `isLoggedIn`:
 
 ```tsx
-import { SessionProvider } from 'next-auth/react';
+// e.g. apps/web/app/films/[slug]/page.tsx
+import { auth } from '@/auth';
 // ...
-<SessionProvider session={session}>{children}</SessionProvider>
+const session = await auth();
+return <BookmarkButton {...bookmarkProps} isLoggedIn={!!session?.user} />;
 ```
+
+If the button is used in many places, an alternative is to create a thin server wrapper `BookmarkButtonSSR.tsx` that calls `auth()` and forwards to the client `BookmarkButton`. Use whichever is fewer lines for the actual call sites discovered in Step 1.
+
+- [ ] **Step 4: Typecheck + manual smoke**
+
+```bash
+cd C:/dev/bts && pnpm --filter @bts/web typecheck
+```
+
+Manual: load a film page logged-out, toggle bookmark, see localStorage update. (Server toggle awaits Task 14 OAuth setup to test live.)
+
+- [ ] **Step 5: Commit**
+
+```bash
+cd C:/dev/bts && git add -u apps/web
+git commit -m "feat(web): bookmark UI uses store hook, swapping localStorage<>server on auth"
+```
+
+---
+
+## Task 13: `/bookmarks` page reads from the store
+
+**Files:**
+- Find/modify: existing `apps/web/app/bookmarks/page.tsx` (it exists — it currently reads localStorage on the client).
+- May need a small client wrapper if the page is currently a server component that can't await the local store.
+
+- [ ] **Step 1: Read the existing page** to understand the current structure.
+
+- [ ] **Step 2: Adjust to use the store**
+
+Pattern:
+
+```tsx
+// app/bookmarks/page.tsx (server)
+import { auth } from '@/auth';
+import { BookmarksClient } from './BookmarksClient';
+
+export default async function Page() {
+  const session = await auth();
+  return <BookmarksClient isLoggedIn={!!session?.user} />;
+}
+```
+
+```tsx
+// app/bookmarks/BookmarksClient.tsx
+'use client';
+import { useEffect, useState } from 'react';
+import { useBookmarkStore } from '@/lib/bookmarks/use-store';
+import type { Bookmark } from '@/lib/bookmarks/types';
+
+export function BookmarksClient({ isLoggedIn }: { isLoggedIn: boolean }) {
+  const store = useBookmarkStore(isLoggedIn);
+  const [items, setItems] = useState<Bookmark[] | null>(null);
+
+  useEffect(() => {
+    void store.list().then(setItems);
+    function onChange() { void store.list().then(setItems); }
+    window.addEventListener('cinecanon:bookmarks-changed', onChange);
+    return () => window.removeEventListener('cinecanon:bookmarks-changed', onChange);
+  }, [store]);
+
+  if (items === null) return <p className="text-zinc-400">Loading…</p>;
+  if (items.length === 0) return <p className="text-zinc-400">No bookmarks yet.</p>;
+
+  return (
+    <ul className="space-y-2">
+      {items.map((b) => (
+        <li key={`${b.kind}:${b.slug}`}>
+          <a href={b.href} className="text-zinc-50 hover:text-amber-400">{b.title}</a>
+          {b.subtitle && <span className="ml-2 text-sm text-zinc-400">{b.subtitle}</span>}
+        </li>
+      ))}
+    </ul>
+  );
+}
+```
+
+Preserve any existing page layout/title — this snippet only shows the list-source swap. Keep the existing styling unless it clashes with the dark theme.
 
 - [ ] **Step 3: Typecheck + manual smoke**
 
@@ -1430,18 +1516,18 @@ import { SessionProvider } from 'next-auth/react';
 cd C:/dev/bts && pnpm --filter @bts/web typecheck
 ```
 
-Manual: load a film page logged-out, toggle bookmark, see localStorage update. (Server toggle awaits Task 13 OAuth setup to test live.)
+Manual: logged-out, add a bookmark, visit `/bookmarks` — appears. Sign in (after Task 14 OAuth setup) — same item appears (merged from localStorage).
 
 - [ ] **Step 4: Commit**
 
 ```bash
-cd C:/dev/bts && git add -u apps/web && git add apps/web/app/layout.tsx
-git commit -m "feat(web): bookmark UI uses store hook, swapping localStorage<>server on auth"
+cd C:/dev/bts && git add apps/web/app/bookmarks
+git commit -m "feat(web): /bookmarks page reads from store (server or local)"
 ```
 
 ---
 
-## Task 13: Playwright smoke tests
+## Task 14: Playwright smoke tests
 
 **Files:**
 - Create or modify: `apps/web/tests/e2e/auth.spec.ts`
@@ -1488,7 +1574,7 @@ git commit -m "test(web): playwright smoke tests for auth pages"
 
 ---
 
-## Task 14: Manual end-to-end smoke + final sweep
+## Task 15: Manual end-to-end smoke + final sweep
 
 - [ ] **Step 1: Create OAuth apps** per `docs/auth-setup.md`. Fill `.env.local` in `apps/web/`.
 
