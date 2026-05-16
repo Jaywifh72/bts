@@ -7,7 +7,7 @@ import { KeyboardShortcuts } from '@/components/nav/KeyboardShortcuts';
 import { CommandPalette } from '@/components/nav/CommandPalette';
 import { BookmarkSyncOnSignIn } from '@/components/BookmarkSyncOnSignIn';
 import { siteUrl } from '@/lib/site';
-import { auth } from '@/auth';
+import { safeAuth } from '@/lib/safe-auth';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
@@ -39,7 +39,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
-  const session = await auth();
+  const session = await safeAuth();
   return (
     <html lang="en" className={`${inter.variable} ${dmSerifDisplay.variable}`}>
       <body data-logged-in={session ? 'true' : 'false'} className="min-h-screen bg-zinc-950 font-sans text-zinc-50 antialiased">

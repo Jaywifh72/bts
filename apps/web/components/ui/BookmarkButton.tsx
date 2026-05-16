@@ -1,4 +1,4 @@
-import { auth } from '@/auth';
+import { safeAuth } from '@/lib/safe-auth';
 import type { BookmarkKind } from '@/lib/bookmarks/types';
 import { BookmarkButtonClient } from './BookmarkButtonClient';
 
@@ -16,6 +16,6 @@ export async function BookmarkButton(props: {
   href: string;
   size?: 'sm' | 'md';
 }) {
-  const session = await auth();
+  const session = await safeAuth();
   return <BookmarkButtonClient {...props} isLoggedIn={!!session?.user} />;
 }

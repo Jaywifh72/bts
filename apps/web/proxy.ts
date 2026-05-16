@@ -42,16 +42,26 @@ function adminGate(req: NextRequest): NextResponse | null {
   return null;
 }
 
-const { auth: withAuth } = NextAuth(authConfig);
+// Auth.js is initialised only if AUTH_SECRET is configured. Without it,
+// `auth()` throws at request time — for environments where Auth.js
+// isn't set up (CI test runs, missing config), fall back to the admin
+// gate alone so the rest of the site keeps serving.
+const authEnabled = !!process.env.AUTH_SECRET;
+const withAuth = authEnabled ? NextAuth(authConfig).auth : null;
 
-// `withAuth` wraps the handler so Auth.js can attach session info to
-// `req.auth` and apply the `authorized` callback for /account/* — the
-// inner handler still runs the admin gate for /admin/*.
-export default withAuth((req) => {
-  const adminRedirect = adminGate(req as unknown as NextRequest);
+const handler = (req: NextRequest) => {
+  const adminRedirect = adminGate(req);
   if (adminRedirect) return adminRedirect;
   return NextResponse.next();
-});
+};
+
+// When auth is enabled: wrap with NextAuth so /account/* is gated.
+// When disabled: plain handler — /account/* will render the page-level
+// redirect, which is also fine (page reads safeAuth → null → redirect).
+export default authEnabled
+  // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+  ? withAuth!((req) => handler(req as unknown as NextRequest))
+  : handler;
 
 export const config = {
   // Skip Next internals, static files, and auth itself.

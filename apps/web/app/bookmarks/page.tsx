@@ -1,5 +1,5 @@
 import type { Metadata } from 'next';
-import { auth } from '@/auth';
+import { safeAuth } from '@/lib/safe-auth';
 import { BookmarksClient } from '@/components/bookmarks/BookmarksClient';
 
 export const metadata: Metadata = {
@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 };
 
 export default async function BookmarksPage() {
-  const session = await auth();
+  const session = await safeAuth();
   const isLoggedIn = !!session?.user;
   return (
     <div className="mx-auto max-w-3xl">
