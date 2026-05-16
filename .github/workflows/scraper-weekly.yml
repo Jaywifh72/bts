@@ -1,0 +1,120 @@
+name: Weekly scraper (Neon prod)
+
+# Conservative weekly refresh — keeps cinecanon.com fresh without
+# burning Neon's free-tier compute budget. Runs Sunday 04:00 UTC
+# (low-traffic for both Vercel and Neon).
+#
+# Required secrets (set in repo Settings → Secrets and variables → Actions):
+#   DATABASE_URL              Neon pooled URL (postgres://...-pooler...)
+#   TMDB_READ_ACCESS_TOKEN    same value as the Vercel env var
+#   YOUTUBE_API_KEY           (optional) for discover:videos
+#   VIMEO_ACCESS_TOKEN        (optional) for Vimeo BTS content
+#   VERCEL_DEPLOY_HOOK_URL    (optional) if set, triggers a rebuild
+#                             at the end so ISR cache regenerates
+#
+# Manually trigger via Actions → "Weekly scraper" → Run workflow.
+
+on:
+  schedule:
+    # Sunday 04:00 UTC. cron is 5-field: min hour dom month dow
+    - cron: '0 4 * * 0'
+  workflow_dispatch:
+    inputs:
+      jobs:
+        description: 'Comma-separated subset to run (tmdb-enrich,discover-videos,wikidata-awards). Empty = all.'
+        required: false
+        default: ''
+
+# Don't pile up runs if the previous one is still going.
+concurrency:
+  group: scraper-weekly
+  cancel-in-progress: false
+
+jobs:
+  tmdb-enrich:
+    name: TMDB poster/backdrop refresh (latest 50)
+    if: github.event.inputs.jobs == '' || contains(github.event.inputs.jobs, 'tmdb-enrich')
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Refresh TMDB metadata for newest productions
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TMDB_READ_ACCESS_TOKEN: ${{ secrets.TMDB_READ_ACCESS_TOKEN }}
+        run: pnpm --filter @bts/scraper cli tmdb:enrich --refresh
+
+  discover-videos:
+    name: Discover new BTS videos (YouTube)
+    if: github.event.inputs.jobs == '' || contains(github.event.inputs.jobs, 'discover-videos')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: tmdb-enrich  # serial so we don't double-tap Neon
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Discover videos for curated productions
+        if: ${{ env.YOUTUBE_API_KEY != '' }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          VIMEO_ACCESS_TOKEN: ${{ secrets.VIMEO_ACCESS_TOKEN }}
+        run: pnpm --filter @bts/scraper cli discover:videos
+      - name: Skip notice (no YouTube key)
+        if: ${{ env.YOUTUBE_API_KEY == '' }}
+        run: echo "Skipping — YOUTUBE_API_KEY secret not set"
+
+  wikidata-awards:
+    name: Wikidata awards refresh
+    if: github.event.inputs.jobs == '' || contains(github.event.inputs.jobs, 'wikidata-awards')
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    needs: discover-videos
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - run: pnpm install --frozen-lockfile
+      - name: Refresh awards from Wikidata
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm --filter @bts/scraper cli wikidata:awards --refresh
+
+  trigger-rebuild:
+    name: Trigger Vercel rebuild to flush ISR
+    if: always() && (needs.tmdb-enrich.result == 'success' || needs.discover-videos.result == 'success' || needs.wikidata-awards.result == 'success')
+    needs: [tmdb-enrich, discover-videos, wikidata-awards]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Ping Vercel deploy hook
+        if: ${{ env.HOOK != '' }}
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: |
+          echo "Triggering Vercel rebuild..."
+          curl -sSf -X POST "$HOOK" -o /dev/null -w "HTTP %{http_code}\n"
+      - name: Skip notice (no deploy hook)
+        if: ${{ env.HOOK == '' }}
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK_URL }}
+        run: echo "Skipping rebuild — VERCEL_DEPLOY_HOOK_URL secret not set. ISR will refresh naturally over the next 24h."
