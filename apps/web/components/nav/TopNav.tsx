@@ -3,7 +3,9 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect, useRef } from 'react';
+import type { Session } from 'next-auth';
 import { SearchBar } from './SearchBar';
+import { UserMenu } from './UserMenu';
 import { CineCanonMark } from '@/components/brand/CineCanonMark';
 
 // UX-audit second pass — top nav had grown to 9 entries plus 3 icons,
@@ -28,7 +30,7 @@ function isActive(href: string, pathname: string): boolean {
   return pathname === href || pathname.startsWith(href + '/');
 }
 
-export function TopNav() {
+export function TopNav({ session }: { session: Session | null }) {
   const pathname = usePathname() ?? '/';
   const [mobileOpen, setMobileOpen] = useState(false);
   const hamburgerRef = useRef<HTMLButtonElement>(null);
@@ -131,6 +133,7 @@ export function TopNav() {
             ★
           </Link>
           <div className="hidden sm:block"><SearchBar /></div>
+          <UserMenu session={session} />
 
           {/* Mobile hamburger — hidden on lg+ */}
           <button

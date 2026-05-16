@@ -6,6 +6,7 @@ import { Footer } from '@/components/nav/Footer';
 import { KeyboardShortcuts } from '@/components/nav/KeyboardShortcuts';
 import { CommandPalette } from '@/components/nav/CommandPalette';
 import { siteUrl } from '@/lib/site';
+import { auth } from '@/auth';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
@@ -36,7 +37,8 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await auth();
   return (
     <html lang="en" className={`${inter.variable} ${dmSerifDisplay.variable}`}>
       <body className="min-h-screen bg-zinc-950 font-sans text-zinc-50 antialiased">
@@ -44,7 +46,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <a href="#main-content" className="skip-link">
           Skip to content
         </a>
-        <TopNav />
+        <TopNav session={session} />
         <main
           id="main-content"
           tabIndex={-1}
