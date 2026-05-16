@@ -28,7 +28,7 @@ export function SourcesList({ sources }: { sources: readonly Source[] }) {
   if (sources.length === 0) return null;
   return (
     <section id="sources" className="mt-10 scroll-mt-6 border-t border-zinc-800 pt-6">
-      <SectionHeader label="Provenance" heading="Sources" />
+      <SectionHeader label="Provenance" heading="Sources" anchorId="sources" />
       <ol className="mt-2 space-y-3 text-sm text-zinc-400">
         {sources.map((s) => (
           <li
@@ -37,14 +37,14 @@ export function SourcesList({ sources }: { sources: readonly Source[] }) {
             className="scroll-mt-6 border-l border-zinc-800 pl-3"
           >
             <div className="flex flex-wrap items-baseline gap-2">
-              <span className="font-mono text-xs text-amber-400/80">[{s.number}]</span>
+              <span className="font-mono text-xs text-amber-300">[{s.number}]</span>
               <span className="font-medium text-zinc-200">{s.title}</span>
               <Badge
                 label={s.confidence.replace('_', ' ')}
                 variant={confidenceBadgeVariant(s.confidence)}
               />
             </div>
-            <div className="mt-0.5 text-xs text-zinc-500">
+            <div className="mt-0.5 text-xs text-zinc-400">
               {[s.publication, s.author, s.published_at].filter(Boolean).join(' · ')}
               {(s.url || s.archive_url) && (
                 <>
@@ -58,7 +58,7 @@ export function SourcesList({ sources }: { sources: readonly Source[] }) {
                         className="text-red-400"
                         title={`Original returned ${s.last_status === 0 ? 'network error' : 'HTTP ' + s.last_status} on last check`}
                       >
-                        link rotted
+                        <span aria-hidden="true">⚠ </span>link rotted (broken)
                       </span>
                       {s.archive_url && (
                         <>
@@ -69,7 +69,7 @@ export function SourcesList({ sources }: { sources: readonly Source[] }) {
                             rel="noopener noreferrer"
                             className="text-amber-400 hover:underline"
                           >
-                            archive ↗
+                            archive <span aria-hidden="true">↗</span>
                           </a>
                         </>
                       )}
@@ -81,7 +81,7 @@ export function SourcesList({ sources }: { sources: readonly Source[] }) {
                       rel="noopener noreferrer"
                       className="text-amber-400 hover:underline"
                     >
-                      {s.url ? 'link' : 'archive'} ↗
+                      {s.url ? 'link' : 'archive'} <span aria-hidden="true">↗</span>
                     </a>
                   )}
                 </>

@@ -38,7 +38,7 @@ export function RolePage({
       {crossCutBlock}
       {peopleBlock}
       {dossierBlock}
-      <aside className="mt-12 rounded border border-zinc-800 bg-zinc-900/40 p-4 text-xs leading-relaxed text-zinc-500">
+      <aside className="mt-12 rounded border border-zinc-800 bg-zinc-900/40 p-4 text-xs leading-relaxed text-zinc-400">
         <p className="mb-2 text-[10px] uppercase tracking-widest text-zinc-400">
           About this page
         </p>
@@ -72,7 +72,7 @@ export function CrossCutLink({ href, title }: { href: string; title: string }) {
         href={href}
         className="block rounded border border-zinc-800 bg-zinc-900/40 p-3 text-sm text-zinc-200 hover:border-amber-700/60 hover:text-amber-400"
       >
-        → {title}
+        <span aria-hidden="true">→ </span>{title}
       </Link>
     </li>
   );

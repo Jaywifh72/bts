@@ -42,10 +42,10 @@ export function CorrectionForm({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="text-zinc-500 hover:text-amber-400"
+        className="text-zinc-400 hover:text-amber-400"
         title="Report incorrect or missing info"
       >
-        Suggest a correction →
+        Report claim error <span aria-hidden="true">→</span>
       </button>
     );
   }

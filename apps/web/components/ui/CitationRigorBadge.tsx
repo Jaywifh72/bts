@@ -11,7 +11,7 @@
  * collided with `ClaimConfidenceBadge`, which is a completely different
  * component (8-value enum badge for individual claim attributions).
  */
-type CitationRigorData = {
+export type CitationRigorData = {
   score: number;
   total: number;
   primary_count: number;

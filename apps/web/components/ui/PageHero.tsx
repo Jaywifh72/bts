@@ -19,6 +19,20 @@ import type { ReactNode } from 'react';
  *   - Heading is font-serif text-5xl
  *   - Description has max-w-2xl
  */
+/**
+ * Section accent palette — colour is a navigation primitive. Each value
+ * below is reserved for a single section so colour memory works across
+ * pages. Don't reach for `purple` on a non-VFX page just because it
+ * happens to look good in isolation.
+ *
+ *   red      → stunts          (Stunts, /for-coordinators, stunt detail)
+ *   amber    → references / archive landing strips with a stat hero
+ *   purple   → VFX             (/vfx, /vfx/[slug], VFX cross-cuts)
+ *   blue     → sound           (/sound, /locations)
+ *   emerald  → locations / production design (/production-design)
+ *   zinc     → neutral browse  (/decades, /films, /crew, neutral atlases)
+ *   none     → opt-out gradient (Films, Crew, Ask — text-only heros)
+ */
 export type PageHeroAccent = 'red' | 'amber' | 'purple' | 'blue' | 'emerald' | 'zinc' | 'none';
 
 const ACCENT: Record<PageHeroAccent, { eyebrow: string; gradient: string | null }> = {
@@ -84,10 +98,13 @@ export function PageHero({
  * the hero. Pure presentation; doesn't need to know the underlying data.
  */
 export function PageHeroStat({ label, value }: { label: string; value: ReactNode }) {
+  // A11y: each stat is a self-contained <dl> so the label/value pair is
+  // announced together by screen readers, without forcing every call site
+  // to wrap its grid container in <dl>.
   return (
-    <div>
-      <div className="font-mono text-2xl text-zinc-50 tabular-nums">{value}</div>
-      <div className="mt-0.5 text-[10px] uppercase tracking-wide text-zinc-500">{label}</div>
-    </div>
+    <dl>
+      <dd className="font-mono text-2xl text-zinc-50 tabular-nums">{value}</dd>
+      <dt className="mt-0.5 text-[10px] uppercase tracking-wide text-zinc-300">{label}</dt>
+    </dl>
   );
 }
