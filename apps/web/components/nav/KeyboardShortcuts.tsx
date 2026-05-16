@@ -87,6 +87,11 @@ export function KeyboardShortcuts() {
         return;
       }
 
+      // a11y B3: don't fire `g`-chord navigation while help dialog is open —
+      // navigating away leaves an orphaned dialog reference and traps screen
+      // readers in a stale region.
+      if (helpOpen) return;
+
       if (pendingG) {
         const route = ROUTE_FOR_KEY[e.key];
         pendingG = false;
@@ -117,7 +122,7 @@ export function KeyboardShortcuts() {
     <div
       role="dialog"
       aria-modal="true"
-      aria-label="Keyboard shortcuts"
+      aria-labelledby="kbd-shortcuts-heading"
       className="fixed inset-0 z-50 flex items-start justify-center bg-zinc-950/70 p-8 backdrop-blur-sm"
       onClick={() => setHelpOpen(false)}
     >
@@ -127,18 +132,19 @@ export function KeyboardShortcuts() {
         onClick={(e) => e.stopPropagation()}
       >
         <div className="mb-4 flex items-center justify-between">
-          <h2 className="font-serif text-lg text-zinc-100">Keyboard shortcuts</h2>
+          <h2 id="kbd-shortcuts-heading" className="font-serif text-lg text-zinc-100">Keyboard shortcuts</h2>
           <button
             ref={closeButtonRef}
             type="button"
             onClick={() => setHelpOpen(false)}
-            className="text-xs text-zinc-500 hover:text-zinc-300 focus:outline-none focus:ring-2 focus:ring-amber-400 rounded px-1"
+            className="inline-flex h-9 min-w-[2.5rem] items-center justify-center rounded border border-zinc-700 px-2 text-xs text-zinc-300 hover:border-amber-500 hover:text-zinc-100 focus:outline-none focus:ring-2 focus:ring-amber-400 ring-offset-2 ring-offset-zinc-900"
             aria-label="Close keyboard shortcuts dialog"
           >
             Esc
           </button>
         </div>
         <dl className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-2 text-sm">
+          <Shortcut keys={['⌘', 'K']} desc="Open command palette" />
           <Shortcut keys={['/']} desc="Focus search" />
           <Shortcut keys={['?']} desc="Toggle this help" />
           <Shortcut keys={['g', 'h']} desc="Go to home" />

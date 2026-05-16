@@ -13,7 +13,17 @@
 
 const STORAGE_KEY = 'cinecanon:bookmarks:v1';
 
-export type BookmarkKind = 'film' | 'crew' | 'gear-item' | 'gear-series' | 'vfx-house';
+export type BookmarkKind =
+  | 'film'
+  | 'crew'
+  | 'gear-item'
+  | 'gear-series'
+  | 'vfx-house'
+  | 'stunt-company'
+  | 'stunt-school'
+  | 'reference'
+  | 'format'
+  | 'society';
 
 export type Bookmark = {
   kind: BookmarkKind;

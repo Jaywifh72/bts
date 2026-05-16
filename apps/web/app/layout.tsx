@@ -4,6 +4,7 @@ import { inter, dmSerifDisplay } from '@/lib/fonts';
 import { TopNav } from '@/components/nav/TopNav';
 import { Footer } from '@/components/nav/Footer';
 import { KeyboardShortcuts } from '@/components/nav/KeyboardShortcuts';
+import { CommandPalette } from '@/components/nav/CommandPalette';
 import { siteUrl } from '@/lib/site';
 
 export const metadata: Metadata = {
@@ -53,6 +54,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         </main>
         <Footer />
         <KeyboardShortcuts />
+        <CommandPalette />
       </body>
     </html>
   );

@@ -7,9 +7,12 @@
     @apply bg-zinc-950 text-zinc-50;
   }
 
-  /* Amber focus rings */
+  /* Amber focus rings. A11y-audit B1: use `ring` + `ring-offset` rather
+     than `outline-offset` so the visible ring renders with a zinc-950 gap
+     against any surface (zinc-900/40 cards, zinc-950 nav). The previous
+     transparent offset-2 gap failed 3:1 contrast on near-equal bg pairs. */
   :focus-visible {
-    @apply outline-2 outline-amber-400 outline-offset-2;
+    @apply outline-none ring-2 ring-amber-400 ring-offset-2 ring-offset-zinc-950;
   }
 
   /* Native details/summary styling */
@@ -77,4 +80,59 @@
 }
 .skip-link:focus {
   @apply translate-y-0;
+}
+
+/* UX-audit second pass — table-to-card stack pattern for narrow viewports.
+   Opt-in via `class="stack-on-mobile"` on the <table>. Each <td> needs a
+   `data-label="…"` attribute matching its column header; on mobile we
+   hide <thead> and render the label inline before the cell value.
+
+   On-set audience uses iPad-in-landscape inside clip-light tents; a
+   6-column table horizontal-scrolls into discomfort. The card stack
+   keeps each row vertically scannable. */
+@media (max-width: 639px) {
+  table.stack-on-mobile thead {
+    display: none;
+  }
+  table.stack-on-mobile,
+  table.stack-on-mobile tbody,
+  table.stack-on-mobile tr,
+  table.stack-on-mobile td {
+    display: block;
+    width: 100%;
+  }
+  table.stack-on-mobile tr {
+    @apply border-b border-zinc-800 px-3 py-2;
+  }
+  table.stack-on-mobile td {
+    @apply flex items-baseline gap-2 px-0 py-1;
+  }
+  table.stack-on-mobile td::before {
+    content: attr(data-label);
+    @apply min-w-[5.5rem] shrink-0 font-mono text-[10px] uppercase tracking-wide text-zinc-400;
+  }
+  table.stack-on-mobile td:empty,
+  table.stack-on-mobile td[data-empty='true'] {
+    display: none;
+  }
+}
+
+/* Universal scroll-hint affordance for `.overflow-x-auto` wrappers.
+   Renders a soft amber right-edge fade when the wrapped region is
+   horizontally scrollable, so a working pro on an iPad knows there's
+   more content to scroll to. Hidden on lg+ where layouts fit. */
+@media (max-width: 1023px) {
+  .scroll-hint-right {
+    position: relative;
+  }
+  .scroll-hint-right::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 24px;
+    background: linear-gradient(to left, rgb(9 9 11 / 0.6), transparent);
+    pointer-events: none;
+  }
 }

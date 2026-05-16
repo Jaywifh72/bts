@@ -9,7 +9,7 @@ import Link from 'next/link';
 export function Footer() {
   return (
     <footer className="mt-16 border-t border-zinc-800 bg-zinc-950">
-      <div className="mx-auto max-w-7xl px-6 py-8 text-xs text-zinc-500">
+      <div className="mx-auto max-w-7xl px-6 py-8 text-xs text-zinc-400">
         <div className="flex flex-wrap gap-x-8 gap-y-3">
           <div>
             <p className="font-serif text-sm text-zinc-300">CineCanon</p>
@@ -19,7 +19,7 @@ export function Footer() {
             </p>
           </div>
           <div className="flex flex-col gap-1">
-            <p className="text-[10px] uppercase tracking-widest text-zinc-600">Sections</p>
+            <p className="text-[10px] uppercase tracking-widest text-zinc-300">Sections</p>
             <Link href="/films?tier=curated" className="hover:text-zinc-300">Curated films</Link>
             <Link href="/films" className="hover:text-zinc-300">All films</Link>
             <Link href="/crew" className="hover:text-zinc-300">Crew</Link>
@@ -33,7 +33,7 @@ export function Footer() {
             <Link href="/costume-hair-makeup" className="hover:text-zinc-300">Costume / Hair / Makeup</Link>
           </div>
           <div className="flex flex-col gap-1">
-            <p className="text-[10px] uppercase tracking-widest text-zinc-600">Cross-cuts</p>
+            <p className="text-[10px] uppercase tracking-widest text-zinc-300">Cross-cuts</p>
             <Link href="/ask" className="hover:text-zinc-300">Ask anything</Link>
             <Link href="/queries" className="hover:text-zinc-300">Killer queries</Link>
             <Link href="/references" className="hover:text-zinc-300">References graph</Link>
@@ -44,7 +44,7 @@ export function Footer() {
             <Link href="/shots" className="hover:text-zinc-300">Shots (palette)</Link>
           </div>
           <div className="flex flex-col gap-1">
-            <p className="text-[10px] uppercase tracking-widest text-zinc-600">For working pros</p>
+            <p className="text-[10px] uppercase tracking-widest text-zinc-300">For working pros</p>
             <Link href="/tools" className="hover:text-zinc-300">Tools</Link>
             <Link href="/for-dps" className="hover:text-zinc-300">For DPs</Link>
             <Link href="/for-colorists" className="hover:text-zinc-300">For Colorists</Link>
@@ -52,25 +52,26 @@ export function Footer() {
             <Link href="/for-gaffers" className="hover:text-zinc-300">For Gaffers</Link>
           </div>
           <div className="flex flex-col gap-1">
-            <p className="text-[10px] uppercase tracking-widest text-zinc-600">About</p>
+            <p className="text-[10px] uppercase tracking-widest text-zinc-300">About</p>
             <Link href="/about" className="hover:text-zinc-300">About this site</Link>
             <Link href="/methodology" className="hover:text-zinc-300">Methodology</Link>
             <Link href="/about#sources" className="hover:text-zinc-300">Data sources</Link>
           </div>
           <div className="flex flex-col gap-1">
-            <p className="text-[10px] uppercase tracking-widest text-zinc-600">Follow</p>
+            <p className="text-[10px] uppercase tracking-widest text-zinc-300">Follow</p>
             <a
               href="/digest.xml"
               className="hover:text-zinc-300"
               title="Atom feed of newly curated productions"
+              type="application/atom+xml"
             >
-              Weekly digest (RSS)
+              Weekly digest <span className="text-zinc-500">(Atom)</span>
             </a>
             <Link href="/api/v1" className="hover:text-zinc-300">Public API</Link>
           </div>
         </div>
-        <div className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-900 pt-4 text-[11px] text-zinc-600">
-          <p>Movie metadata courtesy of <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-400">TMDb</a> — this product uses the TMDb API but is not endorsed or certified by TMDb.</p>
+        <div className="mt-8 flex flex-wrap items-center justify-between gap-2 border-t border-zinc-900 pt-4 text-[11px] text-zinc-400">
+          <p>Movie metadata courtesy of <a href="https://www.themoviedb.org/" target="_blank" rel="noopener noreferrer" className="hover:text-zinc-200">TMDb</a> — this product uses the TMDb API but is not endorsed or certified by TMDb.</p>
           <p>© {new Date().getFullYear()} CineCanon</p>
         </div>
       </div>
