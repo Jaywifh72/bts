@@ -1,20 +1,21 @@
+import NextAuth from 'next-auth';
 import { NextResponse, type NextRequest } from 'next/server';
+import { authConfig } from './auth.config';
 
 /**
- * Gate /admin/* on a single shared token stored in the ADMIN_TOKEN env var.
- * The login page itself (/admin/login) is exempt so users can authenticate.
+ * Combined edge proxy for two access-gates:
  *
- * This is intentionally minimal — full multi-user auth is sub-project 6.
- * For now this protects the single-operator review UI from drive-by access.
+ *  1. `/admin/*` — gated by a shared ADMIN_TOKEN cookie (single-operator
+ *     review UI, see admin/login/actions.ts for the server-side login).
+ *  2. `/account/*` — gated by Auth.js session via the `authorized`
+ *     callback in `auth.config.ts` (redirects to `/signin`).
  *
- * The middleware runs on the Edge runtime where node:crypto is not available,
- * so we use a manual constant-time XOR rather than Buffer.timingSafeEqual.
- * (The login action in admin/login/actions.ts is server-only and uses
- *  timingSafeEqual proper — both paths are time-safe.)
+ * Both run in the Edge runtime, so node:crypto is not available — the
+ * admin token comparison uses a manual constant-time XOR.
  */
+
 function tokensMatch(provided: string, expected: string): boolean {
   if (provided.length !== expected.length) {
-    // Still walk the longer string so length comparison doesn't leak.
     let diff = 1;
     const longer = expected.length > provided.length ? expected : provided;
     for (let i = 0; i < longer.length; i++) diff |= longer.charCodeAt(i) ^ 0;
@@ -27,20 +28,32 @@ function tokensMatch(provided: string, expected: string): boolean {
   return diff === 0;
 }
 
-export function proxy(req: NextRequest) {
+function adminGate(req: NextRequest): NextResponse | null {
+  const path = req.nextUrl.pathname;
+  if (!path.startsWith('/admin') || path.startsWith('/admin/login')) return null;
+
   const expected = process.env.ADMIN_TOKEN;
   const provided = req.cookies.get('admin_token')?.value;
-
   if (!expected || !provided || !tokensMatch(provided, expected)) {
     const url = new URL('/admin/login', req.url);
     url.searchParams.set('next', req.nextUrl.pathname + req.nextUrl.search);
     return NextResponse.redirect(url);
   }
-
-  return NextResponse.next();
+  return null;
 }
 
+const { auth: withAuth } = NextAuth(authConfig);
+
+// `withAuth` wraps the handler so Auth.js can attach session info to
+// `req.auth` and apply the `authorized` callback for /account/* — the
+// inner handler still runs the admin gate for /admin/*.
+export default withAuth((req) => {
+  const adminRedirect = adminGate(req as unknown as NextRequest);
+  if (adminRedirect) return adminRedirect;
+  return NextResponse.next();
+});
+
 export const config = {
-  // Match every /admin/* path EXCEPT /admin/login (login can't require auth).
-  matcher: ['/admin/((?!login).*)'],
+  // Skip Next internals, static files, and auth itself.
+  matcher: ['/((?!api/auth|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)'],
 };
