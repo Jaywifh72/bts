@@ -141,7 +141,7 @@ A short `docs/auth-setup.md` will walk through creating the OAuth apps.
 1. Migration runs in dev (`pnpm db:migrate`).
 2. Set env vars locally, register OAuth apps in Google Cloud + GitHub.
 3. Manual smoke test: sign in with each provider, link both to one account, favorite an item, sign out, sign back in, favorite is still there.
-4. Deploy with production OAuth credentials + `AUTH_URL` set to the prod hostname.
+4. Deploy with production OAuth credentials + `AUTH_TRUST_HOST=true`. `AUTH_URL` only needs to be set if request auto-detection picks the wrong hostname (e.g., custom proxy layout).
 
 ## Open questions
 
