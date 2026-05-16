@@ -102,6 +102,45 @@ export async function toggleFavorite(entityType: FavoriteEntityType, entityId: s
 
 Rate limit: 30 toggles/minute per user via existing Upstash setup.
 
+## Visual design / aesthetic
+
+The sign-in flow and account pages must match CineCanon's existing dark, editorial aesthetic — they should feel like a continuation of the site, not a third-party drop-in.
+
+**Tokens to use** (already in `globals.css` / `tailwind.config.ts`):
+- Background: `bg-zinc-950` (page), `bg-zinc-900/40` or `bg-zinc-900/60` (cards)
+- Borders: `border-zinc-800`
+- Text: `text-zinc-50` (primary), `text-zinc-400` (muted), `font-sans` (Inter), `font-serif` (DM Serif Display, for page titles only)
+- Accent: `amber-400` (focus), `amber-600` (primary CTA bg), `text-zinc-950` on amber
+- Focus: rely on the global `:focus-visible` amber ring — do not override
+
+**Do NOT use** the locked CineCanon brand tokens (`cc-paper`, `cc-amber`, `cc-ink`) — those are reserved for identity surfaces (logo, confidence glyphs) per `components/brand/README.md`.
+
+**`/signin` page layout:**
+- Rendered inside the existing `RootLayout` (TopNav + Footer stay) so it doesn't feel like an island.
+- Centered card: `max-w-sm`, `rounded-lg`, `border border-zinc-800`, `bg-zinc-900/40`, `p-8`.
+- Title in DM Serif Display: "Sign in to CineCanon". Subtitle in `text-zinc-400` text-sm: "Save references, build lookbooks."
+- Two provider buttons stacked, full-width, `h-11`, `rounded-md`, `border border-zinc-800`, `bg-zinc-900 hover:bg-zinc-800`, with provider glyph (Google "G" mark, GitHub octocat) + label "Continue with Google" / "Continue with GitHub". Glyphs are inline SVG, no external assets.
+- Error states (e.g. `?error=OAuthAccountNotLinked`) render in a small `text-amber-400 text-sm` notice above the buttons with a plain-English message.
+
+**`/account` page:**
+- Uses standard page layout (`mx-auto max-w-7xl` from RootLayout's `<main>`).
+- Page title in `font-serif text-3xl`: "Account".
+- Two cards side-by-side on `lg+`, stacked on mobile: "Profile" (avatar, name, email) and "Connected providers" (list of linked accounts with provider glyph).
+- Sign-out is a `text-amber-400 hover:text-amber-300` link, not a heavy button — matches the editorial tone.
+
+**`UserMenu` in TopNav:**
+- Logged-out: text link "Sign in" styled to match existing nav links (whatever pattern `TopNav.tsx` uses — match exactly).
+- Logged-in: 32px circular avatar (`rounded-full`, `ring-1 ring-zinc-800`) opening a dropdown with "Account", "My favorites", "Sign out". Dropdown uses `bg-zinc-900 border border-zinc-800 rounded-md shadow-lg`, items `text-zinc-50 hover:bg-zinc-800`.
+
+**`FavoriteButton`:**
+- Icon-only star button (`lucide-react` or inline SVG — match what the codebase already uses).
+- Inactive: `text-zinc-500 hover:text-amber-400`. Active: `text-amber-400 fill-amber-400`.
+- Includes `aria-pressed` and accessible label.
+
+**Reduced-motion + high-contrast:** inherited from `globals.css` — no custom handling needed as long as we use Tailwind utilities listed above.
+
+Before implementing, the implementer must read `components/nav/TopNav.tsx` and at least one existing card-based page (e.g. `app/about/page.tsx`) to match exact spacing, heading sizes, and link styling.
+
 ## Environment variables
 
 Documented in `apps/web/.env.example`:
