@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useRef, useEffect } from 'react';
+import Image from 'next/image';
 import Link from 'next/link';
 import { signOut } from 'next-auth/react';
 import type { Session } from 'next-auth';
@@ -48,8 +49,7 @@ export function UserMenu({ session }: { session: Session | null }) {
         className="flex h-8 w-8 items-center justify-center rounded-full bg-zinc-800 text-sm font-medium text-zinc-50 ring-1 ring-zinc-700 hover:ring-amber-400"
       >
         {session.user.image ? (
-          // eslint-disable-next-line @next/next/no-img-element
-          <img src={session.user.image} alt="" className="h-8 w-8 rounded-full" />
+          <Image src={session.user.image} alt="" width={32} height={32} className="h-8 w-8 rounded-full" />
         ) : (
           <span aria-hidden="true">{initial}</span>
         )}

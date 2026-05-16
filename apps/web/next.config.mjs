@@ -32,6 +32,9 @@ const config = {
       { protocol: 'https', hostname: 'i.vimeocdn.com' },
       // CineCanon own CDN (future)
       { protocol: 'https', hostname: 'cdn.cinecanon.com' },
+      // OAuth provider avatars (Google + GitHub)
+      { protocol: 'https', hostname: 'lh3.googleusercontent.com' },
+      { protocol: 'https', hostname: 'avatars.githubusercontent.com' },
     ],
     // Production keyframes can hot-link to publisher CDNs we don't enumerate.
     // The keyframe admin page handles arbitrary URLs that wouldn't pass remotePatterns.

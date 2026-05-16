@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Image from 'next/image';
 import { redirect } from 'next/navigation';
 import { eq } from 'drizzle-orm';
 import { auth } from '@/auth';
@@ -24,8 +25,13 @@ export default async function AccountPage() {
           <h2 className="text-sm font-medium uppercase tracking-wide text-zinc-400">Profile</h2>
           <div className="mt-4 flex items-center gap-4">
             {session.user.image && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={session.user.image} alt="" className="h-12 w-12 rounded-full ring-1 ring-zinc-800" />
+              <Image
+                src={session.user.image}
+                alt=""
+                width={48}
+                height={48}
+                className="h-12 w-12 rounded-full ring-1 ring-zinc-800"
+              />
             )}
             <div>
               <p className="text-zinc-50">{session.user.name ?? '—'}</p>
