@@ -135,8 +135,13 @@ export async function getSocietyWithMembers(
   }
   const codeToSlug = new Map<string, string>();
   if (allOtherCodes.size > 0) {
+    // Drizzle's sql template spreads JS arrays as separate placeholders
+    // (`$1, $2, $3`), which Postgres parses as a multi-arg ANY() returning
+    // a record — then the ::text[] cast fails with "cannot cast record to
+    // text[]". Build a single text[] literal param instead.
+    const codeArrayLiteral = `{${[...allOtherCodes].map((c) => `"${c.replace(/"/g, '\\"')}"`).join(',')}}`;
     const lookup = await db.execute<{ code: string; slug: string }>(sql`
-      SELECT code, slug FROM societies WHERE code = ANY(${[...allOtherCodes]}::text[])
+      SELECT code, slug FROM societies WHERE code = ANY(${codeArrayLiteral}::text[])
     `);
     for (const r of lookup) codeToSlug.set(r.code, r.slug);
   }
