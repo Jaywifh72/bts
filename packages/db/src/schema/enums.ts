@@ -152,6 +152,13 @@ export const claimEntityTypeEnum = pgEnum('claim_entity_type_enum', [
   'video',
   'post_house',
   'location',
+  // Migration 0061 — added for Theme F2 (citation rendering on remaining
+  // detail page surfaces). Format is a slug-keyed lookup, not a row;
+  // claim_entities.entity_id stores 0 with `entity_slug` populated.
+  'stunt_company',
+  'stunt_school',
+  'format',
+  'society',
 ]);
 
 export const claimConflictKindEnum = pgEnum('claim_conflict_kind_enum', [

@@ -2,7 +2,7 @@ import {
   pgTable, bigserial, bigint, boolean, integer, numeric, text, timestamp, jsonb, index, unique, pgEnum,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
-import { productions } from './productions.ts';
+import { productions, productionDataTierEnum } from './productions.ts';
 import { scenes } from './scenes.ts';
 import { vfxHouses } from './vfx.ts';
 import { people } from './people.ts';
@@ -33,10 +33,17 @@ export const stuntCompanies = pgTable('stunt_companies', {
   references: jsonb('references').notNull().default(sql`'[]'::jsonb`)
     .$type<Array<{ title: string; url: string; publication?: string; kind?: string }>>(),
   wikidataId: text('wikidata_id').unique(),
+  // Migration 0060 — entity-level provenance.
+  dataTier: productionDataTierEnum('data_tier').notNull().default('imported'),
+  curatedBy: text('curated_by'),
+  curatedByUrl: text('curated_by_url'),
+  lastCuratedReview: timestamp('last_curated_review', { withTimezone: true }),
+  lastVerifiedAt: timestamp('last_verified_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   countryIdx: index('stunt_companies_country_idx').on(t.country),
+  dataTierIdx: index('stunt_companies_data_tier_idx').on(t.dataTier),
 }));
 
 export const stuntSchools = pgTable('stunt_schools', {
@@ -53,10 +60,17 @@ export const stuntSchools = pgTable('stunt_schools', {
   references: jsonb('references').notNull().default(sql`'[]'::jsonb`)
     .$type<Array<{ title: string; url: string; publication?: string; kind?: string }>>(),
   wikidataId: text('wikidata_id').unique(),
+  // Migration 0060 — entity-level provenance.
+  dataTier: productionDataTierEnum('data_tier').notNull().default('imported'),
+  curatedBy: text('curated_by'),
+  curatedByUrl: text('curated_by_url'),
+  lastCuratedReview: timestamp('last_curated_review', { withTimezone: true }),
+  lastVerifiedAt: timestamp('last_verified_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   countryIdx: index('stunt_schools_country_idx').on(t.country),
+  dataTierIdx: index('stunt_schools_data_tier_idx').on(t.dataTier),
 }));
 
 // ── Phase 3: stunt_sequences + stunt_sequence_credits ─────────────

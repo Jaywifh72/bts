@@ -1,5 +1,5 @@
 import {
-  pgTable, bigserial, bigint, integer, smallint, text, timestamp, date, unique, index,
+  pgTable, bigserial, bigint, boolean, integer, smallint, text, timestamp, date, unique, index,
 } from 'drizzle-orm/pg-core';
 import { productions } from './productions.ts';
 import { people } from './people.ts';
@@ -21,6 +21,11 @@ export const crewAssignments = pgTable('crew_assignments', {
   startedOn: date('started_on'),
   endedOn: date('ended_on'),
   notes: text('notes'),
+  // Migration 0059 — curator-set flag for the canonical lead on this
+  // (production, role). Multiple TRUE rows for the same role are valid
+  // (co-DPs / multi-editor docs). Default FALSE; backfilled from
+  // credit_order on migration land.
+  isPrimary: boolean('is_primary').notNull().default(false),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({

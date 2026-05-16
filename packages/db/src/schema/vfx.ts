@@ -9,7 +9,7 @@ import {
   sourceConfidenceEnum,
   vfxHouseKindEnum,
 } from './enums.ts';
-import { productions } from './productions.ts';
+import { productions, productionDataTierEnum } from './productions.ts';
 import { sources } from './sources.ts';
 
 export const vfxHouses = pgTable('vfx_houses', {
@@ -36,9 +36,17 @@ export const vfxHouses = pgTable('vfx_houses', {
   // pointers (Wikipedia, fxguide, studio about-pages, public interviews).
   references: jsonb('references').notNull().default(sql`'[]'::jsonb`)
     .$type<Array<{ title: string; url: string; publication?: string; kind?: string }>>(),
+  // Migration 0060 — entity-level provenance.
+  dataTier: productionDataTierEnum('data_tier').notNull().default('imported'),
+  curatedBy: text('curated_by'),
+  curatedByUrl: text('curated_by_url'),
+  lastCuratedReview: timestamp('last_curated_review', { withTimezone: true }),
+  lastVerifiedAt: timestamp('last_verified_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
-});
+}, (t) => ({
+  dataTierIdx: index('vfx_houses_data_tier_idx').on(t.dataTier),
+}));
 
 export const vfxHouseOffices = pgTable('vfx_house_offices', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),

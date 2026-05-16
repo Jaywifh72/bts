@@ -2,6 +2,7 @@ import {
   pgTable, bigserial, bigint, integer, text, timestamp, jsonb, index, unique, pgEnum, date,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { productionDataTierEnum } from './productions.ts';
 
 /**
  * Phase 22 — polymorphic media foundation. See migration
@@ -37,12 +38,21 @@ export const mediaAssets = pgTable('media_assets', {
   durationSeconds: integer('duration_seconds'),
   publishedAt: date('published_at'),
   metadata: jsonb('metadata').notNull().default(sql`'{}'::jsonb`).$type<Record<string, unknown>>(),
+  // Migration 0063 — entity-level provenance. data_tier='curated' means
+  // a curator hand-attached this URL; last_verified_at is when it was
+  // last reached without 404. See migration comment for full semantics.
+  dataTier: productionDataTierEnum('data_tier').notNull().default('imported'),
+  curatedBy: text('curated_by'),
+  curatedByUrl: text('curated_by_url'),
+  lastCuratedReview: timestamp('last_curated_review', { withTimezone: true }),
+  lastVerifiedAt: timestamp('last_verified_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   kindIdx: index('media_assets_kind_idx').on(t.kind),
   externalIdx: index('media_assets_external_idx').on(t.source, t.externalId),
   publishedIdx: index('media_assets_published_idx').on(t.publishedAt),
+  dataTierIdx: index('media_assets_data_tier_idx').on(t.dataTier),
 }));
 
 export const mediaAssociations = pgTable('media_associations', {

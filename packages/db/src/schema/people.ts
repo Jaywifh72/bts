@@ -1,5 +1,6 @@
 import { pgTable, bigserial, integer, text, date, timestamp, vector, numeric, index } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
+import { productionDataTierEnum } from './productions.ts';
 
 export const people = pgTable('people', {
   id: bigserial('id', { mode: 'number' }).primaryKey(),
@@ -39,10 +40,19 @@ export const people = pgTable('people', {
   // as mentor slugs on the protégé row. GIN-indexed for fast inverse
   // queries ("who did this person mentor?").
   mentorPersonSlugs: text('mentor_person_slugs').array().notNull().default(sql`ARRAY[]::text[]`),
+  // Migration 0060 — entity-level provenance (mirrors productions).
+  // The EntityProvenanceFooter component renders these fields on
+  // /crew/[slug]; null curatedBy hides the byline cleanly.
+  dataTier: productionDataTierEnum('data_tier').notNull().default('imported'),
+  curatedBy: text('curated_by'),
+  curatedByUrl: text('curated_by_url'),
+  lastCuratedReview: timestamp('last_curated_review', { withTimezone: true }),
+  lastVerifiedAt: timestamp('last_verified_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({
   stuntDisciplinesGin: index('people_stunt_disciplines_gin_idx').using('gin', t.stuntDisciplines),
   stuntCompanyIdx: index('people_stunt_company_idx').on(t.stuntCompanySlug)
     .where(sql`${t.stuntCompanySlug} IS NOT NULL`),
+  dataTierIdx: index('people_data_tier_idx').on(t.dataTier),
 }));
