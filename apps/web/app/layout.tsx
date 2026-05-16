@@ -5,6 +5,7 @@ import { TopNav } from '@/components/nav/TopNav';
 import { Footer } from '@/components/nav/Footer';
 import { KeyboardShortcuts } from '@/components/nav/KeyboardShortcuts';
 import { CommandPalette } from '@/components/nav/CommandPalette';
+import { BookmarkSyncOnSignIn } from '@/components/BookmarkSyncOnSignIn';
 import { siteUrl } from '@/lib/site';
 import { auth } from '@/auth';
 
@@ -57,6 +58,7 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <Footer />
         <KeyboardShortcuts />
         <CommandPalette />
+        <BookmarkSyncOnSignIn isLoggedIn={!!session} />
       </body>
     </html>
   );
