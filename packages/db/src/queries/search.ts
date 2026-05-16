@@ -24,6 +24,8 @@ export type SearchResult = {
   href: string;
   /** Trigram similarity in [0, 1]. Higher is better. */
   score: number;
+  /** Data tier for production hits — 'curated' or 'imported'. null for other categories. */
+  data_tier: 'curated' | 'imported' | null;
 };
 
 const SIMILARITY_THRESHOLD = 0.15;
@@ -63,6 +65,7 @@ export async function search(
     subtitle: string | null;
     href: string;
     score: number;
+    data_tier: 'curated' | 'imported' | null;
   };
 
   return db.execute<RawRow>(sql`
@@ -80,7 +83,8 @@ export async function search(
           GREATEST(
             similarity(title, ${trimmed}),
             COALESCE(similarity(original_title, ${trimmed}), 0)
-          )::real AS score
+          )::real AS score,
+          data_tier::text AS data_tier
         FROM productions
         WHERE similarity(title, ${trimmed}) > ${threshold}
            OR similarity(original_title, ${trimmed}) > ${threshold}
@@ -94,7 +98,8 @@ export async function search(
           display_name AS display,
           NULL::text AS subtitle,
           '/crew/' || slug AS href,
-          similarity(display_name, ${trimmed})::real AS score
+          similarity(display_name, ${trimmed})::real AS score,
+          NULL::text AS data_tier
         FROM people
         WHERE similarity(display_name, ${trimmed}) > ${threshold}
         ORDER BY score DESC, display_name ASC
@@ -107,7 +112,8 @@ export async function search(
           name AS display,
           country AS subtitle,
           '/gear/' || slug AS href,
-          similarity(name, ${trimmed})::real AS score
+          similarity(name, ${trimmed})::real AS score,
+          NULL::text AS data_tier
         FROM equipment_manufacturers
         WHERE similarity(name, ${trimmed}) > ${threshold}
         ORDER BY score DESC, name ASC
@@ -120,7 +126,8 @@ export async function search(
           es.name AS display,
           em.name AS subtitle,
           '/gear/' || em.slug || '/' || es.slug AS href,
-          similarity(es.name, ${trimmed})::real AS score
+          similarity(es.name, ${trimmed})::real AS score,
+          NULL::text AS data_tier
         FROM equipment_series es
         JOIN equipment_manufacturers em ON em.id = es.manufacturer_id
         WHERE similarity(es.name, ${trimmed}) > ${threshold}
@@ -134,7 +141,8 @@ export async function search(
           ei.name AS display,
           em.name || ' · ' || es.name AS subtitle,
           '/gear/' || em.slug || '/' || es.slug || '/' || ei.slug AS href,
-          similarity(ei.name, ${trimmed})::real AS score
+          similarity(ei.name, ${trimmed})::real AS score,
+          NULL::text AS data_tier
         FROM equipment_items ei
         JOIN equipment_series es ON es.id = ei.series_id
         JOIN equipment_manufacturers em ON em.id = es.manufacturer_id
@@ -149,7 +157,8 @@ export async function search(
           name AS display,
           country AS subtitle,
           '/vfx/' || slug AS href,
-          similarity(name, ${trimmed})::real AS score
+          similarity(name, ${trimmed})::real AS score,
+          NULL::text AS data_tier
         FROM vfx_houses
         WHERE similarity(name, ${trimmed}) > ${threshold}
         ORDER BY score DESC, name ASC
@@ -165,7 +174,8 @@ export async function search(
           name AS display,
           country AS subtitle,
           '/films?studio=' || slug AS href,
-          similarity(name, ${trimmed})::real AS score
+          similarity(name, ${trimmed})::real AS score,
+          NULL::text AS data_tier
         FROM studios
         WHERE similarity(name, ${trimmed}) > ${threshold}
         ORDER BY score DESC, name ASC
@@ -180,7 +190,8 @@ export async function search(
           sc.title AS display,
           p.title AS subtitle,
           '/films/' || p.slug || '#scene-' || sc.slug AS href,
-          similarity(sc.title, ${trimmed})::real AS score
+          similarity(sc.title, ${trimmed})::real AS score,
+          NULL::text AS data_tier
         FROM scenes sc
         JOIN productions p ON p.id = sc.production_id
         WHERE similarity(sc.title, ${trimmed}) > ${threshold}
@@ -195,7 +206,8 @@ export async function search(
           v.title AS display,
           v.channel_name AS subtitle,
           v.url AS href,
-          similarity(v.title, ${trimmed})::real AS score
+          similarity(v.title, ${trimmed})::real AS score,
+          NULL::text AS data_tier
         FROM production_videos v
         WHERE v.status = 'published'
           AND similarity(v.title, ${trimmed}) > ${threshold}

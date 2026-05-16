@@ -1,6 +1,7 @@
 import { db as defaultDb } from '../db.ts';
 import type { PostgresJsDatabase } from 'drizzle-orm/postgres-js';
 import { sql } from 'drizzle-orm';
+import { getEvidenceForClaims, type EvidenceItem } from './evidence.ts';
 
 type SeedDb = PostgresJsDatabase<Record<string, never>>;
 
@@ -56,7 +57,13 @@ export type ClaimEntityType =
   | 'source'
   | 'video'
   | 'post_house'
-  | 'location';
+  | 'location'
+  // Migration 0061 — added for Theme F2 (citation rendering on
+  // remaining entity detail pages).
+  | 'stunt_company'
+  | 'stunt_school'
+  | 'format'
+  | 'society';
 
 export type ClaimConflictKind =
   | 'direct_conflict'
@@ -276,21 +283,69 @@ export async function getClaimsForVfxHouse(
   return getClaimsForEntity(db, 'vfx_house', vfxHouseId);
 }
 
-async function getClaimsForEntity(
-  db: SeedDb,
+/**
+ * UX-audit F2 — polymorphic claims fetch. Promoted from private helper to
+ * exported public API so detail pages on every entity type (crew, vfx,
+ * stunts/companies, stunts/schools, format, societies, post_houses,
+ * equipment_*) can render the same citation footer pattern the film
+ * detail page already uses.
+ *
+ * Migration 0061 added the missing entity_type enum values
+ * (stunt_company / stunt_school / format / society) — for entities that
+ * key by slug rather than int id (format, society in some seed paths),
+ * the caller passes the surrogate `entityId=0` and the join falls
+ * through to `claim_entities.entity_slug`.
+ */
+export async function getClaimsForEntity(
+  db: SeedDb = defaultDb,
   entityType: ClaimEntityType,
   entityId: number,
+  entitySlug?: string,
 ): Promise<ClaimRow[]> {
+  // Match by id when present; fall back to slug for entities whose
+  // claim rows were authored against the slug instead of the row id.
+  const matchClause = entitySlug
+    ? sql`(ce.entity_id = ${entityId} OR ce.entity_slug = ${entitySlug})`
+    : sql`ce.entity_id = ${entityId}`;
+
   return db.execute<ClaimRow>(sql`
     SELECT ${claimSelect}
     FROM claims c
     JOIN claim_entities ce ON ce.claim_id = c.id
     LEFT JOIN claim_sources cs ON cs.claim_id = c.id
     WHERE ce.entity_type = ${entityType}::claim_entity_type_enum
-      AND ce.entity_id = ${entityId}
+      AND ${matchClause}
     GROUP BY c.id
     ORDER BY c.updated_at DESC, c.id DESC
   `);
+}
+
+/**
+ * UX-audit F2 — convenience helper that bundles claims + per-claim
+ * sources + per-claim evidence into a single 3-way Promise.all so
+ * detail pages render with one await. Reuses the existing batch
+ * loaders (`getSourcesForClaims` / `getEvidenceForClaims`).
+ */
+export async function getClaimsBundleForEntity(
+  db: SeedDb = defaultDb,
+  entityType: ClaimEntityType,
+  entityId: number,
+  entitySlug?: string,
+): Promise<{
+  claims: ClaimRow[];
+  sourcesByClaimId: Record<number, ClaimSourceRow[]>;
+  evidenceByClaimId: Record<number, EvidenceItem[]>;
+}> {
+  const claims = await getClaimsForEntity(db, entityType, entityId, entitySlug);
+  if (claims.length === 0) {
+    return { claims, sourcesByClaimId: {}, evidenceByClaimId: {} };
+  }
+  const claimIds = claims.map((c) => c.id);
+  const [sourcesByClaimId, evidenceByClaimId] = await Promise.all([
+    getSourcesForClaims(db, claimIds),
+    getEvidenceForClaims(db, claimIds),
+  ]);
+  return { claims, sourcesByClaimId, evidenceByClaimId };
 }
 
 export async function getClaimSources(
@@ -684,5 +739,48 @@ export async function listUnresolvedClaimConflicts(
         )
       )` : sql`TRUE`}
     ORDER BY cc.created_at DESC
+  `);
+}
+
+/**
+ * UX-audit (homepage Move 3) — the most-recently-attached claim sources
+ * across every entity type. Powers the "Newly cited sources" column of
+ * the archive-this-week rail. Returns one row per (claim, source) join
+ * with enough context to render: which entity gained this citation,
+ * which source URL, with what confidence.
+ */
+export async function listRecentCitations(
+  db: SeedDb = defaultDb,
+  limit = 5,
+): Promise<Array<{
+  claim_id: number;
+  claim_statement: string;
+  source_id: number;
+  source_title: string;
+  source_publication: string | null;
+  source_url: string | null;
+  confidence: string;
+  entity_type: string;
+  entity_slug: string | null;
+  attached_at: string;
+}>> {
+  return db.execute(sql`
+    SELECT DISTINCT ON (cs.id)
+      cs.claim_id,
+      c.statement AS claim_statement,
+      cs.source_id,
+      s.title AS source_title,
+      s.publication AS source_publication,
+      s.url AS source_url,
+      cs.confidence::text,
+      ce.entity_type::text,
+      ce.entity_slug,
+      cs.created_at::text AS attached_at
+    FROM claim_sources cs
+    JOIN claims c ON c.id = cs.claim_id
+    JOIN sources s ON s.id = cs.source_id
+    LEFT JOIN claim_entities ce ON ce.claim_id = c.id
+    ORDER BY cs.id, cs.created_at DESC
+    LIMIT ${limit}
   `);
 }

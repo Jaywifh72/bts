@@ -23,3 +23,5 @@ export * from './queries/scenes.ts';
 export * from './queries/stunts.ts';
 export * from './queries/jobs.ts';
 export * from './queries/media.ts';
+export * from './queries/societies.ts';
+export * from './queries/scoring-stages.ts';

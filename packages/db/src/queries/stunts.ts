@@ -21,6 +21,12 @@ export type StuntCompanyRow = {
   summary: string | null;
   tagline: string | null;
   references: Array<{ title: string; url: string; publication?: string; kind?: string }>;
+  // 0060 — entity-level provenance (only surfaced on detail pages).
+  data_tier?: 'curated' | 'imported';
+  curated_by?: string | null;
+  curated_by_url?: string | null;
+  last_curated_review?: string | null;
+  last_verified_at?: string | null;
 };
 
 export async function listStuntCompanies(db: SeedDb = defaultDb) {
@@ -37,7 +43,9 @@ export async function getStuntCompanyBySlug(db: SeedDb = defaultDb, slug: string
   const [row] = await db.execute<StuntCompanyRow>(sql`
     SELECT slug, name, founded_year, headquarters, country, parent_company,
            website, reel_url, careers_url, founder_names, specialties,
-           member_count, summary, tagline, "references"
+           member_count, summary, tagline, "references",
+           data_tier, curated_by, curated_by_url,
+           last_curated_review::text, last_verified_at::text
     FROM stunt_companies
     WHERE slug = ${slug}
   `);
@@ -57,6 +65,12 @@ export type StuntSchoolRow = {
   summary: string | null;
   tagline: string | null;
   references: Array<{ title: string; url: string; publication?: string; kind?: string }>;
+  // 0060 — entity-level provenance (only surfaced on detail pages).
+  data_tier?: 'curated' | 'imported';
+  curated_by?: string | null;
+  curated_by_url?: string | null;
+  last_curated_review?: string | null;
+  last_verified_at?: string | null;
 };
 
 export async function listStuntSchools(db: SeedDb = defaultDb) {
@@ -71,7 +85,9 @@ export async function listStuntSchools(db: SeedDb = defaultDb) {
 export async function getStuntSchoolBySlug(db: SeedDb = defaultDb, slug: string) {
   const [row] = await db.execute<StuntSchoolRow>(sql`
     SELECT slug, name, founded_year, headquarters, country, website,
-           curriculum_disciplines, summary, tagline, "references"
+           curriculum_disciplines, summary, tagline, "references",
+           data_tier, curated_by, curated_by_url,
+           last_curated_review::text, last_verified_at::text
     FROM stunt_schools
     WHERE slug = ${slug}
   `);

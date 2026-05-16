@@ -9,9 +9,13 @@ import { sql } from 'drizzle-orm';
  */
 export async function listPostHouses(
   db: SeedDb = defaultDb,
-  opts: { withCreditsOnly?: boolean } = {},
+  opts: { withCreditsOnly?: boolean; kinds?: string[]; limit?: number } = {},
 ) {
   const withCreditsOnly = opts.withCreditsOnly ?? true;
+  const limit = opts.limit ?? 200;
+  const kindFilter = opts.kinds && opts.kinds.length > 0
+    ? sql`AND ph.kind::text = ANY(${`{${opts.kinds.join(',')}}`}::text[])`
+    : sql``;
   return db.execute<{
     slug: string;
     name: string;
@@ -20,13 +24,15 @@ export async function listPostHouses(
     city: string | null;
     production_count: number;
   }>(sql`
-    SELECT ph.slug, ph.name, ph.kind, ph.country, ph.city,
+    SELECT ph.slug, ph.name, ph.kind::text, ph.country, ph.city,
            COUNT(DISTINCT pph.production_id)::int AS production_count
     FROM post_houses ph
     LEFT JOIN production_post_houses pph ON pph.post_house_id = ph.id
+    WHERE TRUE ${kindFilter}
     GROUP BY ph.id
     HAVING ${withCreditsOnly ? sql`COUNT(DISTINCT pph.production_id) > 0` : sql`TRUE`}
     ORDER BY production_count DESC, ph.name ASC
+    LIMIT ${limit}
   `);
 }
 

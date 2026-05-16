@@ -109,6 +109,44 @@ export type SimilarKeyFrame = {
 };
 
 /**
+ * UX-audit second pass — visually-similar shots for an entire
+ * production. Picks the production's representative keyframe (lowest
+ * sort_order, populated embedding) and runs the existing
+ * getVisuallySimilarKeyFrames against it, filtering out same-production
+ * results. Powers the "visually similar shots" rail on film detail.
+ */
+export async function getSimilarKeyFramesForProduction(
+  db: SeedDb = defaultDb,
+  productionSlug: string,
+  limit: number = 6,
+): Promise<SimilarKeyFrame[]> {
+  return db.execute<SimilarKeyFrame>(sql`
+    WITH src AS (
+      SELECT kf.embedding
+      FROM production_keyframes kf
+      JOIN productions p ON p.id = kf.production_id
+      WHERE p.slug = ${productionSlug}
+        AND kf.embedding IS NOT NULL
+      ORDER BY kf.sort_order, kf.id
+      LIMIT 1
+    )
+    SELECT
+      kf.id, kf.image_url, kf.caption,
+      p.slug AS production_slug, p.title AS production_title,
+      sc.slug AS scene_slug, sc.title AS scene_title,
+      1 - (kf.embedding <=> (SELECT embedding FROM src))::float AS similarity
+    FROM production_keyframes kf
+    JOIN productions p ON p.id = kf.production_id
+    LEFT JOIN scenes sc ON sc.id = kf.scene_id
+    WHERE p.slug <> ${productionSlug}
+      AND kf.embedding IS NOT NULL
+      AND EXISTS (SELECT 1 FROM src)
+    ORDER BY kf.embedding <=> (SELECT embedding FROM src)
+    LIMIT ${limit}
+  `);
+}
+
+/**
  * E-28 — visually-similar key frames by cosine-distance on the
  * pgvector `embedding` column. `<=>` returns cosine distance (0 =
  * identical, 2 = opposite); we expose `1 - distance` as similarity
@@ -178,6 +216,45 @@ export async function findDuplicateKeyFrames(
  * date into the keyframe set. Same day → same shot; next day rotates.
  * No randomness so the homepage and any social-share path agree.
  */
+/**
+ * UX-audit (homepage Move 3) — N keyframes rotating on a daily key. A
+ * wall, not a single hero. Each shot rotates predictably so the page
+ * cache (revalidate=3600) stays warm but the content shifts each day.
+ */
+export async function getShotsOfTheDay(
+  db: SeedDb = defaultDb,
+  dayKey: string,
+  count: number,
+): Promise<Array<KeyFrame & { production_slug: string; production_title: string }>> {
+  return db.execute<KeyFrame & { production_slug: string; production_title: string }>(sql`
+    WITH ordered AS (
+      SELECT kf.id, kf.image_url, kf.caption,
+             sc.slug AS scene_slug, sc.title AS scene_title,
+             kf.sort_order, kf.palette,
+             p.slug AS production_slug, p.title AS production_title,
+             ROW_NUMBER() OVER (ORDER BY kf.id) - 1 AS idx,
+             COUNT(*) OVER () AS total
+      FROM production_keyframes kf
+      JOIN productions p ON p.id = kf.production_id
+      LEFT JOIN scenes sc ON sc.id = kf.scene_id
+    ),
+    seeded AS (
+      SELECT *,
+             -- Offset relative to today's hash; rows whose offset is
+             -- less than count are in today's window. Modular over total
+             -- so the window wraps cleanly.
+             ((idx - (ABS(hashtext(${dayKey})) % NULLIF(total, 0))) + total) % NULLIF(total, 0) AS rotated_idx
+      FROM ordered
+      WHERE total > 0
+    )
+    SELECT id, image_url, caption, scene_slug, scene_title, sort_order, palette,
+           production_slug, production_title
+    FROM seeded
+    WHERE rotated_idx < ${count}
+    ORDER BY rotated_idx
+  `);
+}
+
 export async function getShotOfTheDay(
   db: SeedDb = defaultDb,
   dayKey: string,

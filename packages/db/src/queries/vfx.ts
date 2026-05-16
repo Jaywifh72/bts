@@ -19,10 +19,20 @@ export async function listVfxHouses(
     country: string | null;
     founded_year: number | null;
     website: string | null;
+    kind: string | null;
+    tagline: string | null;
+    summary: string | null;
+    headquarters: string | null;
     production_count: number;
+    primary_count: number;
+    total_shots: number | null;
   }>(sql`
     SELECT vh.slug, vh.name, vh.country, vh.founded_year, vh.website,
-           COUNT(DISTINCT vc.production_id)::int AS production_count
+           vh.kind::text AS kind,
+           vh.tagline, vh.summary, vh.headquarters,
+           COUNT(DISTINCT vc.production_id)::int AS production_count,
+           COUNT(DISTINCT CASE WHEN vc.role = 'primary' THEN vc.production_id END)::int AS primary_count,
+           SUM(vc.shot_count)::int AS total_shots
     FROM vfx_houses vh
     LEFT JOIN vfx_credits vc ON vc.vfx_house_id = vh.id
     GROUP BY vh.id
@@ -50,11 +60,19 @@ export async function getVfxHouseWithFilmography(db: SeedDb = defaultDb, slug: s
     total_productions: number;
     primary_credits: number;
     total_shots: number | null;
+    // 0060 — entity-level provenance.
+    data_tier: 'curated' | 'imported';
+    curated_by: string | null;
+    curated_by_url: string | null;
+    last_curated_review: string | null;
+    last_verified_at: string | null;
   }>(sql`
     SELECT
       vh.id, vh.slug, vh.name, vh.country, vh.founded_year, vh.website,
       vh.summary, vh.headquarters, vh.parent_company, vh.employee_count,
       vh.tagline, vh.careers_url, vh.reel_url, vh."references",
+      vh.data_tier, vh.curated_by, vh.curated_by_url,
+      vh.last_curated_review::text, vh.last_verified_at::text,
       COUNT(DISTINCT vc.production_id)::int AS total_productions,
       COUNT(DISTINCT CASE WHEN vc.role = 'primary' THEN vc.production_id END)::int AS primary_credits,
       SUM(vc.shot_count) AS total_shots

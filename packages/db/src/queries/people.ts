@@ -167,6 +167,12 @@ export async function getPersonBySlug(db: SeedDb = defaultDb, slug: string) {
     stunt_company_slug: string | null;
     // 0044 — phase-4 lineage edges.
     mentor_person_slugs: string[];
+    // 0060 — entity-level provenance.
+    data_tier: 'curated' | 'imported';
+    curated_by: string | null;
+    curated_by_url: string | null;
+    last_curated_review: string | null;
+    last_verified_at: string | null;
   }>(sql`
     SELECT id, slug, display_name,
            EXTRACT(YEAR FROM birth_date)::int AS birth_year,
@@ -189,7 +195,12 @@ export async function getPersonBySlug(db: SeedDb = defaultDb, slug: string) {
            doubles_for,
            training_school_slugs,
            stunt_company_slug,
-           mentor_person_slugs
+           mentor_person_slugs,
+           data_tier,
+           curated_by,
+           curated_by_url,
+           last_curated_review::text,
+           last_verified_at::text
     FROM people
     WHERE slug = ${slug}
   `);
@@ -590,5 +601,53 @@ export async function getCollaboratorsForPerson(
     ) pr ON pr.person_id = p.id AND pr.rn = 1
     ORDER BY oc.shared DESC, p.display_name ASC
     LIMIT ${limit}
+  `);
+}
+
+/**
+ * UX-audit E5 — find productions that 2+ of the given people crewed on.
+ * Powers the "Shared productions" panel on /crew/compare.
+ */
+export type SharedProductionRow = {
+  slug: string;
+  title: string;
+  release_year: number | null;
+  shared_count: number;
+  /** Slugs of the input people who crewed on this production. */
+  shared_person_slugs: string[];
+};
+
+export async function getSharedProductionsAcrossPeople(
+  db: SeedDb = defaultDb,
+  personSlugs: string[],
+): Promise<SharedProductionRow[]> {
+  if (personSlugs.length < 2) return [];
+  return db.execute<SharedProductionRow>(sql`
+    WITH source_people AS (
+      SELECT id, slug FROM people
+      WHERE slug IN ${sql`(${sql.join(personSlugs.map((s) => sql`${s}`), sql`, `)})`}
+    ),
+    prod_people AS (
+      SELECT DISTINCT
+        p.id AS production_id,
+        p.slug,
+        p.title,
+        p.release_year,
+        sp.slug AS person_slug
+      FROM source_people sp
+      JOIN crew_assignments ca ON ca.person_id = sp.id
+      JOIN productions p ON p.id = ca.production_id
+    )
+    SELECT
+      pp.slug,
+      pp.title,
+      pp.release_year,
+      COUNT(DISTINCT pp.person_slug)::int AS shared_count,
+      array_agg(DISTINCT pp.person_slug) AS shared_person_slugs
+    FROM prod_people pp
+    GROUP BY pp.slug, pp.title, pp.release_year
+    HAVING COUNT(DISTINCT pp.person_slug) >= 2
+    ORDER BY shared_count DESC, pp.release_year DESC NULLS LAST, pp.title
+    LIMIT 30
   `);
 }

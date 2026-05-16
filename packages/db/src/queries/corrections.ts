@@ -71,6 +71,39 @@ export async function countOpenCorrections(db: SeedDb = defaultDb): Promise<numb
   return Number(row?.count ?? 0);
 }
 
+/**
+ * UX-audit (homepage Move 3) — the most-recently-resolved corrections,
+ * for the "Archive this week" rail. Signals the site is alive without
+ * dumping the still-open queue (which would feel like a complaint board).
+ *
+ * Only resolved corrections render — the public version of the curator
+ * activity log. Triage notes deliberately stripped at the SELECT.
+ */
+export async function listRecentlyResolvedCorrections(
+  db: SeedDb = defaultDb,
+  limit = 5,
+): Promise<Array<{
+  id: number;
+  production_slug: string | null;
+  production_title: string | null;
+  message: string;
+  resolved_at: string;
+}>> {
+  return db.execute(sql`
+    SELECT
+      c.id,
+      p.slug AS production_slug,
+      p.title AS production_title,
+      c.message,
+      c.updated_at::text AS resolved_at
+    FROM corrections c
+    LEFT JOIN productions p ON p.id = c.production_id
+    WHERE c.status = 'resolved'
+    ORDER BY c.updated_at DESC
+    LIMIT ${limit}
+  `);
+}
+
 export async function updateCorrectionStatus(
   db: SeedDb = defaultDb,
   id: number,

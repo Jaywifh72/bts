@@ -40,6 +40,13 @@ export type MediaAssetRow = {
   duration_seconds: number | null;
   published_at: string | null;
   metadata: Record<string, unknown>;
+  // 0063 — provenance columns (optional so light-weight callers that
+  // don't SELECT them still typecheck).
+  data_tier?: 'curated' | 'imported';
+  curated_by?: string | null;
+  curated_by_url?: string | null;
+  last_curated_review?: string | null;
+  last_verified_at?: string | null;
 };
 
 export type MediaAssociationRow = MediaAssetRow & {
@@ -304,7 +311,9 @@ export async function getMediaAssetById(
   const [asset] = await db.execute<MediaAssetRow>(sql`
     SELECT id, kind::text, url, title, caption, credit, publication,
            source, external_id, thumbnail_url, duration_seconds,
-           published_at::text, metadata
+           published_at::text, metadata,
+           data_tier, curated_by, curated_by_url,
+           last_curated_review::text, last_verified_at::text
     FROM media_assets WHERE id = ${id}
   `);
   if (!asset) return null;
@@ -396,6 +405,10 @@ export type CitedAssetRow = {
   thumbnail_url: string | null;
   association_count: number;
   entity_type_count: number;
+  /** ISO date the source was originally published. */
+  published_at: string | null;
+  /** ISO timestamp the most recent association was created. */
+  last_cited_at: string;
 };
 
 /**
@@ -416,12 +429,14 @@ export async function listMostCitedAssets(
   return db.execute<CitedAssetRow>(sql`
     SELECT mas.id, mas.url, mas.title, mas.kind::text,
            mas.publication, mas.thumbnail_url,
+           mas.published_at::text AS published_at,
+           MAX(ma.created_at)::text AS last_cited_at,
            COUNT(ma.id)::int AS association_count,
            COUNT(DISTINCT ma.entity_type)::int AS entity_type_count
     FROM media_assets mas
     JOIN media_associations ma ON ma.media_asset_id = mas.id
     WHERE TRUE ${kindFilter}
-    GROUP BY mas.id, mas.url, mas.title, mas.kind, mas.publication, mas.thumbnail_url
+    GROUP BY mas.id, mas.url, mas.title, mas.kind, mas.publication, mas.thumbnail_url, mas.published_at
     HAVING COUNT(ma.id) > 1
     ORDER BY association_count DESC, mas.title
     LIMIT ${limit} OFFSET ${offset}

@@ -24,6 +24,8 @@ export type ListProductionsFilters = {
   dataTier?: 'curated' | 'imported' | 'all';
   /** Filter by release decade boundary, e.g. 2020 → 2020-2029. */
   decade?: number;
+  /** Multi-decade filter (UX-audit P0-3). When provided, overrides `decade`. */
+  decades?: number[];
   /** Genre case-sensitive match against the TMDb genres array. */
   genre?: string;
   /** Slug of a specific person; returns only productions they crewed on. */
@@ -76,7 +78,13 @@ export async function listProductions(
       ON pf.production_id = p.id AND pf.is_primary = true
     WHERE
       ${dataTier === 'all' ? sql`TRUE` : sql`p.data_tier = ${dataTier}::production_data_tier`}
-      AND ${filters.decade ? sql`p.release_year BETWEEN ${filters.decade} AND ${filters.decade + 9}` : sql`TRUE`}
+      AND ${
+        filters.decades && filters.decades.length > 0
+          ? sql`(p.release_year / 10) * 10 IN ${sql`(${sql.join(filters.decades.map((d) => sql`${d}`), sql`, `)})`}`
+          : filters.decade
+            ? sql`p.release_year BETWEEN ${filters.decade} AND ${filters.decade + 9}`
+            : sql`TRUE`
+      }
       AND ${filters.genre ? sql`${filters.genre} = ANY(p.genres)` : sql`TRUE`}
       AND ${filters.personSlug ? sql`EXISTS (
         SELECT 1 FROM crew_assignments ca
@@ -102,7 +110,13 @@ export async function countProductions(
     SELECT COUNT(*)::text AS count FROM productions p
     WHERE
       ${dataTier === 'all' ? sql`TRUE` : sql`p.data_tier = ${dataTier}::production_data_tier`}
-      AND ${filters.decade ? sql`p.release_year BETWEEN ${filters.decade} AND ${filters.decade + 9}` : sql`TRUE`}
+      AND ${
+        filters.decades && filters.decades.length > 0
+          ? sql`(p.release_year / 10) * 10 IN ${sql`(${sql.join(filters.decades.map((d) => sql`${d}`), sql`, `)})`}`
+          : filters.decade
+            ? sql`p.release_year BETWEEN ${filters.decade} AND ${filters.decade + 9}`
+            : sql`TRUE`
+      }
       AND ${filters.genre ? sql`${filters.genre} = ANY(p.genres)` : sql`TRUE`}
       AND ${filters.personSlug ? sql`EXISTS (
         SELECT 1 FROM crew_assignments ca
@@ -136,7 +150,7 @@ export async function listRecentlyUpdatedProductions(
   db: SeedDb = defaultDb,
   limit = 4,
 ) {
-  return db.execute<ProductionListRow>(sql`
+  return db.execute<ProductionListRow & { last_verified_at: string | null }>(sql`
     SELECT
       p.slug, p.title, p.type, p.release_year, p.synopsis,
       pf.aspect_ratio AS primary_aspect_ratio,
@@ -145,7 +159,8 @@ export async function listRecentlyUpdatedProductions(
       p.data_tier,
       p.genres,
       p.vote_average::text,
-      p.popularity::text
+      p.popularity::text,
+      p.last_verified_at::text
     FROM productions p
     LEFT JOIN production_formats pf
       ON pf.production_id = p.id AND pf.is_primary = true
@@ -268,21 +283,23 @@ export async function getProductionWithFullDetail(db: SeedDb = defaultDb, slug: 
       FROM production_studios ps JOIN studios s ON s.id = ps.studio_id
       WHERE ps.production_id = ${prod.id} ORDER BY s.name`),
 
-    // Crew
+    // Crew. Migration 0059 — is_primary sorts the lead credit to the top
+    // of each role group so the UI can render co-DPs / multi-editor docs
+    // with explicit "primary" weight rather than guessing by credit_order.
     db.execute<{
       person_slug: string; display_name: string; role_slug: string; role_name: string;
       role_category: string; credit_order: number | null; credit_name_override: string | null;
-      profile_path: string | null;
+      profile_path: string | null; is_primary: boolean;
     }>(sql`
       SELECT ppl.slug AS person_slug, ppl.display_name, r.slug AS role_slug,
              r.name AS role_name, r.category AS role_category,
              ca.credit_order, ca.credit_name_override,
-             ppl.profile_path
+             ppl.profile_path, ca.is_primary
       FROM crew_assignments ca
       JOIN people ppl ON ppl.id = ca.person_id
       JOIN roles r ON r.id = ca.role_id
       WHERE ca.production_id = ${prod.id}
-      ORDER BY r.category, ca.credit_order NULLS LAST, ppl.display_name`),
+      ORDER BY r.category, ca.is_primary DESC, ca.credit_order NULLS LAST, ppl.display_name`),
 
     // Scenes with equipment
     db.execute<{
@@ -441,6 +458,7 @@ export async function searchProductionsCombined(
   poster_path: string | null;
   synopsis: string | null;
   similarity: number | null;
+  data_tier: 'curated' | 'imported';
 }>> {
   const literal = queryEmbedding ? `[${queryEmbedding.join(',')}]` : null;
 
@@ -497,8 +515,9 @@ export async function searchProductionsCombined(
     poster_path: string | null;
     synopsis: string | null;
     similarity: number | null;
+    data_tier: 'curated' | 'imported';
   }>(sql`
-    SELECT p.slug, p.title, p.release_year, p.poster_path, p.synopsis,
+    SELECT p.slug, p.title, p.release_year, p.poster_path, p.synopsis, p.data_tier,
            ${similarityCol}
     FROM productions p
     WHERE ${dirClause}
@@ -982,4 +1001,154 @@ export async function getEditorialDepthStats(db: SeedDb = defaultDb): Promise<Ed
       ) sub) AS cited_references
   `);
   return rows[0]!;
+}
+
+/**
+ * UX-audit P0-3 — fetch a 2-4 slug set for the /films/compare side-by-side
+ * view. Returns the same shape as `listProductions` plus a primary-DP slug,
+ * since lens/DP comparability is the most-requested cross-film cut.
+ */
+export type ProductionCompareRow = ProductionListRow & {
+  primary_dp_name: string | null;
+  primary_dp_slug: string | null;
+  director_name: string | null;
+  director_slug: string | null;
+  runtime_minutes: number | null;
+};
+
+export async function getProductionsForComparison(
+  db: SeedDb = defaultDb,
+  slugs: string[],
+): Promise<ProductionCompareRow[]> {
+  if (slugs.length === 0) return [];
+  return db.execute<ProductionCompareRow>(sql`
+    SELECT
+      p.slug, p.title, p.type, p.release_year, p.synopsis,
+      pf.aspect_ratio AS primary_aspect_ratio,
+      pf.acquisition_format AS primary_acquisition_format,
+      p.poster_path,
+      p.data_tier,
+      p.genres,
+      p.vote_average::text,
+      p.popularity::text,
+      p.runtime_minutes,
+      -- Migration 0059 — is_primary is the canonical primary marker.
+      -- Falls back to credit_order for un-curated productions where
+      -- the boolean is still FALSE everywhere in a (production, role)
+      -- group (post-backfill that group still has exactly one TRUE,
+      -- but co-curated edits may temporarily leave none).
+      (
+        SELECT pp.display_name FROM crew_assignments ca
+        JOIN people pp ON pp.id = ca.person_id
+        JOIN roles r ON r.id = ca.role_id
+        WHERE ca.production_id = p.id
+          AND (r.name ILIKE '%cinematograph%' OR r.slug ILIKE 'director-of-photo%')
+        ORDER BY ca.is_primary DESC, ca.credit_order ASC NULLS LAST LIMIT 1
+      ) AS primary_dp_name,
+      (
+        SELECT pp.slug FROM crew_assignments ca
+        JOIN people pp ON pp.id = ca.person_id
+        JOIN roles r ON r.id = ca.role_id
+        WHERE ca.production_id = p.id
+          AND (r.name ILIKE '%cinematograph%' OR r.slug ILIKE 'director-of-photo%')
+        ORDER BY ca.is_primary DESC, ca.credit_order ASC NULLS LAST LIMIT 1
+      ) AS primary_dp_slug,
+      (
+        SELECT pp.display_name FROM crew_assignments ca
+        JOIN people pp ON pp.id = ca.person_id
+        JOIN roles r ON r.id = ca.role_id
+        WHERE ca.production_id = p.id AND r.slug = 'director'
+        ORDER BY ca.is_primary DESC, ca.credit_order ASC NULLS LAST LIMIT 1
+      ) AS director_name,
+      (
+        SELECT pp.slug FROM crew_assignments ca
+        JOIN people pp ON pp.id = ca.person_id
+        JOIN roles r ON r.id = ca.role_id
+        WHERE ca.production_id = p.id AND r.slug = 'director'
+        ORDER BY ca.is_primary DESC, ca.credit_order ASC NULLS LAST LIMIT 1
+      ) AS director_slug
+    FROM productions p
+    LEFT JOIN production_formats pf ON pf.production_id = p.id AND pf.is_primary = true
+    WHERE p.slug IN ${sql`(${sql.join(slugs.map((s) => sql`${s}`), sql`, `)})`}
+  `);
+}
+
+/**
+ * UX-audit E4 — find crew people who appear on 2+ of the given production
+ * slugs. Powers the "Shared collaborators" panel on /films/compare. Sorted
+ * by overlap count desc, then primary-role for stable display.
+ */
+export type SharedCollaboratorRow = {
+  slug: string;
+  display_name: string;
+  primary_role: string | null;
+  shared_count: number;
+  shared_slugs: string[];
+};
+
+export async function getSharedCollaboratorsAcrossFilms(
+  db: SeedDb = defaultDb,
+  productionSlugs: string[],
+): Promise<SharedCollaboratorRow[]> {
+  if (productionSlugs.length < 2) return [];
+  return db.execute<SharedCollaboratorRow>(sql`
+    WITH source_productions AS (
+      SELECT id, slug FROM productions
+      WHERE slug IN ${sql`(${sql.join(productionSlugs.map((s) => sql`${s}`), sql`, `)})`}
+    ),
+    crew_x AS (
+      SELECT
+        ppl.id,
+        ppl.slug,
+        ppl.display_name,
+        sp.slug AS production_slug
+      FROM source_productions sp
+      JOIN crew_assignments ca ON ca.production_id = sp.id
+      JOIN people ppl ON ppl.id = ca.person_id
+      GROUP BY ppl.id, ppl.slug, ppl.display_name, sp.slug
+    )
+    SELECT
+      cx.slug,
+      cx.display_name,
+      (
+        SELECT r.name FROM crew_assignments ca2
+        JOIN roles r ON r.id = ca2.role_id
+        WHERE ca2.person_id = cx.id
+        GROUP BY r.name
+        ORDER BY COUNT(*) DESC LIMIT 1
+      ) AS primary_role,
+      COUNT(DISTINCT cx.production_slug)::int AS shared_count,
+      array_agg(DISTINCT cx.production_slug) AS shared_slugs
+    FROM crew_x cx
+    GROUP BY cx.id, cx.slug, cx.display_name
+    HAVING COUNT(DISTINCT cx.production_slug) >= 2
+    ORDER BY shared_count DESC, cx.display_name ASC
+    LIMIT 30
+  `);
+}
+
+/**
+ * Migration 0059 follow-up — clean helper for the "who is the primary
+ * lead for this (production, role)?" query that the codebase fakes with
+ * credit_order subqueries in ~6 places. Falls back to credit_order when
+ * no row in the group is marked primary (uncurated productions).
+ *
+ * Use this in preference to inline subqueries going forward.
+ */
+export async function getPrimaryCrewForRole(
+  db: SeedDb = defaultDb,
+  productionSlug: string,
+  roleSlug: string,
+): Promise<{ display_name: string; slug: string } | null> {
+  const [row] = await db.execute<{ display_name: string; slug: string }>(sql`
+    SELECT pp.display_name, pp.slug
+    FROM crew_assignments ca
+    JOIN people pp ON pp.id = ca.person_id
+    JOIN roles r ON r.id = ca.role_id
+    JOIN productions p ON p.id = ca.production_id
+    WHERE p.slug = ${productionSlug} AND r.slug = ${roleSlug}
+    ORDER BY ca.is_primary DESC, ca.credit_order ASC NULLS LAST
+    LIMIT 1
+  `);
+  return row ?? null;
 }
