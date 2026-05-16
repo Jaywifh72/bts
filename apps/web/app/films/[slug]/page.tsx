@@ -41,15 +41,19 @@ interface Props {
 export const revalidate = 86400;
 
 export async function generateStaticParams() {
-  // Pre-render EVERY production at build. Cold-page-on-first-visit was the
-  // measurable spike-day failure mode: each cold film page fires ~19 parallel
-  // queries + TMDb image fetch. Pre-rendering at build time pushes that cost
-  // off the request path. With `revalidate = 86400` the build artifact only
-  // stays stale for a day before ISR re-renders it.
+  // Deploy-budget refactor: pre-render only the curated tier (~hand-seeded
+  // dossiers) at build. Imported / long-tail productions render on first
+  // visit and cache via ISR (`revalidate = 86400`).
   //
-  // If the catalog grows beyond ~5,000 productions and build time becomes
-  // an issue, revert to curated-only + warm imported on first visit.
-  const rows = await listProductions(db);
+  // Why: building every row fans out ~30 pages × ~19 parallel queries
+  // each, which exhausts free-tier Postgres connection pools (Neon free
+  // = 100, local Docker = 100). The curated subset is what readers
+  // actually hit most often — the long tail gets warmed on demand.
+  //
+  // To revert to "pre-render every row", change to `listProductions(db)`
+  // and ensure your DATABASE_URL points at a pgbouncer / pooled
+  // connection that can absorb the build's concurrency.
+  const rows = await listProductions(db, { dataTier: 'curated', limit: 2000 });
   return rows.map((r) => ({ slug: r.slug }));
 }
 

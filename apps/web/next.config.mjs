@@ -1,6 +1,15 @@
 /** @type {import('next').NextConfig} */
 const config = {
   transpilePackages: ['@bts/db'],
+  // Deploy budget — cap static-page concurrency at build so the
+  // build worker doesn't fan ~30 pages × ~19 queries each across a
+  // small Postgres connection pool. Vercel's build env + Neon's
+  // pooler can absorb more, but pinning this here keeps local
+  // builds (Docker pg, 100 conns) honest with prod expectations.
+  experimental: {
+    workerThreads: false,
+    cpus: 2,
+  },
   // Next 16+ dev server treats requests to /_next/* as cross-origin unless
   // the Host header matches the server's bound origin. When the dev server
   // binds to `localhost` but the browser hits `127.0.0.1` (Chrome devtools
