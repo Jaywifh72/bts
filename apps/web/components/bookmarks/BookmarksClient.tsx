@@ -11,6 +11,11 @@ const KIND_LABEL: Record<string, string> = {
   'gear-item': 'Gear',
   'gear-series': 'Gear',
   'vfx-house': 'VFX Houses',
+  'stunt-company': 'Stunt Companies',
+  'stunt-school': 'Stunt Schools',
+  reference: 'References',
+  format: 'Formats',
+  society: 'Societies',
 };
 
 export function BookmarksClient({ isLoggedIn }: { isLoggedIn: boolean }) {

@@ -5,7 +5,9 @@ vi.mock('@bts/db', () => ({
   db: {
     insert: vi.fn().mockReturnValue({
       values: vi.fn().mockReturnValue({
-        onConflictDoNothing: vi.fn().mockResolvedValue(undefined),
+        onConflictDoNothing: vi.fn().mockReturnValue({
+          returning: vi.fn().mockResolvedValue([]),
+        }),
       }),
     }),
     delete: vi.fn().mockReturnValue({ where: vi.fn().mockResolvedValue(undefined) }),
@@ -13,6 +15,7 @@ vi.mock('@bts/db', () => ({
       from: vi.fn().mockReturnValue({
         where: vi.fn().mockReturnValue({
           orderBy: vi.fn().mockResolvedValue([]),
+          limit: vi.fn().mockResolvedValue([]),
         }),
       }),
     }),
@@ -29,7 +32,12 @@ vi.mock('@/lib/rate-limit', () => ({
 }));
 vi.mock('next/cache', () => ({ revalidatePath: vi.fn() }));
 
-import { addBookmarkAction, removeBookmarkAction } from './bookmarks';
+import {
+  addBookmarkAction,
+  removeBookmarkAction,
+  toggleBookmarkAction,
+  hasBookmarkAction,
+} from './bookmarks';
 import { auth } from '@/auth';
 
 describe('bookmark server actions', () => {
@@ -51,5 +59,17 @@ describe('bookmark server actions', () => {
   it('removeBookmarkAction throws when unauthenticated', async () => {
     (auth as ReturnType<typeof vi.fn>).mockResolvedValue(null);
     await expect(removeBookmarkAction('film', 'x')).rejects.toThrow(/unauth/i);
+  });
+
+  it('toggleBookmarkAction throws when unauthenticated', async () => {
+    (auth as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    await expect(
+      toggleBookmarkAction({ kind: 'film', slug: 'x', title: 't', href: '/films/x' }),
+    ).rejects.toThrow(/unauth/i);
+  });
+
+  it('hasBookmarkAction throws when unauthenticated', async () => {
+    (auth as ReturnType<typeof vi.fn>).mockResolvedValue(null);
+    await expect(hasBookmarkAction('film', 'x')).rejects.toThrow(/unauth/i);
   });
 });
