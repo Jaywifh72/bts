@@ -2,7 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { getBookmarks, removeBookmark, type Bookmark } from '@/lib/bookmarks';
+import { useBookmarkStore } from '@/lib/bookmarks/use-store';
+import type { Bookmark } from '@/lib/bookmarks/types';
 
 const KIND_LABEL: Record<string, string> = {
   film: 'Films',
@@ -12,23 +13,26 @@ const KIND_LABEL: Record<string, string> = {
   'vfx-house': 'VFX Houses',
 };
 
-export function BookmarksClient() {
-  const [items, setItems] = useState<Bookmark[]>([]);
-  const [hydrated, setHydrated] = useState(false);
+export function BookmarksClient({ isLoggedIn }: { isLoggedIn: boolean }) {
+  const store = useBookmarkStore(isLoggedIn);
+  const [items, setItems] = useState<Bookmark[] | null>(null);
 
   useEffect(() => {
-    setHydrated(true);
-    setItems(getBookmarks());
-    function refresh() { setItems(getBookmarks()); }
-    window.addEventListener('cinecanon:bookmarks-changed', refresh);
-    window.addEventListener('storage', refresh);
+    let cancelled = false;
+    function load() {
+      void store.list().then((v) => { if (!cancelled) setItems(v); });
+    }
+    load();
+    window.addEventListener('cinecanon:bookmarks-changed', load);
+    window.addEventListener('storage', load);
     return () => {
-      window.removeEventListener('cinecanon:bookmarks-changed', refresh);
-      window.removeEventListener('storage', refresh);
+      cancelled = true;
+      window.removeEventListener('cinecanon:bookmarks-changed', load);
+      window.removeEventListener('storage', load);
     };
-  }, []);
+  }, [store]);
 
-  if (!hydrated) {
+  if (items === null) {
     return <div className="rounded border border-zinc-800 bg-zinc-900/40 p-8 text-center text-zinc-500">Loading…</div>;
   }
 
@@ -40,12 +44,16 @@ export function BookmarksClient() {
     );
   }
 
-  // Group by kind
   const grouped = new Map<string, Bookmark[]>();
   for (const item of items) {
     const list = grouped.get(item.kind) ?? [];
     list.push(item);
     grouped.set(item.kind, list);
+  }
+
+  async function onRemove(b: Bookmark) {
+    await store.remove(b.kind, b.slug);
+    window.dispatchEvent(new CustomEvent('cinecanon:bookmarks-changed'));
   }
 
   return (
@@ -58,13 +66,11 @@ export function BookmarksClient() {
               <li key={`${b.kind}:${b.slug}`} className="flex items-center justify-between gap-4 px-4 py-2.5">
                 <Link href={b.href} className="min-w-0 flex-1">
                   <div className="truncate text-zinc-100 hover:text-amber-400">{b.title}</div>
-                  {b.subtitle && (
-                    <div className="text-xs text-zinc-500">{b.subtitle}</div>
-                  )}
+                  {b.subtitle && <div className="text-xs text-zinc-500">{b.subtitle}</div>}
                 </Link>
                 <button
                   type="button"
-                  onClick={() => { removeBookmark(b.kind, b.slug); setItems(getBookmarks()); }}
+                  onClick={() => onRemove(b)}
                   className="text-xs text-zinc-500 hover:text-red-400"
                   aria-label={`Remove ${b.title} from bookmarks`}
                 >
