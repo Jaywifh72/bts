@@ -15,8 +15,14 @@ import { sql, type SQL } from 'drizzle-orm';
 
 export type CraftSlug =
   | 'cinematography' | 'editing' | 'production-design' | 'costume-design'
-  | 'makeup-hairstyling' | 'sound' | 'score' | 'visual-effects'
-  | 'stunts' | 'casting' | 'animation' | 'art-direction';
+  | 'makeup-hairstyling'
+  // Sound is split into three crafts because MPSE Golden Reel and CAS
+  // distinguish them — see `craftFromAward` for the mapping rules. The
+  // legacy 'sound' slug is kept as an alias-target inside the matcher so
+  // existing seeded rows don't break.
+  | 'sound-design' | 'dialogue-adr' | 'music-editing'
+  | 'score' | 'music-supervision'
+  | 'visual-effects' | 'stunts' | 'casting' | 'animation' | 'art-direction';
 
 export type CraftDef = {
   slug: CraftSlug;
@@ -33,8 +39,11 @@ export const CRAFTS: CraftDef[] = [
   { slug: 'production-design',  name: 'Production Design',   tagline: 'World-building, sets, scenic',          sortOrder: 30 },
   { slug: 'costume-design',     name: 'Costume Design',      tagline: 'Character through wardrobe',             sortOrder: 40 },
   { slug: 'makeup-hairstyling', name: 'Makeup & Hairstyling',tagline: 'Prosthetics, beauty, character',         sortOrder: 50 },
-  { slug: 'sound',              name: 'Sound',               tagline: 'Mixers, editors, designers',             sortOrder: 60 },
+  { slug: 'sound-design',       name: 'Sound Design & Foley',tagline: 'Designers, SFX editors, foley',          sortOrder: 60 },
+  { slug: 'dialogue-adr',       name: 'Dialogue & ADR',      tagline: 'Production sound, dialogue editing, ADR', sortOrder: 65 },
+  { slug: 'music-editing',      name: 'Music Editing',       tagline: 'Score editorial and integration',        sortOrder: 67 },
   { slug: 'score',              name: 'Original Score',      tagline: 'Composers and orchestration',            sortOrder: 70 },
+  { slug: 'music-supervision',  name: 'Music Supervision',   tagline: 'Licensed song selection and clearance',  sortOrder: 75 },
   { slug: 'visual-effects',     name: 'Visual Effects',      tagline: 'Houses, supervisors, the VFX team',      sortOrder: 80 },
   { slug: 'stunts',             name: 'Stunts',              tagline: 'Coordinators, performers, rigging',      sortOrder: 90 },
   { slug: 'casting',            name: 'Casting',             tagline: 'Casting directors',                      sortOrder: 100 },
@@ -89,13 +98,22 @@ export function craftFromAward(awardOrg: string, category: string): CraftSlug | 
   // stunt categories should they ever appear).
   if (/stunt/.test(c)) return 'stunts';
   if (/cinematograph/.test(c)) return 'cinematography';
+  // Music editing (MPSE Golden Reel) — match BEFORE generic 'editing'.
+  if (/music editing|music editor/.test(c)) return 'music-editing';
   if (/\bediting\b|\bedited\b|film editing/.test(c)) return 'editing';
   if (/production design|production designer/.test(c)) return 'production-design';
   if (/art direction|art director/.test(c)) return 'art-direction';
   if (/costume/.test(c)) return 'costume-design';
   if (/makeup|make-up|hair/.test(c)) return 'makeup-hairstyling';
-  // 'sound' must avoid 'soundtrack' (rarely used as a category but safe).
-  if (/sound mixing|sound editing|sound design|\bsound\b(?!track)/.test(c)) return 'sound';
+  // Sound family — order matters: dialogue/ADR first (most specific), then
+  // design/effects/foley, then bare 'sound' → falls through to sound-design.
+  if (/dialogue|dialog editor|\badr\b/.test(c)) return 'dialogue-adr';
+  if (/sound design|sound effect|foley|sfx editor|supervising sound/.test(c)) return 'sound-design';
+  // 'sound mixing' (CAS, AMPAS Best Sound) — production+post mix, classify as dialogue-adr lineage
+  if (/sound mixing|sound mixer|re-recording mixer/.test(c)) return 'dialogue-adr';
+  if (/\bsound\b(?!track)/.test(c)) return 'sound-design';
+  // Music supervision — match BEFORE score patterns.
+  if (/music supervis/.test(c)) return 'music-supervision';
   if (/original score|musical score|score(?! and song)/.test(c)) return 'score';
   if (/visual effect/.test(c)) return 'visual-effects';
   if (/casting/.test(c)) return 'casting';
@@ -130,8 +148,13 @@ export function craftCaseSql(orgCol: SQL, catCol: SQL): SQL {
     WHEN ${catCol} ILIKE '%art direction%'        THEN 'art-direction'
     WHEN ${catCol} ILIKE '%costume%'              THEN 'costume-design'
     WHEN ${catCol} ILIKE '%makeup%' OR ${catCol} ILIKE '%make-up%' OR ${catCol} ILIKE '%hair%' THEN 'makeup-hairstyling'
-    WHEN ${catCol} ILIKE '%sound mixing%' OR ${catCol} ILIKE '%sound editing%' OR ${catCol} ILIKE '%sound design%'
-         OR (${catCol} ILIKE '%sound%' AND ${catCol} NOT ILIKE '%soundtrack%') THEN 'sound'
+    WHEN ${catCol} ILIKE '%music editing%' OR ${catCol} ILIKE '%music editor%' THEN 'music-editing'
+    WHEN ${catCol} ILIKE '%dialogue%' OR ${catCol} ILIKE '%dialog editor%' OR ${catCol} ILIKE '%adr%' THEN 'dialogue-adr'
+    WHEN ${catCol} ILIKE '%sound design%' OR ${catCol} ILIKE '%sound effect%' OR ${catCol} ILIKE '%foley%'
+         OR ${catCol} ILIKE '%sfx editor%' OR ${catCol} ILIKE '%supervising sound%' THEN 'sound-design'
+    WHEN ${catCol} ILIKE '%sound mixing%' OR ${catCol} ILIKE '%sound mixer%' OR ${catCol} ILIKE '%re-recording mixer%' THEN 'dialogue-adr'
+    WHEN ${catCol} ILIKE '%sound%' AND ${catCol} NOT ILIKE '%soundtrack%' THEN 'sound-design'
+    WHEN ${catCol} ILIKE '%music supervis%' THEN 'music-supervision'
     WHEN ${catCol} ILIKE '%original score%' OR ${catCol} ILIKE '%musical score%'
          OR (${catCol} ILIKE '%score%' AND ${catCol} NOT ILIKE '%score and song%') THEN 'score'
     WHEN ${catCol} ILIKE '%visual effect%'        THEN 'visual-effects'

@@ -45,6 +45,7 @@ export default async function HomePage() {
     featured, totalCurated, totalAll, recentlyUpdatedRaw,
     shotOfTheDay, depthStats,
     recentCorrections, recentCitations, shotWall, awardsStats,
+    soundStats, musicStats,
   ] = await Promise.all([
     listFeaturedProductions(db, 6),
     countProductions(db, { dataTier: 'curated' }),
@@ -65,6 +66,25 @@ export default async function HomePage() {
              COUNT(DISTINCT award_org)::int AS orgs
       FROM production_awards
     `).then((r) => r[0] ?? { total: 0, wins: 0, orgs: 0 }),
+    // Sound depth — post-houses tagged sound + sound-department crew count.
+    db.execute<{ houses: number; people: number }>(sql`
+      SELECT
+        (SELECT COUNT(*)::int FROM post_houses WHERE kind IN ('sound_mix', 'sound_design')) AS houses,
+        (SELECT COUNT(DISTINCT ca.person_id)::int
+           FROM crew_assignments ca
+           JOIN roles r ON r.id = ca.role_id
+          WHERE r.slug IN ('production-sound-mixer','sound-designer','re-recording-mixer',
+                           'foley-artist','boom-operator','supervising-sound-editor','dialog-editor')) AS people
+    `).then((r) => r[0] ?? { houses: 0, people: 0 }),
+    // Music depth — scoring stages + composer/music-supervisor crew count.
+    db.execute<{ stages: number; composers: number }>(sql`
+      SELECT
+        (SELECT COUNT(*)::int FROM scoring_stages) AS stages,
+        (SELECT COUNT(DISTINCT ca.person_id)::int
+           FROM crew_assignments ca
+           JOIN roles r ON r.id = ca.role_id
+          WHERE r.slug IN ('composer','co-composer','orchestrator','music-supervisor','music-editor')) AS composers
+    `).then((r) => r[0] ?? { stages: 0, composers: 0 }),
   ]);
 
   // UX-audit 2026-05-15: Anora etc. were appearing in BOTH rails within
@@ -390,6 +410,36 @@ export default async function HomePage() {
               {awardsStats.total.toLocaleString()} documented entries · {awardsStats.wins.toLocaleString()} wins
               across {awardsStats.orgs} awarding bodies — Oscars, BAFTAs, Cannes, ASC, VES,
               Taurus. Filter by craft, org, year, or recipient.
+            </p>
+          </Link>
+
+          <Link
+            href="/sound"
+            className="group flex flex-col gap-2 rounded border border-sky-900/40 bg-sky-950/10 p-4 hover:border-sky-700/60 transition-colors"
+          >
+            <p className="text-[10px] uppercase tracking-[0.2em] text-sky-400/80">Sound</p>
+            <h3 className="font-serif text-base text-zinc-100 group-hover:text-amber-400">
+              Mixers, designers, foley, dub stages
+            </h3>
+            <p className="text-xs leading-relaxed text-zinc-400">
+              {soundStats.houses} post-houses tagged sound mix or sound design ·
+              {' '}{soundStats.people.toLocaleString()} working sound-department crew with cited credits.
+              Production mixers, supervising sound editors, re-recording mixers, foley.
+            </p>
+          </Link>
+
+          <Link
+            href="/music"
+            className="group flex flex-col gap-2 rounded border border-violet-900/40 bg-violet-950/10 p-4 hover:border-violet-700/60 transition-colors"
+          >
+            <p className="text-[10px] uppercase tracking-[0.2em] text-violet-400/80">Music & Score</p>
+            <h3 className="font-serif text-base text-zinc-100 group-hover:text-amber-400">
+              Composers, scoring stages, supervisors
+            </h3>
+            <p className="text-xs leading-relaxed text-zinc-400">
+              {musicStats.composers.toLocaleString()} composers, orchestrators, music editors and supervisors ·
+              {' '}{musicStats.stages} scoring stages catalogued. Score deep-dives and curated cue-level
+              listening guides coming online.
             </p>
           </Link>
 
