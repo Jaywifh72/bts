@@ -22,7 +22,9 @@ const SECTIONS = sectionFlag ? [sectionFlag] : ['core', 'films', 'crew', 'gear',
 async function fetchSitemap(name: string): Promise<string[]> {
   const r = await fetch(`${BASE}/sitemap-${name}.xml`);
   const xml = await r.text();
-  return Array.from(xml.matchAll(/<loc>([^<]+)<\/loc>/g)).map((m) => m[1]);
+  return Array.from(xml.matchAll(/<loc>([^<]+)<\/loc>/g))
+    .map((m) => m[1])
+    .filter((u): u is string => !!u);
 }
 
 async function warm(url: string, attempt = 1): Promise<{ url: string; status: number; ms: number; bytes: number }> {
@@ -49,7 +51,9 @@ async function runPool<T>(items: T[], n: number, fn: (item: T, idx: number) => P
     while (true) {
       const idx = i++;
       if (idx >= items.length) return;
-      await fn(items[idx], idx);
+      const item = items[idx];
+      if (item === undefined) return;
+      await fn(item, idx);
     }
   });
   await Promise.all(workers);

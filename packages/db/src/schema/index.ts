@@ -23,3 +23,5 @@ export * from './jobs.ts';
 export * from './media.ts';
 export * from './societies.ts';
 export * from './scoring-stages.ts';
+export * from './auth.ts';
+export * from './bookmarks.ts';

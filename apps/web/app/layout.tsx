@@ -5,7 +5,9 @@ import { TopNav } from '@/components/nav/TopNav';
 import { Footer } from '@/components/nav/Footer';
 import { KeyboardShortcuts } from '@/components/nav/KeyboardShortcuts';
 import { CommandPalette } from '@/components/nav/CommandPalette';
+import { BookmarkSyncOnSignIn } from '@/components/BookmarkSyncOnSignIn';
 import { siteUrl } from '@/lib/site';
+import { safeAuth } from '@/lib/safe-auth';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
@@ -36,15 +38,16 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({ children }: { children: React.ReactNode }) {
+export default async function RootLayout({ children }: { children: React.ReactNode }) {
+  const session = await safeAuth();
   return (
     <html lang="en" className={`${inter.variable} ${dmSerifDisplay.variable}`}>
-      <body className="min-h-screen bg-zinc-950 font-sans text-zinc-50 antialiased">
+      <body data-logged-in={session ? 'true' : 'false'} className="min-h-screen bg-zinc-950 font-sans text-zinc-50 antialiased">
         {/* T8-2: skip-to-content. Visually hidden until keyboard-focused. */}
         <a href="#main-content" className="skip-link">
           Skip to content
         </a>
-        <TopNav />
+        <TopNav session={session} />
         <main
           id="main-content"
           tabIndex={-1}
@@ -55,6 +58,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <Footer />
         <KeyboardShortcuts />
         <CommandPalette />
+        <BookmarkSyncOnSignIn isLoggedIn={!!session} />
       </body>
     </html>
   );
