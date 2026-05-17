@@ -146,10 +146,10 @@ const WIKIDATA_JOBS: JobDef[] = [
     group: 'wikidata',
     label: 'Wikidata — resolve person IDs',
     description:
-      'For people missing a wikidata_id, search by IMDb ID + display name to resolve the canonical Q-number.',
+      'For people missing a wikidata_id, search by IMDb ID + display name to resolve the canonical Q-number. Rate-limited; defaults to 500/run so a single click finishes in minutes — clear the field to process all ~4300 people (will hit the GHA 90-min cap).',
     command: { args: ['--filter', '@bts/scraper', 'cli', 'wikidata:resolve', '--target=people'] },
     inputs: [
-      { name: 'limit', label: 'Limit', type: 'number', placeholder: 'all' },
+      { name: 'limit', label: 'Limit', type: 'number', placeholder: 'all', default: 500 },
     ],
     weight: 'medium',
   },
@@ -171,10 +171,10 @@ const WIKIDATA_JOBS: JobDef[] = [
     group: 'wikidata',
     label: 'Wikidata — backfill education',
     description:
-      'Pull alma-mater / film-school affiliations from Wikidata into the people.film_schools array.',
+      'Pull alma-mater / film-school affiliations from Wikidata into the people.film_schools array. Rate-limited; defaults to 500/run so a single click finishes in minutes — clear the field to process all eligible people.',
     command: { args: ['--filter', '@bts/scraper', 'cli', 'wikidata:education'] },
     inputs: [
-      { name: 'limit', label: 'Limit', type: 'number', placeholder: 'all' },
+      { name: 'limit', label: 'Limit', type: 'number', placeholder: 'all', default: 500 },
       { name: 'refresh', label: 'Refresh existing', type: 'boolean' },
     ],
     weight: 'medium',

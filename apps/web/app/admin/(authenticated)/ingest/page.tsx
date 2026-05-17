@@ -107,6 +107,11 @@ function JobCard({
                 <input
                   name={input.name}
                   type={input.type === 'number' ? 'number' : 'text'}
+                  defaultValue={
+                    input.default !== undefined && input.default !== true && input.default !== false
+                      ? String(input.default)
+                      : undefined
+                  }
                   placeholder={input.placeholder}
                   className="mt-1 w-full rounded border border-zinc-700 bg-zinc-950/60 px-2 py-1 font-mono text-xs text-zinc-200 focus:border-amber-700 focus:outline-none"
                 />
