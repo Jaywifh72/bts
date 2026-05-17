@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { updateUserRoleAction } from './actions';
+import { updateUserRoleAction } from '../../app/admin/(authenticated)/users/actions';
 
 type Role = 'admin' | 'super_user' | 'premium' | 'standard';
 

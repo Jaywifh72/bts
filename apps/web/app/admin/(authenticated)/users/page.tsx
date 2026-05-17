@@ -3,7 +3,7 @@ import { redirect } from 'next/navigation';
 import { asc } from 'drizzle-orm';
 import { db, users, accounts } from '@bts/db';
 import { safeAuth } from '@/lib/safe-auth';
-import { UserRoleSelect } from './UserRoleSelect';
+import { UserRoleSelect } from '@/components/admin/UserRoleSelect';
 
 export const metadata: Metadata = {
   title: 'User Management',
