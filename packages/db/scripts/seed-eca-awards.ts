@@ -51,7 +51,7 @@ for (const r of RECIPIENTS) {
     INSERT INTO production_awards (production_id, award_org, category, year, is_winner, recipient_person_id, source_url)
     VALUES (${productionId}, 'eca'::award_org_enum, ${r.category}, ${r.year}, true, ${person.id},
             ${'https://www.icgmagazine.com/eca/' + r.year})
-    ON CONFLICT (production_id, award_org, category, year, recipient_person_id) DO NOTHING
+    ON CONFLICT ON CONSTRAINT production_awards_unique DO NOTHING
   `);
   inserted++;
   console.log(`  [ok] ECA ${r.year} → ${r.personSlug} (later shot ${r.productionSlug})`);
