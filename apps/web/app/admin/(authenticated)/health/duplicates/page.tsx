@@ -1,6 +1,15 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { findDuplicateCandidates } from '@/lib/admin/health-queries';
+import { DuplicateMergeButtons } from '@/components/admin/DuplicateMergeButtons';
+
+// Tables we know how to merge (matches the action's allowlist).
+const MERGEABLE = new Set([
+  'vfx_houses',
+  'stunt_companies',
+  'equipment_manufacturers',
+  'productions',
+]);
 
 export const metadata: Metadata = {
   title: 'Duplicate candidates',
@@ -80,7 +89,7 @@ export default async function AdminDuplicatesPage() {
                       key={`${tableName}-${i}-${p.a_slug}-${p.b_slug}`}
                       className="rounded border border-zinc-800 bg-zinc-900/40 p-3"
                     >
-                      <div className="flex items-baseline justify-between gap-3">
+                      <div className="flex items-start justify-between gap-3">
                         <div className="flex items-center gap-2">
                           <span
                             className={`rounded px-1.5 py-0.5 font-mono text-[10px] ${similarityBadge(p.similarity)}`}
@@ -92,6 +101,15 @@ export default async function AdminDuplicatesPage() {
                             similar
                           </span>
                         </div>
+                        {MERGEABLE.has(p.table_name) && (
+                          <DuplicateMergeButtons
+                            tableName={p.table_name}
+                            aSlug={p.a_slug}
+                            aName={p.a_name}
+                            bSlug={p.b_slug}
+                            bName={p.b_name}
+                          />
+                        )}
                       </div>
                       <div className="mt-2 grid gap-3 sm:grid-cols-2">
                         <div className="rounded border border-zinc-800 bg-zinc-950/40 p-2">
@@ -133,9 +151,17 @@ export default async function AdminDuplicatesPage() {
         Pairs are scored with Postgres <code className="font-mono text-zinc-400">pg_trgm.similarity()</code>{' '}
         against the row’s primary name field. Thresholds are
         per-table: editorial entities at 0.45, productions at 0.85,
-        people at 0.7. Merge UI is a follow-up phase — for now this
-        is a detection-only view that lets you spot collisions early
-        and fix them via the existing SQL paths.
+        people at 0.7.
+        <br />
+        <span className="mt-2 block text-zinc-400">
+          <strong className="text-zinc-300">Merge:</strong> Pick which
+          side to keep. Every FK pointing at the deleted row is
+          re-pointed at the kept one inside a transaction; rows in
+          join tables that would collide (e.g. both sides linked to
+          the same production) are dropped instead. People merge is
+          still out of scope — the entity-resolution heuristics need
+          their own UI.
+        </span>
       </aside>
     </div>
   );
