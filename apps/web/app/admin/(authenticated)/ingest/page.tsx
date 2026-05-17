@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { db, listJobRuns, getLastRunPerJob, type JobRunStatus } from '@bts/db';
 import { JOBS, JOB_GROUPS, type JobDef } from '@/lib/admin/job-registry';
-import { runJobAction, runMultipleJobsAction } from './actions';
+import { runJobAction } from './actions';
 import { TmdbQuickAdd } from '@/components/admin/TmdbQuickAdd';
 import { BulkRunBar } from '@/components/admin/BulkRunBar';
 
@@ -173,15 +173,8 @@ export default async function AdminIngestPage(
 
   return (
     <div>
-      {/* Form that all per-card "selected" checkboxes attach to via
-          form="bulk-run-form". The submit button lives in BulkRunBar
-          but uses form="bulk-run-form" too so it submits this form.
-          An empty self-closing form here was breaking page hydration
-          in Next 16, so we render a marker hidden input as the only
-          child to ensure the form has a body. */}
-      <form id="bulk-run-form" action={runMultipleJobsAction} className="contents">
-        <input type="hidden" name="_bulk" value="1" />
-      </form>
+      {/* BulkRunBar (below) renders the form#bulk-run-form. Checkboxes
+          on each JobCard reference it via the `form` attribute. */}
 
       <header className="mb-6 flex items-baseline justify-between">
         <div>
