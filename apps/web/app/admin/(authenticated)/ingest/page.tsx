@@ -11,6 +11,11 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// Force dynamic so the page is rendered per-request — diagnosing whether
+// SSR'd-and-cached output is what's breaking React hydration here.
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 const STATUS_BADGE: Record<JobRunStatus, string> = {
   queued: 'bg-zinc-700 text-zinc-200',
   running: 'bg-sky-600 text-zinc-50',
