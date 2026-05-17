@@ -28,8 +28,11 @@ const ROLE_PILL_CLASS: Record<Role, string> = {
   standard: 'bg-zinc-800 text-zinc-300',
 };
 
+// ISO date so SSR + client produce identical strings (no locale/TZ
+// divergence that would trigger a React hydration mismatch and silently
+// abort hydration of the entire table subtree).
 function formatDate(d: Date): string {
-  return d.toLocaleDateString('en-US', { year: 'numeric', month: 'short', day: 'numeric' });
+  return d.toISOString().slice(0, 10); // YYYY-MM-DD
 }
 
 export default async function AdminUsersPage() {

@@ -4,7 +4,7 @@ import { db, listJobRuns, getLastRunPerJob, type JobRunStatus } from '@bts/db';
 import { JOBS, JOB_GROUPS, type JobDef } from '@/lib/admin/job-registry';
 import { runJobAction } from './actions';
 import { TmdbQuickAdd } from '@/components/admin/TmdbQuickAdd';
-// import { BulkRunBar } from '@/components/admin/BulkRunBar';
+import { BulkRunBar } from '@/components/admin/BulkRunBar';
 
 export const metadata: Metadata = {
   title: 'Ingest',
@@ -125,7 +125,7 @@ function JobCard({
               >
                 {lastRun.status}
               </span>
-              <span>{formatRelative(lastRun.started_at)}</span>
+              <span suppressHydrationWarning>{formatRelative(lastRun.started_at)}</span>
               <span className="text-zinc-600">·</span>
               <span>{formatDuration(lastRun.duration_seconds)}</span>
               {(lastRun.inserted_count > 0 || lastRun.updated_count > 0) && (
@@ -294,7 +294,7 @@ export default async function AdminIngestPage(
               <tbody className="divide-y divide-zinc-800">
                 {recentRuns.map((r) => (
                   <tr key={r.id} className="hover:bg-zinc-900/40">
-                    <td className="px-3 py-2 font-mono text-zinc-400">
+                    <td className="px-3 py-2 font-mono text-zinc-400" suppressHydrationWarning>
                       {formatRelative(r.started_at)}
                     </td>
                     <td className="px-3 py-2 text-zinc-200">{r.job_label}</td>
@@ -327,8 +327,7 @@ export default async function AdminIngestPage(
         )}
       </section>
 
-      {/* BulkRunBar temporarily disabled — diagnosing hydration */}
-      {/* <BulkRunBar /> */}
+      <BulkRunBar />
     </div>
   );
 }

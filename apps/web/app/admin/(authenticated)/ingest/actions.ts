@@ -28,41 +28,5 @@ export async function runJobAction(formData: FormData) {
   redirect(`/admin/ingest/runs/${result.runId}`);
 }
 
-/**
- * Bulk-dispatch every checked job. Each job is queued with empty
- * params (uses script defaults); operators who need custom params
- * should run those jobs individually. Failures on individual jobs
- * are surfaced via the error flash but don't abort the batch.
- */
-export async function runMultipleJobsAction(formData: FormData) {
-  const ids = formData.getAll('selected').map(String).filter(Boolean);
-  if (ids.length === 0) {
-    redirect('/admin/ingest?error=no_jobs_selected');
-  }
-
-  let dispatched = 0;
-  const errors: string[] = [];
-  for (const id of ids) {
-    const job = getJobById(id);
-    if (!job) {
-      errors.push(`${id}: unknown job`);
-      continue;
-    }
-    const result = await startJobRun(job.id, {}, 'admin');
-    if ('error' in result) {
-      errors.push(`${id}: ${result.error}`);
-    } else {
-      dispatched++;
-    }
-  }
-
-  revalidatePath('/admin/ingest');
-  if (errors.length > 0) {
-    redirect(
-      `/admin/ingest?error=${encodeURIComponent(
-        `Dispatched ${dispatched}/${ids.length}. Errors: ${errors.join('; ')}`,
-      )}`,
-    );
-  }
-  redirect(`/admin/ingest?dispatched=${dispatched}`);
-}
+// runMultipleJobsAction moved to lib/admin/bulk-run-action.ts so it
+// can be imported by client components without route-group path quirks.
