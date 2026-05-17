@@ -78,7 +78,7 @@ for (const a of AWARDS) {
       INSERT INTO production_awards (production_id, award_org, category, year, is_winner, source_url)
       SELECT prod.id, ${a.award_org}::award_org_enum, ${a.category}, ${a.year}, ${a.is_winner}, ${a.source_url}
       FROM productions prod WHERE prod.slug = ${a.slug}
-      ON CONFLICT (production_id, award_org, category, year, recipient_person_id) DO UPDATE SET
+      ON CONFLICT ON CONSTRAINT production_awards_unique DO UPDATE SET
         is_winner = EXCLUDED.is_winner,
         source_url = EXCLUDED.source_url,
         updated_at = NOW()
