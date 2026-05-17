@@ -61,16 +61,25 @@ async function main() {
 
   await markJobRunStarted(db, runId, { githubRunUrl: process.env.GITHUB_RUN_URL ?? null });
 
-  // Resolve cwd. `command_cwd` is relative to the repo root.
-  const repoRoot = path.resolve(process.cwd());
+  // Resolve cwd. `command_cwd` is relative to the repo root. In GHA the
+  // worker is launched via `pnpm --filter @bts/db exec`, which chdirs
+  // into packages/db — so process.cwd() is NOT the repo root. Use
+  // GITHUB_WORKSPACE (set by every GHA runner) as the canonical root;
+  // fall back to walking up from process.cwd() for local runs.
+  const repoRoot = process.env.GITHUB_WORKSPACE
+    ? path.resolve(process.env.GITHUB_WORKSPACE)
+    : path.resolve(process.cwd());
   const cwd = run.command_cwd ? path.join(repoRoot, run.command_cwd) : repoRoot;
 
   console.log(`run-admin-job: spawning "${run.command_bin} ${run.command_args.join(' ')}" in ${cwd}`);
 
+  // shell:true on every platform so the bin (pnpm/npx/tsx) is resolved
+  // via PATH. The args come from a controlled server-side registry,
+  // not user input, so shell injection is not a concern here.
   const child = spawn(run.command_bin, run.command_args, {
     cwd,
     env: { ...process.env, FORCE_COLOR: '0' },
-    shell: process.platform === 'win32',
+    shell: true,
   });
 
   let totals = { inserted: 0, updated: 0, warning: 0 };

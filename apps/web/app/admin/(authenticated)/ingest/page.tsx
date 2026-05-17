@@ -2,8 +2,9 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { db, listJobRuns, getLastRunPerJob, type JobRunStatus } from '@bts/db';
 import { JOBS, JOB_GROUPS, type JobDef } from '@/lib/admin/job-registry';
-import { runJobAction } from './actions';
+import { runJobAction, runMultipleJobsAction } from './actions';
 import { TmdbQuickAdd } from '@/components/admin/TmdbQuickAdd';
+import { BulkRunBar } from '@/components/admin/BulkRunBar';
 
 export const metadata: Metadata = {
   title: 'Ingest',
@@ -60,7 +61,21 @@ function JobCard({
       <input type="hidden" name="job_id" value={job.id} />
 
       <div className="flex items-baseline justify-between gap-2">
-        <h3 className="font-serif text-base text-zinc-100">{job.label}</h3>
+        <label className="flex flex-1 cursor-pointer items-baseline gap-2 select-none">
+          {/* Checkbox associated with the page-level bulk-run form via
+              the `form` attribute. Lives inside this card visually but
+              belongs to a different form so the individual Run button
+              isn't affected. */}
+          <input
+            type="checkbox"
+            name="selected"
+            value={job.id}
+            form="bulk-run-form"
+            className="h-4 w-4 shrink-0 rounded border-zinc-600 bg-zinc-900"
+            aria-label={`Select ${job.label} for bulk run`}
+          />
+          <h3 className="font-serif text-base text-zinc-100">{job.label}</h3>
+        </label>
         <span
           className={`shrink-0 rounded border ${WEIGHT_BADGE[job.weight]} px-1.5 py-0.5 text-[10px] uppercase tracking-wide`}
           title={WEIGHT_LABEL[job.weight]}
@@ -143,7 +158,7 @@ function JobCard({
 
 export default async function AdminIngestPage(
   props: {
-    searchParams: Promise<{ error?: string }>;
+    searchParams: Promise<{ error?: string; dispatched?: string }>;
   }
 ) {
   const searchParams = await props.searchParams;
@@ -154,9 +169,15 @@ export default async function AdminIngestPage(
 
   const lastByJob = new Map(lastPerJob.map((r) => [r.job_id, r]));
   const error = searchParams.error;
+  const dispatched = Number(searchParams.dispatched ?? 0);
 
   return (
     <div>
+      {/* Form that all per-card "selected" checkboxes attach to via
+          form="bulk-run-form". Empty children — the submit button lives
+          in the sticky bar below. */}
+      <form id="bulk-run-form" action={runMultipleJobsAction} className="contents" />
+
       <header className="mb-6 flex items-baseline justify-between">
         <div>
           <h1 className="font-serif text-2xl text-zinc-50">Ingest</h1>
@@ -176,6 +197,21 @@ export default async function AdminIngestPage(
       {error && (
         <div className="mb-6 rounded border border-red-900 bg-red-950/40 p-3 text-sm text-red-200">
           Failed to start: {error}
+        </div>
+      )}
+      {dispatched > 0 && (
+        <div className="mb-6 rounded border border-emerald-900/60 bg-emerald-950/30 p-3 text-sm text-emerald-200">
+          Dispatched {dispatched} job{dispatched === 1 ? '' : 's'} — see Recent
+          runs below or watch{' '}
+          <a
+            href="https://github.com/Jaywifh72/bts/actions/workflows/admin-job.yml"
+            target="_blank"
+            rel="noreferrer"
+            className="underline hover:text-emerald-100"
+          >
+            GitHub Actions ↗
+          </a>
+          .
         </div>
       )}
 
@@ -278,6 +314,11 @@ export default async function AdminIngestPage(
           </div>
         )}
       </section>
+
+      {/* Sticky bottom bar — only visible once at least one card is
+          checked. Submit button is associated with #bulk-run-form via
+          the form attribute, so individual Run forms aren't disturbed. */}
+      <BulkRunBar />
     </div>
   );
 }
