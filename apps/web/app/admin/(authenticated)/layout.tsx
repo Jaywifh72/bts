@@ -161,6 +161,14 @@ export default async function AdminAuthenticatedLayout({
                 </span>
               )}
             </Link>
+            {role === 'admin' && (
+              <Link
+                href="/admin/users"
+                className="shrink-0 whitespace-nowrap text-sm text-zinc-300 hover:text-zinc-50"
+              >
+                Users
+              </Link>
+            )}
             <Link
               href="/admin/corrections"
               className="shrink-0 whitespace-nowrap text-sm text-zinc-300 hover:text-zinc-50"

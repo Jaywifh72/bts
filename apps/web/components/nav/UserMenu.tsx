@@ -75,6 +75,15 @@ export function UserMenu({ session }: { session: Session | null }) {
               Admin
             </Link>
           )}
+          {session.user.role === 'admin' && (
+            <Link
+              href="/admin/users"
+              role="menuitem"
+              className="block px-3 py-2 text-sm font-medium text-amber-400 hover:bg-zinc-800"
+            >
+              User Management
+            </Link>
+          )}
           <button
             type="button"
             role="menuitem"
