@@ -22,9 +22,15 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: 'database' },
   callbacks: {
     ...authConfig.callbacks,
-    // Adapter does not populate session.user.id by default.
+    // Adapter does not populate session.user.id / role by default.
     session({ session, user }) {
       session.user.id = user.id;
+      // The Drizzle adapter passes the full users row through `user`,
+      // so role is available even though it's not part of the default
+      // AdapterUser shape. Cast to a structurally-typed local shape
+      // rather than the broader unknown.
+      const u = user as typeof user & { role?: 'admin' | 'super_user' | 'premium' | 'standard' };
+      session.user.role = u.role ?? 'standard';
       return session;
     },
   },

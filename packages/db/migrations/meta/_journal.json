@@ -463,6 +463,13 @@
       "when": 1783382400000,
       "tag": "0065_bookmarks",
       "breakpoints": true
+    },
+    {
+      "idx": 66,
+      "version": "7",
+      "when": 1783468800000,
+      "tag": "0066_user_role",
+      "breakpoints": true
     }
   ]
 }

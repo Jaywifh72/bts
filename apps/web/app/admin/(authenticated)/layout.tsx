@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { redirect } from 'next/navigation';
 import { unstable_cache } from 'next/cache';
 import {
   db,
@@ -8,7 +9,7 @@ import {
   countSourceHealthWarnings,
   countVideoTimestampAnnotationsForReview,
 } from '@bts/db';
-import { logout } from '../login/actions';
+import { safeAuth } from '@/lib/safe-auth';
 
 /**
  * Cache the admin nav badge counts for 30s. Every admin sub-page is
@@ -48,6 +49,14 @@ export default async function AdminAuthenticatedLayout({
 }: {
   children: React.ReactNode;
 }) {
+  // Role guard — only admin / super_user reach the admin chrome.
+  // Anything else (no session, or a standard/premium user) goes back
+  // to /signin with the original path preserved.
+  const session = await safeAuth();
+  const role = session?.user?.role;
+  if (!session?.user) redirect('/signin?callbackUrl=/admin');
+  if (role !== 'admin' && role !== 'super_user') redirect('/');
+
   const {
     openCorrections,
     claimsNeedingSources,
@@ -167,14 +176,12 @@ export default async function AdminAuthenticatedLayout({
               ← Back to site
             </Link>
           </div>
-          <form action={logout} className="shrink-0">
-            <button
-              type="submit"
-              className="text-xs text-zinc-500 hover:text-zinc-300"
-            >
-              Log out
-            </button>
-          </form>
+          <Link
+            href="/account"
+            className="shrink-0 text-xs text-zinc-500 hover:text-zinc-300"
+          >
+            Account
+          </Link>
         </div>
       </div>
       <div className="mx-auto max-w-screen-2xl px-6 py-6">{children}</div>

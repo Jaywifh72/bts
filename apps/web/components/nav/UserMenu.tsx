@@ -66,6 +66,15 @@ export function UserMenu({ session }: { session: Session | null }) {
           <Link href="/bookmarks" role="menuitem" className="block px-3 py-2 text-sm text-zinc-50 hover:bg-zinc-800">
             My bookmarks
           </Link>
+          {(session.user.role === 'admin' || session.user.role === 'super_user') && (
+            <Link
+              href="/admin"
+              role="menuitem"
+              className="block px-3 py-2 text-sm font-medium text-amber-400 hover:bg-zinc-800"
+            >
+              Admin
+            </Link>
+          )}
           <button
             type="button"
             role="menuitem"

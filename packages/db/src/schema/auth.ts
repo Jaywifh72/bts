@@ -1,4 +1,16 @@
-import { pgTable, text, timestamp, uuid, integer, primaryKey } from 'drizzle-orm/pg-core';
+import { pgTable, pgEnum, text, timestamp, uuid, integer, primaryKey } from 'drizzle-orm/pg-core';
+
+/**
+ * Coarse role tiers. `admin` and `super_user` grant access to /admin/*;
+ * `premium` and `standard` are placeholders for future feature gating.
+ */
+export const userRoleEnum = pgEnum('user_role', [
+  'admin',
+  'super_user',
+  'premium',
+  'standard',
+]);
+export type UserRole = (typeof userRoleEnum.enumValues)[number];
 
 export const users = pgTable('users', {
   id: uuid('id').defaultRandom().primaryKey(),
@@ -6,6 +18,7 @@ export const users = pgTable('users', {
   email: text('email').notNull().unique(),
   emailVerified: timestamp('email_verified', { withTimezone: true }),
   image: text('image'),
+  role: userRoleEnum('role').notNull().default('standard'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
