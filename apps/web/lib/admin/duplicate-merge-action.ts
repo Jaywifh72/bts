@@ -125,3 +125,41 @@ export async function mergeDuplicateAction(
     };
   }
 }
+
+export type IgnoreResult = { ok: true } | { ok: false; error: string };
+
+/**
+ * Mark a candidate pair as "these are NOT actually duplicates — keep
+ * both". The pair is stored canonically (lower slug first) so the
+ * dismissal sticks across page-load orderings. Idempotent: re-marking
+ * an already-ignored pair is a no-op.
+ */
+export async function ignoreDuplicateAction(
+  tableName: string,
+  aSlug: string,
+  bSlug: string,
+): Promise<IgnoreResult> {
+  const session = await safeAuth();
+  if (session?.user?.role !== 'admin') {
+    return { ok: false, error: 'Forbidden: admin only' };
+  }
+  if (!ALLOWED_TABLES.has(tableName)) {
+    return { ok: false, error: `Unknown table: ${tableName}` };
+  }
+  if (aSlug === bSlug) {
+    return { ok: false, error: 'slugs are identical' };
+  }
+
+  const [slugLow, slugHigh] = aSlug < bSlug ? [aSlug, bSlug] : [bSlug, aSlug];
+  try {
+    await db.execute(sql`
+      INSERT INTO ignored_duplicates (table_name, slug_low, slug_high, ignored_by)
+      VALUES (${tableName}, ${slugLow}, ${slugHigh}, ${session.user.id}::uuid)
+      ON CONFLICT (table_name, slug_low, slug_high) DO NOTHING
+    `);
+    revalidatePath('/admin/health/duplicates');
+    return { ok: true };
+  } catch (err) {
+    return { ok: false, error: err instanceof Error ? err.message : String(err) };
+  }
+}

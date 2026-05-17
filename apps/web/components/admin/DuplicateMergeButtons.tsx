@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import { mergeDuplicateAction } from '@/lib/admin/duplicate-merge-action';
+import { mergeDuplicateAction, ignoreDuplicateAction } from '@/lib/admin/duplicate-merge-action';
+import { useRouter } from 'next/navigation';
 
 /**
  * Per-pair "Keep ←" / "Keep →" buttons. Uses browser confirm() so
@@ -23,12 +24,27 @@ export function DuplicateMergeButtons({
   bSlug: string;
   bName: string;
 }) {
+  const router = useRouter();
   const [pending, startTransition] = useTransition();
   const [result, setResult] = useState<
     | { ok: true; msg: string }
     | { ok: false; msg: string }
     | null
   >(null);
+
+  function keepBoth() {
+    setResult(null);
+    startTransition(async () => {
+      const r = await ignoreDuplicateAction(tableName, aSlug, bSlug);
+      if (r.ok) {
+        setResult({ ok: true, msg: 'Dismissed — will not appear again' });
+        // Refresh so the dismissed pair disappears from the list.
+        router.refresh();
+      } else {
+        setResult({ ok: false, msg: r.error });
+      }
+    });
+  }
 
   function merge(keepSlug: string, keepName: string, deleteSlug: string, deleteName: string) {
     if (
@@ -63,6 +79,15 @@ export function DuplicateMergeButtons({
           title={`Keep "${aName}", merge "${bName}" into it`}
         >
           ← Keep left
+        </button>
+        <button
+          type="button"
+          disabled={pending || (result?.ok === true)}
+          onClick={keepBoth}
+          className="rounded border border-zinc-700 bg-zinc-800/60 px-2 py-1 text-[10px] uppercase tracking-wide text-zinc-300 hover:bg-zinc-700 disabled:opacity-40"
+          title="Not a duplicate — keep both rows and don't show this pair again"
+        >
+          Keep both
         </button>
         <button
           type="button"

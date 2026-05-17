@@ -33,7 +33,7 @@ export type DuplicatePair = {
  * batched / GIN-driven differently — out of scope here.
  */
 export async function findDuplicateCandidates(): Promise<DuplicatePair[]> {
-  return db.execute<DuplicatePair>(sql`
+  const rows = await db.execute<DuplicatePair>(sql`
     -- VFX houses
     SELECT 'vfx_houses' AS table_name,
            'VFX house' AS table_label,
@@ -95,6 +95,29 @@ export async function findDuplicateCandidates(): Promise<DuplicatePair[]> {
     ORDER BY similarity DESC
     LIMIT 200
   `);
+  return filterIgnoredPairs(rows);
+}
+
+/**
+ * Drop pairs the operator has explicitly marked "not a duplicate".
+ * Match against (table_name, slug_low, slug_high) where the slugs
+ * are sorted alphabetically so the pair is canonical regardless of
+ * which row appears as "a" in the candidates view.
+ */
+async function filterIgnoredPairs<T extends { table_name: string; a_slug: string; b_slug: string }>(
+  pairs: T[],
+): Promise<T[]> {
+  if (pairs.length === 0) return pairs;
+  const ignored = await db.execute<{ table_name: string; slug_low: string; slug_high: string }>(sql`
+    SELECT table_name, slug_low, slug_high FROM ignored_duplicates
+  `);
+  const blocked = new Set(
+    ignored.map((r) => `${r.table_name}|${r.slug_low}|${r.slug_high}`),
+  );
+  return pairs.filter((p) => {
+    const [lo, hi] = p.a_slug < p.b_slug ? [p.a_slug, p.b_slug] : [p.b_slug, p.a_slug];
+    return !blocked.has(`${p.table_name}|${lo}|${hi}`);
+  });
 }
 
 // ── Coverage drill-down ───────────────────────────────────────────
