@@ -174,9 +174,14 @@ export default async function AdminIngestPage(
   return (
     <div>
       {/* Form that all per-card "selected" checkboxes attach to via
-          form="bulk-run-form". Empty children — the submit button lives
-          in the sticky bar below. */}
-      <form id="bulk-run-form" action={runMultipleJobsAction} className="contents" />
+          form="bulk-run-form". The submit button lives in BulkRunBar
+          but uses form="bulk-run-form" too so it submits this form.
+          An empty self-closing form here was breaking page hydration
+          in Next 16, so we render a marker hidden input as the only
+          child to ensure the form has a body. */}
+      <form id="bulk-run-form" action={runMultipleJobsAction} className="contents">
+        <input type="hidden" name="_bulk" value="1" />
+      </form>
 
       <header className="mb-6 flex items-baseline justify-between">
         <div>
