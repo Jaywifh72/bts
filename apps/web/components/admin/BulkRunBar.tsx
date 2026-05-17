@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { runMultipleJobsAction } from '@/app/admin/(authenticated)/ingest/actions';
+import { runMultipleJobsAction } from '@/lib/admin/bulk-run-action';
 
 /**
  * Hosts the bulk-run form AND the sticky bottom bar. Putting both in
