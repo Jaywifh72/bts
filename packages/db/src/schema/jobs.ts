@@ -28,6 +28,15 @@ export const jobRuns = pgTable('job_runs', {
   skippedCount: integer('skipped_count').notNull().default(0),
   warningCount: integer('warning_count').notNull().default(0),
   errorMessage: text('error_message'),
+  // Execution details populated by the runner when the job is queued.
+  // The GitHub Actions worker reads these to know what to spawn; the
+  // local (spawn-in-process) runner uses them for parity.
+  commandBin: text('command_bin'),
+  commandArgs: jsonb('command_args').$type<string[]>(),
+  commandCwd: text('command_cwd'),
+  // Set after successful GitHub workflow_dispatch so the operator can
+  // tail the GHA log from the run page. NULL when run locally.
+  githubRunUrl: text('github_run_url'),
 }, (t) => ({
   jobIdx: index('job_runs_job_idx').on(t.jobId, t.startedAt),
   startedIdx: index('job_runs_started_idx').on(t.startedAt),

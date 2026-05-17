@@ -12,16 +12,13 @@ import { getJobById, type JobDef, type JobInputField } from './job-registry';
 /**
  * Resolve the monorepo root from the dev server's cwd. The Next.js app
  * runs out of apps/web; the scraper + db packages live two levels up.
+ * Only meaningful when spawning locally — on Vercel the runner
+ * dispatches to GitHub Actions and `cwd` is meaningless.
  */
 function repoRoot(): string {
   return path.resolve(process.cwd(), '..', '..');
 }
 
-/**
- * Build the argv for the spawned process. Form-supplied params append
- * as --<name> <value> for `text`/`number` fields; `boolean` fields
- * append as --<name> when truthy and are omitted when falsy.
- */
 function buildArgs(job: JobDef, params: Record<string, unknown>): string[] {
   const args = [...job.command.args];
   if (!job.inputs) return args;
@@ -39,15 +36,8 @@ function buildArgs(job: JobDef, params: Record<string, unknown>): string[] {
   return args;
 }
 
-/**
- * Parse a chunk of stdout for the seed-script convention prefixes
- * we already use across packages/db/scripts/:
- *   [+] inserted, [~] updated, [!] warning/skipped
- */
 function countMarkers(chunk: string): { inserted: number; updated: number; warning: number } {
-  let inserted = 0;
-  let updated = 0;
-  let warning = 0;
+  let inserted = 0, updated = 0, warning = 0;
   for (const line of chunk.split(/\r?\n/)) {
     const t = line.trimStart();
     if (t.startsWith('[+]')) inserted++;
@@ -57,11 +47,6 @@ function countMarkers(chunk: string): { inserted: number; updated: number; warni
   return { inserted, updated, warning };
 }
 
-/**
- * Coerce form-action FormData (or a plain object) into the params
- * shape the runner expects. Boolean fields come through as 'on' from
- * checkboxes and need normalization.
- */
 export function paramsFromForm(
   job: JobDef,
   form: FormData | Record<string, FormDataEntryValue | null>,
@@ -90,16 +75,65 @@ export function paramsFromForm(
 }
 
 /**
- * Spawn a job and run it asynchronously. Returns the run_id immediately
- * (after the row is inserted) so the caller can navigate to the log
- * viewer; the spawned process continues in the background and the
- * job_runs row is updated as output arrives.
- *
- * NOTE: this assumes the process running Next.js can spawn child
- * processes (true for `next dev` and self-hosted `next start`; not
- * true for Vercel serverless). Long-running jobs on serverless need
- * a separate worker queue — out of scope for Phase 7.1.
+ * Decide whether to dispatch via GitHub Actions (production / Vercel)
+ * or spawn locally (developer's machine). The serverless runtime can't
+ * spawn pnpm — see Vercel docs on filesystem + process limits.
  */
+function shouldUseGithubDispatch(): boolean {
+  // Override knob for testing the GHA path from local dev.
+  if (process.env.JOB_RUNNER === 'github') return true;
+  if (process.env.JOB_RUNNER === 'local') return false;
+  return Boolean(process.env.VERCEL) || Boolean(process.env.AWS_LAMBDA_FUNCTION_NAME);
+}
+
+/**
+ * The repo to dispatch jobs into. Defaults to the canonical fork.
+ * Override via GITHUB_REPO env when running a fork or staging branch.
+ */
+function getGithubRepo(): { owner: string; repo: string } {
+  const raw = process.env.GITHUB_REPO ?? 'Jaywifh72/bts';
+  const [owner, repo] = raw.split('/');
+  if (!owner || !repo) throw new Error(`GITHUB_REPO malformed: ${raw}`);
+  return { owner, repo };
+}
+
+const WORKFLOW_FILE = 'admin-job.yml';
+
+async function dispatchToGithubActions(
+  runId: number,
+  job: JobDef,
+): Promise<void> {
+  const token = process.env.GITHUB_DISPATCH_TOKEN;
+  if (!token) throw new Error('GITHUB_DISPATCH_TOKEN not configured');
+  const { owner, repo } = getGithubRepo();
+  const ref = process.env.GITHUB_DISPATCH_REF ?? 'master';
+
+  const res = await fetch(
+    `https://api.github.com/repos/${owner}/${repo}/actions/workflows/${WORKFLOW_FILE}/dispatches`,
+    {
+      method: 'POST',
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${token}`,
+        'X-GitHub-Api-Version': '2022-11-28',
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        ref,
+        inputs: { run_id: String(runId), job_label: job.label },
+      }),
+    },
+  );
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(`GitHub dispatch failed (${res.status}): ${text}`);
+  }
+  // We don't try to resolve the workflow_run.html_url here — the
+  // /dispatches API doesn't return it, and identifying "our" run by
+  // polling is race-prone. The worker itself sets job_runs.github_run_url
+  // via markJobRunStarted() using $GITHUB_RUN_URL once it starts.
+}
+
 export async function startJobRun(
   jobId: string,
   params: Record<string, unknown>,
@@ -108,17 +142,50 @@ export async function startJobRun(
   const job = getJobById(jobId);
   if (!job) return { error: `Unknown job: ${jobId}` };
 
+  const bin = job.command.bin ?? 'pnpm';
+  const args = buildArgs(job, params);
+
+  if (shouldUseGithubDispatch()) {
+    // Persist a queued row first so we have a stable id to pass to
+    // the workflow. The worker will mark it 'running' on start.
+    const runId = await insertJobRun(db, {
+      jobId: job.id,
+      jobLabel: job.label,
+      params,
+      triggeredBy,
+      status: 'queued',
+      commandBin: bin,
+      commandArgs: args,
+      commandCwd: job.command.cwd,
+    });
+
+    try {
+      await dispatchToGithubActions(runId, job);
+    } catch (err) {
+      // Mark the row failed so the operator sees the dispatch error.
+      await finalizeJobRun(db, runId, {
+        status: 'failed',
+        exitCode: null,
+        errorMessage: err instanceof Error ? err.message : 'Dispatch failed',
+      });
+      return { error: err instanceof Error ? err.message : 'Dispatch failed' };
+    }
+    return { runId, jobId: job.id };
+  }
+
+  // ── Local dev path: spawn the child process directly. ────────────
   const runId = await insertJobRun(db, {
     jobId: job.id,
     jobLabel: job.label,
     params,
     triggeredBy,
+    status: 'running',
+    commandBin: bin,
+    commandArgs: args,
+    commandCwd: job.command.cwd,
   });
 
   const cwd = job.command.cwd ? path.join(repoRoot(), job.command.cwd) : repoRoot();
-  const bin = job.command.bin ?? 'pnpm';
-  const args = buildArgs(job, params);
-
   const child = spawn(bin, args, {
     cwd,
     env: { ...process.env, FORCE_COLOR: '0' },
@@ -135,19 +202,11 @@ export async function startJobRun(
     totals.inserted += counts.inserted;
     totals.updated += counts.updated;
     totals.warning += counts.warning;
-    // Flush in small batches so the log viewer doesn't see one big
-    // post-completion blob. Two-line threshold matches our scripts'
-    // typical output cadence.
     if (buffer.length > 0 && (text.includes('\n') || buffer.length > 2000)) {
       const flush = buffer;
       buffer = '';
-      try {
-        await appendJobRunLog(db, runId, flush);
-      } catch (err) {
-        // Logging failure shouldn't crash the spawned process; surface
-        // it to stderr but keep going.
-        console.error('appendJobRunLog failed:', err);
-      }
+      try { await appendJobRunLog(db, runId, flush); }
+      catch (err) { console.error('appendJobRunLog failed:', err); }
     }
   };
 
@@ -179,10 +238,13 @@ export async function startJobRun(
     });
   });
 
-  // Detach so the response doesn't block on the spawned process.
   child.unref?.();
-
   return { runId, jobId: job.id };
 }
 
+// Re-export buildArgs + countMarkers for tests if needed.
+export { buildArgs, countMarkers };
+
+// Hint to TS that JobInputField is intentionally referenced (for prop
+// types of UI form fields wiring into paramsFromForm).
 export type { JobInputField };

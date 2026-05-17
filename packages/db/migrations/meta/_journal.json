@@ -470,6 +470,13 @@
       "when": 1783468800000,
       "tag": "0066_user_role",
       "breakpoints": true
+    },
+    {
+      "idx": 67,
+      "version": "7",
+      "when": 1783555200000,
+      "tag": "0067_job_runs_dispatch_fields",
+      "breakpoints": true
     }
   ]
 }

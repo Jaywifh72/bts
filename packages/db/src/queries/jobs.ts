@@ -22,6 +22,10 @@ export type JobRunRow = {
   skipped_count: number;
   warning_count: number;
   error_message: string | null;
+  command_bin: string | null;
+  command_args: string[] | null;
+  command_cwd: string | null;
+  github_run_url: string | null;
 };
 
 /** List runs with optional job filter, newest first. Capped at 200. */
@@ -35,7 +39,8 @@ export async function listJobRuns(
            started_at::text, finished_at::text,
            exit_code, log_text,
            inserted_count, updated_count, skipped_count, warning_count,
-           error_message
+           error_message,
+           command_bin, command_args, command_cwd, github_run_url
     FROM job_runs
     WHERE
       ${filters.jobId ? sql`job_id = ${filters.jobId}` : sql`TRUE`}
@@ -54,7 +59,8 @@ export async function getJobRun(
            started_at::text, finished_at::text,
            exit_code, log_text,
            inserted_count, updated_count, skipped_count, warning_count,
-           error_message
+           error_message,
+           command_bin, command_args, command_cwd, github_run_url
     FROM job_runs
     WHERE id = ${id}
   `);
@@ -92,19 +98,70 @@ export async function getLastRunPerJob(db: SeedDb = defaultDb): Promise<JobLastR
 
 export async function insertJobRun(
   db: SeedDb = defaultDb,
-  args: { jobId: string; jobLabel: string; params: Record<string, unknown>; triggeredBy?: string },
+  args: {
+    jobId: string;
+    jobLabel: string;
+    params: Record<string, unknown>;
+    triggeredBy?: string;
+    /** 'queued' for remote dispatch, 'running' for in-process spawn. */
+    status?: JobRunStatus;
+    commandBin?: string;
+    commandArgs?: string[];
+    commandCwd?: string;
+  },
 ): Promise<number> {
   const [row] = await db.execute<{ id: number }>(sql`
-    INSERT INTO job_runs (job_id, job_label, status, params, triggered_by)
+    INSERT INTO job_runs (
+      job_id, job_label, status, params, triggered_by,
+      command_bin, command_args, command_cwd
+    )
     VALUES (
-      ${args.jobId}, ${args.jobLabel}, 'running'::job_run_status_enum,
+      ${args.jobId}, ${args.jobLabel},
+      ${args.status ?? 'running'}::job_run_status_enum,
       ${JSON.stringify(args.params)}::jsonb,
-      ${args.triggeredBy ?? 'admin'}
+      ${args.triggeredBy ?? 'admin'},
+      ${args.commandBin ?? null},
+      ${args.commandArgs ? JSON.stringify(args.commandArgs) : null}::jsonb,
+      ${args.commandCwd ?? null}
     )
     RETURNING id
   `);
   return row!.id;
 }
+
+/**
+ * Mark a queued run as actually running (called by the GHA worker
+ * when the workflow starts executing). Also records the GitHub run URL
+ * so the operator can tail logs on github.com.
+ */
+export async function markJobRunStarted(
+  db: SeedDb = defaultDb,
+  id: number,
+  args: { githubRunUrl?: string | null },
+): Promise<void> {
+  await db.execute(sql`
+    UPDATE job_runs
+    SET status = 'running'::job_run_status_enum,
+        started_at = NOW(),
+        github_run_url = COALESCE(${args.githubRunUrl ?? null}, github_run_url)
+    WHERE id = ${id}
+  `);
+}
+
+/**
+ * Attach a GitHub Actions run URL to a queued/running job. Called from
+ * the dispatch path as soon as the workflow run is discoverable.
+ */
+export async function setJobRunGithubUrl(
+  db: SeedDb = defaultDb,
+  id: number,
+  githubRunUrl: string,
+): Promise<void> {
+  await db.execute(sql`
+    UPDATE job_runs SET github_run_url = ${githubRunUrl} WHERE id = ${id}
+  `);
+}
+
 
 export async function appendJobRunLog(
   db: SeedDb = defaultDb,

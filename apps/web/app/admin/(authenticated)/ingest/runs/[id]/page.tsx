@@ -98,6 +98,17 @@ export default async function JobRunDetailPage(props: { params: Promise<{ id: st
             <span className="uppercase tracking-wide">Trigger</span>{' '}
             <span className="font-mono text-zinc-300">{run.triggered_by}</span>
           </span>
+          {run.github_run_url && (
+            <a
+              href={run.github_run_url}
+              target="_blank"
+              rel="noreferrer"
+              className="text-amber-400 hover:text-amber-300"
+            >
+              <span className="uppercase tracking-wide">GitHub Actions</span>{' '}
+              <span className="font-mono">↗</span>
+            </a>
+          )}
         </div>
       </header>
 
