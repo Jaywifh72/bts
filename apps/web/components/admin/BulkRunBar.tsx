@@ -14,6 +14,8 @@ export function BulkRunBar() {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
+    // eslint-disable-next-line no-console
+    console.log('[BulkRunBar] mounted, wiring change listener');
     function selectedInGroup(group: string): HTMLInputElement[] {
       const section = document.querySelector<HTMLElement>(`section[data-group="${group}"]`);
       if (!section) return [];
@@ -45,6 +47,8 @@ export function BulkRunBar() {
 
     function onChange(e: Event) {
       const target = e.target as HTMLInputElement | null;
+      // eslint-disable-next-line no-console
+      console.log('[BulkRunBar] change event:', { name: target?.name, group: target?.dataset?.selectAllGroup, checked: target?.checked });
       if (target?.dataset.selectAllGroup) {
         // "Select all" toggled — flip every checkbox in that group to match.
         const group = target.dataset.selectAllGroup;
