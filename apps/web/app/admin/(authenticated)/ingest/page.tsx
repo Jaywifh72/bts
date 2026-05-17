@@ -4,7 +4,7 @@ import { db, listJobRuns, getLastRunPerJob, type JobRunStatus } from '@bts/db';
 import { JOBS, JOB_GROUPS, type JobDef } from '@/lib/admin/job-registry';
 import { runJobAction } from './actions';
 import { TmdbQuickAdd } from '@/components/admin/TmdbQuickAdd';
-import { BulkRunBar } from '@/components/admin/BulkRunBar';
+// import { BulkRunBar } from '@/components/admin/BulkRunBar';
 
 export const metadata: Metadata = {
   title: 'Ingest',
@@ -322,10 +322,8 @@ export default async function AdminIngestPage(
         )}
       </section>
 
-      {/* Sticky bottom bar — only visible once at least one card is
-          checked. Submit button is associated with #bulk-run-form via
-          the form attribute, so individual Run forms aren't disturbed. */}
-      <BulkRunBar />
+      {/* BulkRunBar temporarily disabled — diagnosing hydration */}
+      {/* <BulkRunBar /> */}
     </div>
   );
 }
