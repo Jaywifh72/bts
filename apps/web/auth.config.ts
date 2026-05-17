@@ -15,12 +15,11 @@ export const authConfig = {
   pages: {
     signIn: '/signin',
   },
-  callbacks: {
-    authorized({ auth, request }) {
-      const isLoggedIn = !!auth?.user;
-      const protectedPath = request.nextUrl.pathname.startsWith('/account');
-      if (protectedPath) return isLoggedIn;
-      return true;
-    },
-  },
+  // No `authorized` callback — database sessions can't be read in
+  // middleware (the Drizzle adapter needs Node, middleware runs Edge),
+  // so `auth.user` is always null there and any check redirects logged-in
+  // users in error. Auth gating lives in server components instead:
+  //   - /account/page.tsx redirects on null session
+  //   - /admin/(authenticated)/layout.tsx enforces role
+  callbacks: {},
 } satisfies NextAuthConfig;
