@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import {
   db,
+  sql,
   listFeaturedProductions,
   countProductions,
   listRecentlyUpdatedProductions,
@@ -43,7 +44,7 @@ export default async function HomePage() {
   const [
     featured, totalCurated, totalAll, recentlyUpdatedRaw,
     shotOfTheDay, depthStats,
-    recentCorrections, recentCitations, shotWall,
+    recentCorrections, recentCitations, shotWall, awardsStats,
   ] = await Promise.all([
     listFeaturedProductions(db, 6),
     countProductions(db, { dataTier: 'curated' }),
@@ -56,6 +57,14 @@ export default async function HomePage() {
     listRecentlyResolvedCorrections(db, 5),
     listRecentCitations(db, 5),
     getShotsOfTheDay(db, todayKey, 8),
+    // Awards roll-up for the depth-grid tile. Live from production_awards so
+    // the homepage count moves the moment a new award row lands.
+    db.execute<{ total: number; wins: number; orgs: number }>(sql`
+      SELECT COUNT(*)::int AS total,
+             COUNT(*) FILTER (WHERE is_winner)::int AS wins,
+             COUNT(DISTINCT award_org)::int AS orgs
+      FROM production_awards
+    `).then((r) => r[0] ?? { total: 0, wins: 0, orgs: 0 }),
   ]);
 
   // UX-audit 2026-05-15: Anora etc. were appearing in BOTH rails within
@@ -366,6 +375,21 @@ export default async function HomePage() {
               {depthStats.locations} geocoded shooting locations with sun-position
               metadata · {totalCurated} hand-curated films with full crew + scene-level
               equipment usage.
+            </p>
+          </Link>
+
+          <Link
+            href="/awards"
+            className="group flex flex-col gap-2 rounded border border-amber-900/40 bg-amber-950/10 p-4 hover:border-amber-700/60 transition-colors"
+          >
+            <p className="text-[10px] uppercase tracking-[0.2em] text-amber-400/80">Awards</p>
+            <h3 className="font-serif text-base text-zinc-100 group-hover:text-amber-400">
+              Every win and nomination, by craft
+            </h3>
+            <p className="text-xs leading-relaxed text-zinc-400">
+              {awardsStats.total.toLocaleString()} documented entries · {awardsStats.wins.toLocaleString()} wins
+              across {awardsStats.orgs} awarding bodies — Oscars, BAFTAs, Cannes, ASC, VES,
+              Taurus. Filter by craft, org, year, or recipient.
             </p>
           </Link>
 

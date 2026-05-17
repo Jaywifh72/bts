@@ -5,6 +5,8 @@ import { PageHero, PageHeroStat } from '@/components/ui/PageHero';
 import { JsonLd } from '@/lib/jsonLd';
 import { siteUrl, absoluteUrl } from '@/lib/site';
 import { ORG_LABELS, orgLabel } from '@/lib/award-labels';
+import { CRAFTS, craftFromAward, getCraft, type CraftSlug } from '@/lib/awards/crafts';
+import { getCraftSummaries } from '@/lib/awards/queries';
 
 export const metadata: Metadata = {
   title: 'Awards',
@@ -32,7 +34,13 @@ type SearchParams = {
   recipient?: string;
   wins?: string;
   group?: string;
+  craft?: string;
 };
+
+function parseCraft(v: string | undefined): CraftSlug | 'all' {
+  if (!v || v === 'all') return 'all';
+  return getCraft(v) ? (v as CraftSlug) : 'all';
+}
 
 type GroupBy = 'none' | 'org' | 'year' | 'recipient' | 'category';
 
@@ -73,8 +81,9 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
   const recipient = parseRecipient(sp.recipient);
   const winnersOnly = sp.wins === '1';
   const group = parseGroup(sp.group);
+  const craft = parseCraft(sp.craft);
 
-  const [byOrg, stats, years, filtered] = await Promise.all([
+  const [byOrg, stats, years, filtered, craftSummaries] = await Promise.all([
     // Existing summary: counts per org + recent wins for the per-org panel.
     db.execute<OrgRow>(sql`
       WITH by_org AS (
@@ -119,17 +128,28 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
     // Year dropdown options.
     listAwardYears(db),
     // Filtered results table (driven by query string).
-    listAwards(db, { org, year, category: category || undefined, recipientKind: recipient, winnersOnly, limit: 200 }),
+    // Bump limit to 400 when filtering by craft so post-filter row count stays useful.
+    listAwards(db, { org, year, category: category || undefined, recipientKind: recipient, winnersOnly, limit: craft === 'all' ? 200 : 400 }),
+    // Craft strip counts.
+    getCraftSummaries(),
   ]);
 
-  const hasFilter = org !== 'all' || year !== 'all' || category !== '' || recipient !== 'all' || winnersOnly;
+  // Craft is filtered application-side (the @bts/db listAwards doesn't
+  // know about crafts; the proposed 0069-0072 migrations move this into
+  // the schema). Apply AFTER fetching so the user still sees the
+  // server-side filters reflected.
+  const craftFiltered = craft === 'all'
+    ? filtered
+    : filtered.filter((a) => craftFromAward(a.award_org, a.category) === craft);
+
+  const hasFilter = org !== 'all' || year !== 'all' || category !== '' || recipient !== 'all' || winnersOnly || craft !== 'all';
 
   // Group-by aggregation (UX-audit P0-3). App-layer roll-up over the
   // already-filtered 200-row cap; cheap and avoids a second query.
   type GroupRow = { key: string; label: string; total: number; wins: number };
   function groupRows(by: Exclude<GroupBy, 'none'>): GroupRow[] {
     const map = new Map<string, GroupRow>();
-    for (const a of filtered) {
+    for (const a of craftFiltered) {
       let key: string;
       let label: string;
       switch (by) {
@@ -164,6 +184,26 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
         ) : undefined}
       />
 
+      {/* Craft strip — landing-state navigation to craft-focused subpages. */}
+      <nav aria-label="Browse by craft" className="mb-6 flex flex-wrap gap-2">
+        <span className="self-center text-[10px] uppercase tracking-wide text-zinc-500">
+          By craft
+        </span>
+        {CRAFTS.map((c) => {
+          const count = craftSummaries.find((s) => s.craft === c.slug)?.total ?? 0;
+          if (count === 0) return null;
+          return (
+            <Link
+              key={c.slug}
+              href={`/awards/craft/${c.slug}`}
+              className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-sm text-zinc-300 hover:border-amber-700 hover:text-amber-400"
+            >
+              {c.name} <span className="ml-1 font-mono text-[10px] text-zinc-500">{count}</span>
+            </Link>
+          );
+        })}
+      </nav>
+
       {/* Filter form. Server-rendered: submit reloads with new query string. */}
       <section className="mb-10 rounded border border-zinc-800 bg-zinc-900/40 p-4">
         <h2 className="mb-3 font-serif text-base text-zinc-100">Find awards</h2>
@@ -174,8 +214,21 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
           action="#results"
           role="search"
           aria-label="Filter awards"
-          className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6"
+          className="grid gap-3 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-7"
         >
+          <label className="block">
+            <span className="text-[10px] uppercase tracking-wide text-zinc-300">Craft</span>
+            <select
+              name="craft"
+              defaultValue={craft}
+              className="mt-1 block w-full rounded border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm focus:border-amber-500 focus:outline-none"
+            >
+              <option value="all">All</option>
+              {CRAFTS.map((c) => (
+                <option key={c.slug} value={c.slug}>{c.name}</option>
+              ))}
+            </select>
+          </label>
           <label className="block">
             <span className="text-[10px] uppercase tracking-wide text-zinc-300">Organisation</span>
             <select
@@ -276,11 +329,11 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
       {hasFilter || group !== 'none' ? (
         <section id="results" className="scroll-mt-4 mb-12">
           <h2 className="mb-4 font-serif text-xl text-zinc-100">
-            Results ({filtered.length}{filtered.length === 200 ? '+' : ''})
+            Results ({craftFiltered.length}{filtered.length >= 200 && craft === 'all' ? '+' : ''})
             {group !== 'none' && <span className="ml-2 text-sm text-zinc-500">grouped by {group}</span>}
           </h2>
-          {filtered.length === 0 ? (
-            <p className="text-sm text-zinc-500">No awards match these filters. Try widening org / year, or remove the wins-only toggle.</p>
+          {craftFiltered.length === 0 ? (
+            <p className="text-sm text-zinc-500">No awards match these filters. Try widening org / year / craft, or remove the wins-only toggle.</p>
           ) : group !== 'none' ? (
             <ul className="space-y-1.5 text-sm">
               {groupRows(group).map((g) => (
@@ -293,7 +346,7 @@ export default async function AwardsPage({ searchParams }: { searchParams: Promi
             </ul>
           ) : (
             <ul className="space-y-1.5 text-sm">
-              {filtered.map((a) => (
+              {craftFiltered.map((a) => (
                 <li key={a.id} className="flex flex-wrap items-baseline gap-x-2 rounded border border-zinc-800 bg-zinc-900/40 px-3 py-2">
                   <span
                     className={`font-mono text-xs ${a.is_winner ? 'text-amber-400' : 'text-zinc-400'}`}

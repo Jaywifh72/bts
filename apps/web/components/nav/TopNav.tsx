@@ -20,6 +20,7 @@ const links = [
   { href: '/gear', label: 'Gear' },
   { href: '/vfx', label: 'VFX' },
   { href: '/stunts', label: 'Stunts' },
+  { href: '/awards', label: 'Awards' },
   { href: '/references', label: 'Sources' },
   { href: '/tools', label: 'Tools' },
   { href: '/ask', label: 'Ask' },
