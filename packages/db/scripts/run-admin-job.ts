@@ -82,6 +82,35 @@ async function main() {
     shell: true,
   });
 
+  // Defensive shutdown: GHA sends SIGTERM when a job hits its
+  // timeout-minutes cap or when the workflow is cancelled. Without
+  // this handler, the worker dies mid-stream and the job_runs row
+  // stays as `running` forever. Mark it cancelled before exiting
+  // so the UI doesn't show a phantom in-progress run.
+  let cancelled = false;
+  const onSignal = async (sig: NodeJS.Signals) => {
+    if (cancelled) return;
+    cancelled = true;
+    try {
+      child.kill('SIGTERM');
+    } catch { /* ignore */ }
+    try {
+      await finalizeJobRun(db, runId, {
+        status: 'cancelled',
+        exitCode: null,
+        insertedCount: totals.inserted,
+        updatedCount: totals.updated,
+        warningCount: totals.warning,
+        errorMessage: `Worker received ${sig}; job cancelled`,
+      });
+    } catch (err) {
+      console.error('finalizeJobRun on signal failed:', err);
+    }
+    process.exit(143); // 128 + SIGTERM
+  };
+  process.on('SIGTERM', () => { void onSignal('SIGTERM'); });
+  process.on('SIGINT', () => { void onSignal('SIGINT'); });
+
   let totals = { inserted: 0, updated: 0, warning: 0 };
   let buffer = '';
   let flushTimer: NodeJS.Timeout | null = null;

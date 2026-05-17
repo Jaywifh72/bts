@@ -84,6 +84,34 @@ export type JobLastRunRow = {
   run_id: number;
 };
 
+/**
+ * Reap orphaned job_runs left in 'running' state by workers that died
+ * before they could finalise (most commonly: GHA workflow cancelled
+ * after hitting the 90-min timeout-minutes cap, killing the worker
+ * before it ran the close handler). Mark anything still 'running'
+ * past 100 minutes as 'cancelled' so the UI stops showing phantom
+ * in-progress runs.
+ *
+ * Cheap UPDATE; safe to call from the ingest page render.
+ */
+export async function reapOrphanedJobRuns(
+  db: SeedDb = defaultDb,
+): Promise<number> {
+  const result = await db.execute<{ id: number }>(sql`
+    UPDATE job_runs
+    SET status = 'cancelled'::job_run_status_enum,
+        finished_at = NOW(),
+        error_message = COALESCE(
+          error_message,
+          'Reaped: status was running > 100 minutes; worker likely killed by GHA timeout'
+        )
+    WHERE status IN ('running', 'queued')
+      AND started_at < NOW() - INTERVAL '100 minutes'
+    RETURNING id
+  `);
+  return result.length;
+}
+
 export async function getLastRunPerJob(db: SeedDb = defaultDb): Promise<JobLastRunRow[]> {
   return db.execute<JobLastRunRow>(sql`
     SELECT DISTINCT ON (job_id)

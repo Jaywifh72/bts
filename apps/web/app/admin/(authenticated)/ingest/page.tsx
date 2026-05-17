@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { db, listJobRuns, getLastRunPerJob, type JobRunStatus } from '@bts/db';
+import { db, listJobRuns, getLastRunPerJob, reapOrphanedJobRuns, type JobRunStatus } from '@bts/db';
 import { JOBS, JOB_GROUPS, type JobDef } from '@/lib/admin/job-registry';
 import { runJobAction } from './actions';
 import { TmdbQuickAdd } from '@/components/admin/TmdbQuickAdd';
@@ -167,6 +167,10 @@ export default async function AdminIngestPage(
   }
 ) {
   const searchParams = await props.searchParams;
+  // Best-effort: mark any orphaned 'running' rows (worker died before
+  // finalising — usually GHA timeout kill) as 'cancelled' so the UI
+  // doesn't show phantom in-progress runs.
+  await reapOrphanedJobRuns(db);
   const [recentRuns, lastPerJob] = await Promise.all([
     listJobRuns(db, { limit: 15 }),
     getLastRunPerJob(db),
