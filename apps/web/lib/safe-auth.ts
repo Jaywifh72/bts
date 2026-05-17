@@ -20,12 +20,20 @@ export async function safeAuth(): Promise<Session | null> {
   if (!process.env.AUTH_SECRET) return null;
   try {
     const { auth } = await import('@/auth');
-    return await auth();
+    const session = await auth();
+    // Log session shape in prod so "logged in but safeAuth returned null"
+    // diagnoses can be cross-referenced against the request route.
+    // eslint-disable-next-line no-console
+    console.log(
+      '[safeAuth]',
+      session
+        ? { email: session.user?.email, role: session.user?.role, id: session.user?.id }
+        : 'null',
+    );
+    return session;
   } catch (err) {
-    if (process.env.NODE_ENV !== 'production') {
-      // eslint-disable-next-line no-console
-      console.warn('[safeAuth] auth() failed; treating as logged out:', err);
-    }
+    // eslint-disable-next-line no-console
+    console.warn('[safeAuth] auth() failed; treating as logged out:', err);
     return null;
   }
 }
