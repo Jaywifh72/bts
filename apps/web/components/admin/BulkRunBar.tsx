@@ -2,6 +2,11 @@
 
 import { useEffect, useState } from 'react';
 
+// Module-level log — fires when the JS bundle is parsed, regardless of
+// whether the component ever renders.
+// eslint-disable-next-line no-console
+if (typeof window !== 'undefined') console.log('[BulkRunBar] module loaded');
+
 /**
  * Sticky bottom bar that shows how many jobs are currently selected
  * via the page's `input[name="selected"][form="bulk-run-form"]`

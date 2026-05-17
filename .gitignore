@@ -49,3 +49,5 @@ __pycache__/
 *.pyc
 *.pyo
 *.ps1
+
+.vercel
