@@ -84,10 +84,13 @@ export function BulkRunBar() {
     setCount(0);
   }
 
-  if (count === 0) return null;
+  if (count === 0) {
+    // Render a tiny invisible marker so we can confirm mounting in the DOM.
+    return <div data-bulk-run-bar="mounted-empty" hidden />;
+  }
 
   return (
-    <div className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center p-4">
+    <div data-bulk-run-bar="mounted-active" className="pointer-events-none fixed inset-x-0 bottom-0 z-40 flex justify-center p-4">
       <div className="pointer-events-auto flex items-center gap-3 rounded-lg border border-amber-900/60 bg-zinc-950/95 px-4 py-3 shadow-2xl backdrop-blur">
         <span className="text-sm text-zinc-200">
           <span className="font-mono text-amber-400">{count}</span>{' '}
