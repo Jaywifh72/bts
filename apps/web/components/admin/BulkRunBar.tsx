@@ -14,16 +14,50 @@ export function BulkRunBar() {
   const [count, setCount] = useState(0);
 
   useEffect(() => {
+    function selectedInGroup(group: string): HTMLInputElement[] {
+      const section = document.querySelector<HTMLElement>(`section[data-group="${group}"]`);
+      if (!section) return [];
+      return Array.from(
+        section.querySelectorAll<HTMLInputElement>('input[name="selected"][form="bulk-run-form"]'),
+      );
+    }
+
+    function syncSelectAllStates() {
+      document
+        .querySelectorAll<HTMLInputElement>('input[data-select-all-group]')
+        .forEach((master) => {
+          const group = master.dataset.selectAllGroup!;
+          const items = selectedInGroup(group);
+          if (items.length === 0) return;
+          const checkedCount = items.filter((i) => i.checked).length;
+          master.checked = checkedCount === items.length;
+          master.indeterminate = checkedCount > 0 && checkedCount < items.length;
+        });
+    }
+
     function recount() {
       const checked = document.querySelectorAll<HTMLInputElement>(
         'input[name="selected"][form="bulk-run-form"]:checked',
       );
       setCount(checked.length);
+      syncSelectAllStates();
     }
+
+    function onChange(e: Event) {
+      const target = e.target as HTMLInputElement | null;
+      if (target?.dataset.selectAllGroup) {
+        // "Select all" toggled — flip every checkbox in that group to match.
+        const group = target.dataset.selectAllGroup;
+        selectedInGroup(group).forEach((cb) => {
+          cb.checked = target.checked;
+        });
+      }
+      recount();
+    }
+
     recount();
-    // change events bubble; one listener on document catches them all.
-    document.addEventListener('change', recount);
-    return () => document.removeEventListener('change', recount);
+    document.addEventListener('change', onChange);
+    return () => document.removeEventListener('change', onChange);
   }, []);
 
   function clearAll() {
@@ -31,6 +65,12 @@ export function BulkRunBar() {
       .querySelectorAll<HTMLInputElement>('input[name="selected"][form="bulk-run-form"]:checked')
       .forEach((el) => {
         el.checked = false;
+      });
+    document
+      .querySelectorAll<HTMLInputElement>('input[data-select-all-group]')
+      .forEach((el) => {
+        el.checked = false;
+        el.indeterminate = false;
       });
     setCount(0);
   }

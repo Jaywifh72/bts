@@ -33,6 +33,7 @@ export type JobDef = {
     | 'sources'
     | 'embeddings'
     | 'editorial'
+    | 'deep_dive'
     | 'social';
   /** Short human label. Becomes the card title. */
   label: string;
@@ -431,7 +432,7 @@ const EDITORIAL_JOBS: JobDef[] = [
   // Re-run after schema changes touch any of those tables.
   {
     id: 'seed:anora',
-    group: 'editorial',
+    group: 'deep_dive',
     label: 'Deep-dive — Anora (2024)',
     description:
       "Sean Baker's 5-Oscar sweep (Picture, Director, Original Screenplay, Actress, Editing) + Cannes Palme d'Or. Shot 35mm Kodak film by Drew Daniels.",
@@ -440,7 +441,7 @@ const EDITORIAL_JOBS: JobDef[] = [
   },
   {
     id: 'seed:blade-runner-2049',
-    group: 'editorial',
+    group: 'deep_dive',
     label: 'Deep-dive — Blade Runner 2049 (2017)',
     description:
       "Roger Deakins's first Oscar + Best VFX. Adds color pipeline, lighting setups, post-houses, BAFTA + ASC + the second Oscar (VFX) the prior audit missed.",
@@ -449,7 +450,7 @@ const EDITORIAL_JOBS: JobDef[] = [
   },
   {
     id: 'seed:children-of-men',
-    group: 'editorial',
+    group: 'deep_dive',
     label: 'Deep-dive — Children of Men (2006)',
     description:
       "Lubezki's first major Cinematography nomination. Car-ambush long-take built from six sections + four locations; Tim Webber's Framestore CG newborn.",
@@ -458,7 +459,7 @@ const EDITORIAL_JOBS: JobDef[] = [
   },
   {
     id: 'seed:gravity',
-    group: 'editorial',
+    group: 'deep_dive',
     label: 'Deep-dive — Gravity (2013)',
     description:
       "7-Oscar sweep (Cinematography, VFX, Director, Editing, Sound × 2, Score). Lubezki's first Oscar + Webber's Light Box invention. Six prior-audit gaps filled.",
@@ -467,7 +468,7 @@ const EDITORIAL_JOBS: JobDef[] = [
   },
   {
     id: 'seed:no-country-for-old-men',
-    group: 'editorial',
+    group: 'deep_dive',
     label: 'Deep-dive — No Country for Old Men (2007)',
     description:
       "Coen Brothers + Roger Deakins. 4 Oscars (Picture, Director, Adapted Screenplay, Supporting Actor). 35mm Panavision spherical, deliberate non-DI photochemical finish.",
@@ -476,7 +477,7 @@ const EDITORIAL_JOBS: JobDef[] = [
   },
   {
     id: 'seed:parasite',
-    group: 'editorial',
+    group: 'deep_dive',
     label: 'Deep-dive — Parasite (2019)',
     description:
       "First non-English Best Picture winner. Bong Joon-ho's 4-Oscar sweep + Palme d'Or. Patches the prior 5-row audit (incl. a misattributed Cinematography row).",
@@ -485,7 +486,7 @@ const EDITORIAL_JOBS: JobDef[] = [
   },
   {
     id: 'seed:the-brutalist',
-    group: 'editorial',
+    group: 'deep_dive',
     label: 'Deep-dive — The Brutalist (2024)',
     description:
       'Lol Crawley shot the first VistaVision narrative feature since 1961 (64-year gap). Won Cinematography + Actor + Score at the 2025 Oscars; Venice Silver Lion.',
@@ -494,7 +495,7 @@ const EDITORIAL_JOBS: JobDef[] = [
   },
   {
     id: 'seed:the-revenant',
-    group: 'editorial',
+    group: 'deep_dive',
     label: 'Deep-dive — The Revenant (2015)',
     description:
       "Lubezki's record-setting third consecutive Best Cinematography Oscar. ARRI ALEXA 65 shot with a strict no-electric-lighting rule (natural daylight + practical fire only).",
@@ -503,7 +504,7 @@ const EDITORIAL_JOBS: JobDef[] = [
   },
   {
     id: 'seed:top-gun-maverick',
-    group: 'editorial',
+    group: 'deep_dive',
     label: 'Deep-dive — Top Gun: Maverick (2022)',
     description:
       "Most cinematographically-documented marquee release of the past decade. Miranda + Nowell's six-camera Sony VENICE Rialto rig + Light Iron / Company 3 pipeline + Tudhope's 2,400 invisible-VFX shots.",
@@ -525,7 +526,7 @@ const EDITORIAL_JOBS: JobDef[] = [
   },
   {
     id: 'seed:dune2-colorpipeline',
-    group: 'editorial',
+    group: 'deep_dive',
     label: 'Color pipeline — Dune: Part Two',
     description:
       'E-24 demo seed: ALEXA 65 LogC3 → ARRI Wide Gamut 3 → ACEScct → Rec.709 SDR / Rec.2020 PQ HDR-10. Subsumed by `seed:color-pipelines`; kept for the targeted demo path.',
@@ -543,7 +544,7 @@ const EDITORIAL_JOBS: JobDef[] = [
   },
   {
     id: 'seed:poor-things-lighting',
-    group: 'editorial',
+    group: 'deep_dive',
     label: 'Lighting setup — Poor Things rooftops',
     description:
       "E-22 demo seed: one curated lighting setup on Poor Things' Lisbon rooftops scene. Idempotent UPSERT.",
@@ -742,6 +743,11 @@ export const JOB_GROUPS: Array<{
     key: 'editorial',
     label: 'Editorial seeds',
     blurb: 'Re-run any of the curated seed scripts. Idempotent and safe.',
+  },
+  {
+    key: 'deep_dive',
+    label: 'Film deep dives',
+    blurb: 'Per-film hand-curated seed scripts (camera, lighting, color, locations). Re-run to refresh a single dossier.',
   },
   {
     key: 'social',

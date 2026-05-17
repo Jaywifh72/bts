@@ -233,12 +233,21 @@ export default async function AdminIngestPage(
         const items = JOBS.filter((j) => j.group === group.key);
         if (items.length === 0) return null;
         return (
-          <section key={group.key} className="mb-10">
+          <section key={group.key} className="mb-10" data-group={group.key}>
             <div className="mb-3 flex items-baseline justify-between">
               <h2 className="font-serif text-lg text-zinc-100">{group.label}</h2>
-              <span className="text-[10px] uppercase tracking-wide text-zinc-500">
-                {items.length} {items.length === 1 ? 'job' : 'jobs'}
-              </span>
+              <div className="flex items-center gap-3 text-[10px] uppercase tracking-wide text-zinc-500">
+                <label className="flex items-center gap-1.5 normal-case tracking-normal text-xs text-zinc-400 hover:text-zinc-200 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="h-4 w-4 rounded border-zinc-600 bg-zinc-900"
+                    data-select-all-group={group.key}
+                    aria-label={`Select all ${group.label} jobs`}
+                  />
+                  Select all
+                </label>
+                <span>{items.length} {items.length === 1 ? 'job' : 'jobs'}</span>
+              </div>
             </div>
             <p className="mb-4 max-w-2xl text-xs text-zinc-500">{group.blurb}</p>
             <div className="grid gap-3 lg:grid-cols-2">
