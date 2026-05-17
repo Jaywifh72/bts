@@ -46,12 +46,12 @@ test.describe('Smoke pack — top-level routes', () => {
     //      in next.config.mjs)
     //   2. React 19 removed useFormState; stale import killed hydration
     //
-    // Click the "Suggest a correction →" button on the film page and check
+    // Click the "Report claim error →" button on the film page and check
     // the form opens. The button is rendered by CorrectionForm (a 'use client'
     // component), so this test fails fast if the React runtime isn't claiming
     // page-level client components.
     await page.goto('/films/dune-part-two-2024');
-    const correctionsButton = page.getByRole('button', { name: /suggest a correction/i });
+    const correctionsButton = page.getByRole('button', { name: /report claim error/i });
     await expect(correctionsButton).toBeVisible();
     await correctionsButton.click();
     // After click, the inline form should appear with the textarea.
