@@ -1,5 +1,5 @@
 import {
-  pgTable, bigserial, bigint, integer, text, timestamp, jsonb, primaryKey, index,
+  pgTable, bigserial, bigint, boolean, integer, text, timestamp, jsonb, primaryKey, index,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
 import { productions, productionDataTierEnum } from './productions.ts';
@@ -22,6 +22,13 @@ export const scoringStages = pgTable('scoring_stages', {
   capacityChorus: integer('capacity_chorus'),
   website: text('website'),
   notes: text('notes'),
+  // 0079 — booking + format specs.
+  dayRateUsdMin: integer('day_rate_usd_min'),
+  dayRateUsdMax: integer('day_rate_usd_max'),
+  atmosCapable: boolean('atmos_capable').notNull().default(false),
+  yearOpened: integer('year_opened'),
+  console: text('console'),
+  primaryMicChain: text('primary_mic_chain'),
   references: jsonb('references').notNull().default(sql`'[]'::jsonb`)
     .$type<Array<{ title: string; url: string; publication?: string; kind?: string }>>(),
   // F1-aligned provenance.

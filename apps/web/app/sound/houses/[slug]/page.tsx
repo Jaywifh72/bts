@@ -102,6 +102,43 @@ export default async function SoundHouseDetailPage(
         }
       />
 
+      {/* Format-certification badges — Atmos / Premier / IMAX / HDR. */}
+      {(house.atmos_certified || house.dolby_premier_certified || house.imax_certified || house.hdr_grading || house.mix_room_count) && (
+        <section className="mb-6">
+          <h2 className="mb-2 text-[10px] uppercase tracking-widest text-zinc-500">Format certifications</h2>
+          <ul className="flex flex-wrap gap-2">
+            {house.atmos_certified && (
+              <li className="rounded border border-amber-700 bg-amber-900/30 px-2.5 py-1 text-xs text-amber-300">
+                Dolby Atmos certified
+              </li>
+            )}
+            {house.dolby_premier_certified && (
+              <li className="rounded border border-amber-700 bg-amber-900/30 px-2.5 py-1 text-xs text-amber-300">
+                Dolby Premier
+              </li>
+            )}
+            {house.imax_certified && (
+              <li className="rounded border border-amber-700 bg-amber-900/30 px-2.5 py-1 text-xs text-amber-300">
+                IMAX 12.0 certified
+              </li>
+            )}
+            {house.hdr_grading && (
+              <li className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-xs text-zinc-200">
+                HDR grading
+              </li>
+            )}
+            {house.mix_room_count && (
+              <li className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-xs text-zinc-300">
+                {house.mix_room_count} mix room{house.mix_room_count === 1 ? '' : 's'}
+              </li>
+            )}
+          </ul>
+          {house.spec_notes && (
+            <p className="mt-2 max-w-2xl text-xs leading-relaxed text-zinc-400">{house.spec_notes}</p>
+          )}
+        </section>
+      )}
+
       {house.website && (
         <p className="mb-6 text-sm">
           <a href={house.website} target="_blank" rel="noopener noreferrer"

@@ -1,5 +1,5 @@
 import {
-  pgTable, pgEnum, bigserial, bigint, text, integer, timestamp,
+  pgTable, pgEnum, bigserial, bigint, boolean, text, integer, timestamp,
   primaryKey, index,
 } from 'drizzle-orm/pg-core';
 import { productions } from './productions.ts';
@@ -30,6 +30,13 @@ export const postHouses = pgTable('post_houses', {
   website: text('website'),
   foundedYear: integer('founded_year'),
   description: text('description'),
+  // 0079 — format certifications + room counts.
+  atmosCertified: boolean('atmos_certified').notNull().default(false),
+  dolbyPremierCertified: boolean('dolby_premier_certified').notNull().default(false),
+  imaxCertified: boolean('imax_certified').notNull().default(false),
+  mixRoomCount: integer('mix_room_count'),
+  hdrGrading: boolean('hdr_grading').notNull().default(false),
+  specNotes: text('spec_notes'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({

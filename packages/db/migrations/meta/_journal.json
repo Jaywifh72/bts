@@ -526,6 +526,13 @@
       "when": 1784160000000,
       "tag": "0078_vp_volumes",
       "breakpoints": true
+    },
+    {
+      "idx": 75,
+      "version": "7",
+      "when": 1784246400000,
+      "tag": "0079_post_house_scoring_stage_specs",
+      "breakpoints": true
     }
   ]
 }
