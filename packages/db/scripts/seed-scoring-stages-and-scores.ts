@@ -654,14 +654,24 @@ const SOUND_LIBRARIES: SoundLibSeed[] = [
   },
 ];
 
+// Build a Postgres text[] literal: '{"weapons","vehicles"}'. drizzle's
+// sql template flattens JS arrays into a parenthesized parameter list
+// (for IN clauses), not into a single text[] value — so we serialize
+// manually and cast.
+function pgTextArray(items: string[]): string {
+  if (items.length === 0) return '{}';
+  return '{' + items.map((s) => '"' + s.replace(/\\/g, '\\\\').replace(/"/g, '\\"') + '"').join(',') + '}';
+}
+
 for (const sl of SOUND_LIBRARIES) {
+  const specialtiesLit = pgTextArray(sl.specialties);
   await db.execute(sql`
     INSERT INTO sound_libraries (
       slug, name, publisher, country, founded_year, website_url,
       specialties, summary, data_tier, last_verified_at
     ) VALUES (
       ${sl.slug}, ${sl.name}, ${sl.publisher}, ${sl.country}, ${sl.founded_year}, ${sl.website_url},
-      ${sl.specialties}, ${sl.summary}, 'curated', NOW()
+      ${specialtiesLit}::text[], ${sl.summary}, 'curated', NOW()
     )
     ON CONFLICT (slug) DO UPDATE SET
       name = EXCLUDED.name,
