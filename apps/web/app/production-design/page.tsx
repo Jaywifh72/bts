@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { db, listPeople, countPeople, listProductions } from '@bts/db';
 import { DepartmentIndex } from '@/components/role/DepartmentIndex';
 import { JsonLd } from '@/lib/jsonLd';
@@ -26,6 +27,15 @@ export default async function ProductionDesignPage() {
   return (
     <>
       <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/production-design'), name: 'Production design — CineCanon' }} />
+
+      <nav aria-label="Production design sub-disciplines" className="mb-6 flex flex-wrap gap-2 text-sm">
+        <span className="self-center text-[10px] uppercase tracking-widest text-zinc-500">Drill into</span>
+        <Link href="/production-design/designers" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Designers + art dept</Link>
+        <Link href="/for-production-designers" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">For designers</Link>
+        <Link href="/awards/craft/production-design" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">PD awards</Link>
+        <Link href="/awards/craft/art-direction" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Art-direction (legacy)</Link>
+      </nav>
+
       <DepartmentIndex
         title="Production design"
         accent="emerald"

@@ -37,12 +37,15 @@ export function Footer() {
             <Link href="/sound/effects/libraries" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ sfx libraries</Link>
             <Link href="/sound/houses" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ sound houses</Link>
             <Link href="/editing" className="hover:text-zinc-300">Editing</Link>
+            <Link href="/editing/editors" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ editors</Link>
             <Link href="/music" className="hover:text-zinc-300">Music</Link>
             <Link href="/music/composers" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ composers</Link>
             <Link href="/music/scoring-stages" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ scoring stages</Link>
             <Link href="/music/supervisors" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ music supervisors</Link>
             <Link href="/production-design" className="hover:text-zinc-300">Production design</Link>
+            <Link href="/production-design/designers" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ designers + art dept</Link>
             <Link href="/costume-hair-makeup" className="hover:text-zinc-300">Costume / Hair / Makeup</Link>
+            <Link href="/costume-hair-makeup/designers" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ designers + dept heads</Link>
           </div>
           <div className="flex flex-col gap-1">
             <p className="text-[10px] uppercase tracking-widest text-zinc-300">Cross-cuts</p>
@@ -66,6 +69,10 @@ export function Footer() {
             <Link href="/for-sound-designers" className="hover:text-zinc-300">For Sound Designers</Link>
             <Link href="/for-composers" className="hover:text-zinc-300">For Composers</Link>
             <Link href="/for-music-supervisors" className="hover:text-zinc-300">For Music Supervisors</Link>
+            <Link href="/for-editors" className="hover:text-zinc-300">For Editors</Link>
+            <Link href="/for-production-designers" className="hover:text-zinc-300">For Production Designers</Link>
+            <Link href="/for-costume-designers" className="hover:text-zinc-300">For Costume Designers</Link>
+            <Link href="/for-makeup-artists" className="hover:text-zinc-300">For Makeup & Hair Artists</Link>
           </div>
           <div className="flex flex-col gap-1">
             <p className="text-[10px] uppercase tracking-widest text-zinc-300">About</p>

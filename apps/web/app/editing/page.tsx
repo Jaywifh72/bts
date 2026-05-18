@@ -1,4 +1,5 @@
 import type { Metadata } from 'next';
+import Link from 'next/link';
 import { db, listPeople, countPeople, listProductions } from '@bts/db';
 import { DepartmentIndex } from '@/components/role/DepartmentIndex';
 import { JsonLd } from '@/lib/jsonLd';
@@ -26,6 +27,15 @@ export default async function EditingPage() {
   return (
     <>
       <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/editing'), name: 'Editing — CineCanon' }} />
+
+      <nav aria-label="Editing sub-disciplines" className="mb-6 flex flex-wrap gap-2 text-sm">
+        <span className="self-center text-[10px] uppercase tracking-widest text-zinc-500">Drill into</span>
+        <Link href="/editing/editors" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Editors</Link>
+        <Link href="/for-editors" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">For editors</Link>
+        <Link href="/awards/craft/editing" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Editing awards</Link>
+        <Link href="/awards/craft/music-editing" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Music-editing awards</Link>
+      </nav>
+
       <DepartmentIndex
         title="Editing"
         accent="purple"
