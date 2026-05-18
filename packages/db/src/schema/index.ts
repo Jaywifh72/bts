@@ -33,6 +33,7 @@ export * from './specialty-houses.ts';
 export * from './person-style-profiles.ts';
 export * from './practitioner-partnerships.ts';
 export * from './craft-decision-trees.ts';
+export * from './phase2-facility-houses.ts';
 export * from './auth.ts';
 export * from './bookmarks.ts';
 export * from './ignored-duplicates.ts';

@@ -36,3 +36,4 @@ export * from './queries/specialty-houses.ts';
 export * from './queries/person-style-profiles.ts';
 export * from './queries/practitioner-partnerships.ts';
 export * from './queries/craft-decision-trees.ts';
+export * from './queries/phase2-facility-houses.ts';

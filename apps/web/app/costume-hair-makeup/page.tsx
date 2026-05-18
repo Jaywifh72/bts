@@ -32,6 +32,7 @@ export default async function CostumeHairMakeupPage() {
         <span className="self-center text-[10px] uppercase tracking-widest text-zinc-500">Drill into</span>
         <Link href="/costume-hair-makeup/designers" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Designers + dept heads</Link>
         <Link href="/costume-hair-makeup/effects-houses" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Effects houses</Link>
+        <Link href="/costume-hair-makeup/construction-houses" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Construction houses</Link>
         <Link href="/for-costume-designers" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">For costume designers</Link>
         <Link href="/for-makeup-artists" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">For MU & H artists</Link>
         <Link href="/awards/craft/costume-design" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Costume awards</Link>

@@ -589,6 +589,13 @@
       "when": 1784937600000,
       "tag": "0087_craft_decision_trees",
       "breakpoints": true
+    },
+    {
+      "idx": 84,
+      "version": "7",
+      "when": 1785024000000,
+      "tag": "0088_phase2_facility_houses",
+      "breakpoints": true
     }
   ]
 }
