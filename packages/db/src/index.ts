@@ -33,3 +33,4 @@ export * from './queries/equipment-specs.ts';
 export * from './queries/rental-houses.ts';
 export * from './queries/recording-orchestras.ts';
 export * from './queries/specialty-houses.ts';
+export * from './queries/person-style-profiles.ts';

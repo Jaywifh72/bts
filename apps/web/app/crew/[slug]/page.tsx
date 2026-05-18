@@ -11,6 +11,7 @@ import {
   getCollaboratorsForPerson,
   getKnownForByPerson,
   getAwardsForPerson,
+  getStyleProfileForPerson,
   getScoreWorksForComposer,
   getStuntContextForPerson,
   getStuntLineage,
@@ -23,6 +24,7 @@ import {
 import { FilmographyTable } from '@/components/people/FilmographyTable';
 import { EquipmentUsedTable } from '@/components/people/EquipmentUsedTable';
 import { CareerStats } from '@/components/people/CareerStats';
+import { StyleProfile } from '@/components/people/StyleProfile';
 import { PersonAvatar } from '@/components/people/PersonAvatar';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { EntityProvenanceFooter } from '@/components/ui/EntityProvenanceFooter';
@@ -86,6 +88,9 @@ export default async function CrewDetailPage(props: Props) {
     // path below hides the section entirely when zero rows.
     getScoreWorksForComposer(db, params.slug),
   ]);
+  // Style profile — migration 0085. Defensive against missing table on prod.
+  let styleProfile: Awaited<ReturnType<typeof getStyleProfileForPerson>> = null;
+  try { styleProfile = await getStyleProfileForPerson(db, params.slug); } catch { /* table missing */ }
   if (!person) notFound();
   // F2 — fetch the polymorphic claims bundle for this person.
   const claimsBundle = await getClaimsBundleForEntity(db, 'person', person.id, person.slug);
@@ -692,6 +697,12 @@ export default async function CrewDetailPage(props: Props) {
 
         {/* T3-2 — Career stats panel. Computed from filmography + collaborators. */}
         <CareerStats filmography={filmography} collaborators={collaborators} />
+
+        {/* "Learn from the greats" style profile — migration 0085. Renders
+            philosophy, signature techniques, tools of choice, tells, process
+            notes, influences, career arc, sourced references. Self-hides
+            when no profile exists for this person. */}
+        <StyleProfile profile={styleProfile} />
 
         {/* T3-5 — awards this person has won or been nominated for, joined
             back to the production they're for. Self-hides when none. */}

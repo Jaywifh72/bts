@@ -568,6 +568,13 @@
       "when": 1784678400000,
       "tag": "0084_makeup_title_houses",
       "breakpoints": true
+    },
+    {
+      "idx": 81,
+      "version": "7",
+      "when": 1784764800000,
+      "tag": "0085_person_style_profiles",
+      "breakpoints": true
     }
   ]
 }

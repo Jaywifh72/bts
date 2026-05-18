@@ -30,6 +30,7 @@ export * from './vp-volumes.ts';
 export * from './rental-houses.ts';
 export * from './recording-orchestras.ts';
 export * from './specialty-houses.ts';
+export * from './person-style-profiles.ts';
 export * from './auth.ts';
 export * from './bookmarks.ts';
 export * from './ignored-duplicates.ts';
