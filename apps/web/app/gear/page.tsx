@@ -69,6 +69,7 @@ export default async function GearPage() {
         <Link href="/equipment/specs?category=camera_body" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Cameras</Link>
         <Link href="/equipment/specs?category=lens_set" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Lenses</Link>
         <Link href="/equipment/specs?category=lighting_fixture" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Lighting</Link>
+        <Link href="/gear/rentals" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Rental houses</Link>
         <Link href="/gear/compare" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Compare 2-4 items</Link>
       </nav>
 

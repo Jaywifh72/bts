@@ -30,3 +30,5 @@ export * from './queries/music-cues.ts';
 export * from './queries/sound-libraries.ts';
 export * from './queries/vp-volumes.ts';
 export * from './queries/equipment-specs.ts';
+export * from './queries/rental-houses.ts';
+export * from './queries/recording-orchestras.ts';

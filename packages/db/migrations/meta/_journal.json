@@ -554,6 +554,13 @@
       "when": 1784505600000,
       "tag": "0082_facility_profile_parity",
       "breakpoints": true
+    },
+    {
+      "idx": 79,
+      "version": "7",
+      "when": 1784592000000,
+      "tag": "0083_rental_houses_orchestras",
+      "breakpoints": true
     }
   ]
 }

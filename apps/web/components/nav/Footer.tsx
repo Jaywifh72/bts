@@ -29,6 +29,7 @@ export function Footer() {
             <Link href="/crew" className="hover:text-zinc-300">Crew</Link>
             <Link href="/gear" className="hover:text-zinc-300">Gear</Link>
             <Link href="/equipment/specs" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ spec browser</Link>
+            <Link href="/gear/rentals" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ rental houses</Link>
             <Link href="/vfx" className="hover:text-zinc-300">VFX houses</Link>
             <Link href="/vfx/volumes" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ LED volumes</Link>
             <Link href="/stunts" className="hover:text-zinc-300">Stunts</Link>
@@ -43,6 +44,7 @@ export function Footer() {
             <Link href="/music" className="hover:text-zinc-300">Music</Link>
             <Link href="/music/composers" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ composers</Link>
             <Link href="/music/scoring-stages" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ scoring stages</Link>
+            <Link href="/music/orchestras" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ orchestras</Link>
             <Link href="/music/supervisors" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ music supervisors</Link>
             <Link href="/production-design" className="hover:text-zinc-300">Production design</Link>
             <Link href="/production-design/designers" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ designers + art dept</Link>
