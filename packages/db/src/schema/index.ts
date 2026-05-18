@@ -39,3 +39,4 @@ export * from './annotated-walkthroughs.ts';
 export * from './auth.ts';
 export * from './bookmarks.ts';
 export * from './ignored-duplicates.ts';
+export * from './aeo.ts';
