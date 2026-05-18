@@ -505,6 +505,13 @@
       "when": 1783900800000,
       "tag": "0075_sound_libraries",
       "breakpoints": true
+    },
+    {
+      "idx": 72,
+      "version": "7",
+      "when": 1783987200000,
+      "tag": "0076_post_house_sound_design_kind",
+      "breakpoints": true
     }
   ]
 }

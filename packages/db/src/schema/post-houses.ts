@@ -12,7 +12,7 @@ import { productions } from './productions.ts';
  */
 
 export const postHouseKindEnum = pgEnum('post_house_kind', [
-  'di_lab', 'color', 'sound_mix', 'finishing', 'mastering', 'other',
+  'di_lab', 'color', 'sound_mix', 'sound_design', 'finishing', 'mastering', 'other',
 ]);
 
 export const postHouseRoleEnum = pgEnum('post_house_role', [
