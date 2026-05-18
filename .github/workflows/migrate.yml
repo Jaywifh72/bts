@@ -1,0 +1,31 @@
+name: Apply DB migrations (Neon prod)
+
+# Manual workflow to run pnpm --filter @bts/db migrate against the
+# production Neon database. Uses the same DATABASE_URL secret as the
+# admin-job and weekly-scraper workflows.
+#
+# Trigger: gh workflow run migrate.yml, or from the GH Actions UI.
+# Idempotent — drizzle-kit migrate skips applied migrations.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  migrate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Apply migrations
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm --filter @bts/db migrate
