@@ -127,13 +127,18 @@ export async function ingestCuesFromMusicBrainz(
 
       // Stash the release label on all score_works for this production.
       const label = release['label-info']?.[0]?.label?.name;
+      // Update each score_work label individually — drizzle-orm doesn't
+      // bind JS arrays to PG bigint[] reliably across drivers, so we
+      // avoid the array path entirely.
       if (label) {
-        await db.execute(sql`
-          UPDATE score_works
-          SET release_label = COALESCE(NULLIF(release_label, ''), ${label}),
-              updated_at = NOW()
-          WHERE id = ANY(${swIds}::bigint[])
-        `);
+        for (const swId of swIds) {
+          await db.execute(sql`
+            UPDATE score_works
+            SET release_label = COALESCE(NULLIF(release_label, ''), ${label}),
+                updated_at = NOW()
+            WHERE id = ${swId}
+          `);
+        }
       }
 
       // Insert tracks under EACH score_work for this production. Skip
