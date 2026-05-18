@@ -243,6 +243,286 @@ const SCORES: ScoreSeed[] = [
     cue_count_estimate: 22,
     release_label: 'Interscope Records',
   },
+
+  // ── Phase 2 — widely-cited contemporary scores ───────────────────────
+  // The INSERT below uses SELECT FROM productions/people WHERE slug = ...
+  // so entries here will silently no-op when the underlying film/composer
+  // hasn't been ingested yet. Re-runs pick them up automatically when they land.
+
+  // Hans Zimmer canon
+  {
+    production_slug: 'dune-part-two-2024',
+    composer_slug: 'hans-zimmer',
+    scoring_stage_slug: 'synchron-stage-vienna',
+    recording_orchestra: 'Vienna Synchron Stage Orchestra + soloists',
+    recording_location: 'Synchron Stage Vienna + AIR Lyndhurst',
+    themes_summary: 'Expansion of the Dune (2021) palette — duduk, throat-singing, processed strings. New themes for Chani, the Bene Gesserit, and the Fremen worm rituals layered atop the existing Atreides material.',
+    summary: 'Synthesizer-led with extensive orchestral processing. Zimmer eschewed Wagnerian leitmotif in favor of textural palettes per faction.',
+    cue_count_estimate: 22,
+    release_label: 'WaterTower Music',
+  },
+  {
+    production_slug: 'dune-2021',
+    composer_slug: 'hans-zimmer',
+    scoring_stage_slug: 'synchron-stage-vienna',
+    recording_orchestra: 'Vienna Synchron Stage Orchestra + soloists',
+    recording_location: 'Various; primary sessions at Synchron and London',
+    themes_summary: 'Dedicated entirely to Dune — Zimmer turned down Tenet to focus on it. Voiced through synth + processed female vocals + custom-built instruments (gigantic horns, didgeridoo).',
+    summary: 'Academy Award winner for Best Original Score (2022). Notable for inventing new instruments rather than using stock orchestra.',
+    cue_count_estimate: 22,
+    release_label: 'WaterTower Music',
+  },
+  {
+    production_slug: 'interstellar-2014',
+    composer_slug: 'hans-zimmer',
+    scoring_stage_slug: 'air-lyndhurst-hall',
+    recording_orchestra: '4-organ ensemble + chamber strings',
+    recording_location: 'Temple Church London (organ) + AIR Lyndhurst (orchestra)',
+    themes_summary: 'Built around the Harrison & Harrison organ at Temple Church — director Nolan had Zimmer write a piece blind to brief, then revealed the father-child theme. Cues integrated the organ throughout.',
+    summary: 'Process famously inverted: theme written before plot was revealed. \'Mountains\' / \'No Time For Caution\' became reference cues.',
+    cue_count_estimate: 23,
+    release_label: 'WaterTower Music',
+  },
+  {
+    production_slug: 'inception-2010',
+    composer_slug: 'hans-zimmer',
+    scoring_stage_slug: 'air-lyndhurst-hall',
+    recording_orchestra: 'AIR Lyndhurst session musicians + Johnny Marr (guitar)',
+    recording_location: 'AIR Lyndhurst Hall + remote sessions',
+    themes_summary: 'Brass-heavy with the famous slowed-down quote of Édith Piaf\'s \'Non, je ne regrette rien\' used as the in-world kick cue.',
+    summary: 'Brass blat — the BRAAAM became one of the most-imitated cues of the 2010s. \'Time\' (end credits) is the most-streamed score cue of the decade.',
+    cue_count_estimate: 12,
+    release_label: 'WaterTower Music',
+  },
+
+  // Ludwig Göransson
+  {
+    production_slug: 'oppenheimer-2023',
+    composer_slug: 'ludwig-goransson',
+    scoring_stage_slug: 'sony-scoring-stage',
+    recording_orchestra: 'Hollywood Studio Symphony + violin soloist Roman Simovic',
+    recording_location: 'Sony Scoring Stage + remote violin sessions',
+    themes_summary: 'String-led throughout — solo violin foregrounded for Oppenheimer\'s interior. Driving meter changes meant to evoke fission instability.',
+    summary: 'Academy Award winner for Best Original Score (2024). Composed and recorded with Nolan\'s usual short-deadline approach.',
+    cue_count_estimate: 24,
+    release_label: 'Back Lot Music',
+  },
+  {
+    production_slug: 'tenet-2020',
+    composer_slug: 'ludwig-goransson',
+    scoring_stage_slug: null,
+    recording_orchestra: 'Various sessions; pandemic-era remote recording',
+    recording_location: 'Multiple; recorded across COVID lockdowns',
+    themes_summary: 'Electronic + processed orchestra. Recordings of orchestral material played backward to embed the film\'s inversion concept sonically.',
+    summary: 'Hans Zimmer originally attached; passed to focus on Dune. Göransson\'s breakout feature-score credit.',
+    cue_count_estimate: 18,
+    release_label: 'WaterTower Music',
+  },
+
+  // Reznor + Ross
+  {
+    production_slug: 'the-social-network-2010',
+    composer_slug: 'trent-reznor',
+    scoring_stage_slug: null,
+    recording_orchestra: null,
+    recording_location: 'Reznor/Ross home studios',
+    themes_summary: 'Electronic, minimal, anxious — \'Hand Covers Bruise\' became the sonic identity. Co-composed with Atticus Ross.',
+    summary: 'Academy Award winner for Best Original Score (2011). First feature score collaboration for Reznor/Ross.',
+    cue_count_estimate: 19,
+    release_label: 'Null Corporation',
+  },
+  {
+    production_slug: 'the-social-network-2010',
+    composer_slug: 'atticus-ross',
+    scoring_stage_slug: null,
+    recording_orchestra: null,
+    recording_location: 'Reznor/Ross home studios',
+    themes_summary: null,
+    summary: 'Co-composer with Trent Reznor. Long-time NIN collaborator.',
+    cue_count_estimate: 19,
+    release_label: 'Null Corporation',
+  },
+  {
+    production_slug: 'soul-2020',
+    composer_slug: 'trent-reznor',
+    scoring_stage_slug: null,
+    recording_orchestra: null,
+    recording_location: 'Reznor/Ross studios + Jon Batiste sessions',
+    themes_summary: 'Two-composer split: Reznor/Ross wrote the abstract \'Great Beyond\' material; Jon Batiste wrote the jazz cues for the New York scenes.',
+    summary: 'Academy Award winner for Best Original Score (2021). Pixar\'s first jazz-anchored feature.',
+    cue_count_estimate: 20,
+    release_label: 'Walt Disney Records',
+  },
+
+  // Hildur Guðnadóttir
+  {
+    production_slug: 'joker-2019',
+    composer_slug: 'hildur-gudnadottir',
+    scoring_stage_slug: 'synchron-stage-vienna',
+    recording_orchestra: 'Solo cello + orchestral overlay',
+    recording_location: 'Synchron Stage Vienna + Berlin sessions',
+    themes_summary: 'Cello-led — Guðnadóttir\'s own instrument. \'Bathroom Dance\' written to picture before the scene was complete; Phoenix improvised dance to it during the take.',
+    summary: 'Academy Award winner for Best Original Score (2020). First solo female winner in the category.',
+    cue_count_estimate: 18,
+    release_label: 'WaterTower Music',
+  },
+  {
+    production_slug: 'tar-2022',
+    composer_slug: 'hildur-gudnadottir',
+    scoring_stage_slug: null,
+    recording_orchestra: 'Mahler\'s Fifth (existing concert recording) + original cues',
+    recording_location: 'Various',
+    themes_summary: 'Original cues function as connective tissue between Mahler\'s Fifth — the symphony the protagonist conducts. Sparse and tonally restrained.',
+    summary: 'Cate Blanchett character performs the Mahler in-film; Guðnadóttir\'s additional cues had to coexist with that recording.',
+    cue_count_estimate: 10,
+    release_label: 'Deutsche Grammophon',
+  },
+
+  // Jóhann Jóhannsson
+  {
+    production_slug: 'arrival-2016',
+    composer_slug: 'johann-johannsson',
+    scoring_stage_slug: null,
+    recording_orchestra: 'Theatre of Voices choir + chamber orchestra',
+    recording_location: 'Multiple sessions Iceland + Copenhagen',
+    themes_summary: 'Voice-led — Theatre of Voices choir performs deconstructed, breath-emphasizing vocal textures meant to evoke the aliens\' nonlinear language. Max Richter\'s \'On the Nature of Daylight\' bookends the film (licensed, not composed).',
+    summary: 'Among the most-influential scores of the decade. Notably DID NOT use the licensed Max Richter cue that opens and closes the film.',
+    cue_count_estimate: 16,
+    release_label: 'Deutsche Grammophon',
+  },
+  {
+    production_slug: 'sicario-2015',
+    composer_slug: 'johann-johannsson',
+    scoring_stage_slug: null,
+    recording_orchestra: 'Low-brass ensemble + strings + electronic textures',
+    recording_location: 'Various',
+    themes_summary: 'Aggressive sub-bass percussion — \'The Beast\' became one of the most-quoted action cues of the 2010s. Ostinato-driven; very low harmonic rhythm.',
+    summary: 'Academy Award nominee. Defined the action-score palette for half a decade after.',
+    cue_count_estimate: 12,
+    release_label: 'Varèse Sarabande',
+  },
+
+  // Alexandre Desplat
+  {
+    production_slug: 'the-shape-of-water-2017',
+    composer_slug: 'alexandre-desplat',
+    scoring_stage_slug: 'air-lyndhurst-hall',
+    recording_orchestra: 'London Symphony Orchestra',
+    recording_location: 'AIR Lyndhurst Hall, London',
+    themes_summary: 'Accordion-led waltz at the core — Desplat tied to the underwater + period setting. French-Hollywood crossover sensibility throughout.',
+    summary: 'Academy Award winner for Best Original Score (2018).',
+    cue_count_estimate: 22,
+    release_label: 'Decca Records',
+  },
+  {
+    production_slug: 'the-grand-budapest-hotel-2014',
+    composer_slug: 'alexandre-desplat',
+    scoring_stage_slug: null,
+    recording_orchestra: 'Balalaika ensemble + small orchestra',
+    recording_location: 'Berlin + Paris sessions',
+    themes_summary: 'Balalaika-led with cimbalom textures — Mitteleuropa orchestration for the fictional setting. Theme stated minimally and repeated with varied instrumentation.',
+    summary: 'Academy Award winner for Best Original Score (2015).',
+    cue_count_estimate: 28,
+    release_label: 'ABKCO Records',
+  },
+
+  // Mica Levi
+  {
+    production_slug: 'under-the-skin-2013',
+    composer_slug: 'mica-levi',
+    scoring_stage_slug: null,
+    recording_orchestra: 'Microtonal strings + processed textures',
+    recording_location: 'London',
+    themes_summary: 'Microtonal — pitches slide between standard tunings, evoking the alien protagonist\'s sensorium. \'Love\' became the breakthrough cue.',
+    summary: 'Levi\'s first feature score. Studied composition at Guildhall; toured as Micachu.',
+    cue_count_estimate: 12,
+    release_label: 'Milan Records',
+  },
+  {
+    production_slug: 'jackie-2016',
+    composer_slug: 'mica-levi',
+    scoring_stage_slug: null,
+    recording_orchestra: 'Small string ensemble',
+    recording_location: 'London',
+    themes_summary: 'Strings only — microtonal slides between pitches evoke grief\'s ambiguity. Cues sit close to dissonance throughout.',
+    summary: 'Academy Award nominee. Cited as one of the most distinctive contemporary score voices.',
+    cue_count_estimate: 14,
+    release_label: 'Milan Records',
+  },
+
+  // Volker Bertelmann (Hauschka)
+  {
+    production_slug: 'all-quiet-on-the-western-front-2022',
+    composer_slug: 'volker-bertelmann',
+    scoring_stage_slug: null,
+    recording_orchestra: 'Harmonium + prepared piano + strings',
+    recording_location: 'Berlin',
+    themes_summary: 'Three-note motif (E-D#-E) repeated through the film — Bertelmann\'s minimalist signature. Harmonium and prepared-piano timbres dominate.',
+    summary: 'Academy Award winner for Best Original Score (2023).',
+    cue_count_estimate: 18,
+    release_label: 'Netflix Music',
+  },
+
+  // Michael Giacchino
+  {
+    production_slug: 'the-batman-2022',
+    composer_slug: 'michael-giacchino',
+    scoring_stage_slug: 'eastwood-scoring-stage',
+    recording_orchestra: 'Warner Bros. Studio Symphony Orchestra',
+    recording_location: 'Eastwood Scoring Stage, Burbank',
+    themes_summary: 'Slow-build orchestral with choral overlay. The Batman / Riddler theme uses identical pitch material — only orchestration differs.',
+    summary: 'Giacchino at his most restrained — chose minor ostinati over fanfares as a deliberate Batman-revisionist choice.',
+    cue_count_estimate: 26,
+    release_label: 'WaterTower Music',
+  },
+
+  // Carter Burwell (Coens regular + In Bruges)
+  {
+    production_slug: 'the-banshees-of-inisherin-2022',
+    composer_slug: 'carter-burwell',
+    scoring_stage_slug: null,
+    recording_orchestra: 'Irish folk ensemble + small string orchestra',
+    recording_location: 'Ireland + London sessions',
+    themes_summary: 'Lullaby-style theme rooted in Irish folk modes. McDonagh × Burwell collaboration (their third feature).',
+    summary: 'Academy Award nominee. Folk-instrument scoring against picaresque comedy.',
+    cue_count_estimate: 16,
+    release_label: 'Hollywood Records',
+  },
+
+  // Newer flagship scores worth indexing
+  {
+    production_slug: 'killers-of-the-flower-moon-2023',
+    composer_slug: 'robbie-robertson',
+    scoring_stage_slug: null,
+    recording_orchestra: 'Various roots ensembles + electric blues',
+    recording_location: 'LA + multiple',
+    themes_summary: 'Robertson\'s final score before his death. Blues + Indigenous-music textures meant to ground the period setting without museum-piece formality.',
+    summary: 'Posthumous release. Long-time Scorsese collaborator (The Last Waltz, 1978).',
+    cue_count_estimate: 24,
+    release_label: 'Apple Music / Paramount',
+  },
+  {
+    production_slug: 'past-lives-2023',
+    composer_slug: 'christopher-bear',
+    scoring_stage_slug: null,
+    recording_orchestra: 'Small chamber ensemble + electronic',
+    recording_location: 'Various',
+    themes_summary: 'Two-composer collaboration with Daniel Rossen (Grizzly Bear). Restrained piano + strings; never quite arrives at full statement.',
+    summary: 'Christopher Bear + Daniel Rossen of Grizzly Bear — their first feature score together.',
+    cue_count_estimate: 14,
+    release_label: 'A24 Music',
+  },
+  {
+    production_slug: 'aftersun-2022',
+    composer_slug: 'oliver-coates',
+    scoring_stage_slug: null,
+    recording_orchestra: 'Cello (Coates) + electronic textures',
+    recording_location: 'London',
+    themes_summary: 'Cello-led with processed electronic ambience. Sparse — the licensed needle drops (Queen, Aphex Twin) carry as much emotional weight as the score.',
+    summary: 'Coates is also a frequent collaborator with Mica Levi and Radiohead.',
+    cue_count_estimate: 8,
+    release_label: 'A24 Music',
+  },
 ];
 
 for (const sc of SCORES) {
@@ -288,6 +568,115 @@ for (const sc of SCORES) {
   }
 }
 console.log(`[+] score_works: ${SCORES.length} rows attempted (missing composers no-op silently)`);
+
+// ─────────────────────────────────────────────────────────────────
+// 2b. Sound libraries
+// ─────────────────────────────────────────────────────────────────
+// Canonical third-party SFX library catalog. Production credits attach
+// later via end-credits scrape or editorial deep-dives; this pass just
+// gets the entity rows seeded so the /sound/effects/libraries surface
+// has something to show.
+
+type SoundLibSeed = {
+  slug: string;
+  name: string;
+  publisher: string;
+  country: string;
+  founded_year: number | null;
+  website_url: string | null;
+  specialties: string[];
+  summary: string;
+};
+
+const SOUND_LIBRARIES: SoundLibSeed[] = [
+  {
+    slug: 'boom-library',
+    name: 'BOOM Library',
+    publisher: 'BOOM Library GmbH',
+    country: 'DE', founded_year: 2010,
+    website_url: 'https://www.boomlibrary.com',
+    specialties: ['weapons', 'vehicles', 'creatures', 'cinematic textures'],
+    summary: 'Berlin-based premium SFX library publisher. Known for cinematic-tier weapons, vehicles, and creature design libraries widely credited on tentpole features.',
+  },
+  {
+    slug: 'pro-sound-effects',
+    name: 'Pro Sound Effects',
+    publisher: 'Pro Sound Effects',
+    country: 'US', founded_year: 2004,
+    website_url: 'https://www.prosoundeffects.com',
+    specialties: ['ambience', 'foley', 'general', 'archival NBC + ABC libraries'],
+    summary: 'Distributor + publisher carrying the NBC News, ABC News, and Hollywood Edge archives plus original recordings. One of the largest commercial SFX catalogs available to post houses.',
+  },
+  {
+    slug: 'a-sound-effect',
+    name: 'A Sound Effect',
+    publisher: 'Independent SFX Marketplace',
+    country: 'DK', founded_year: 2013,
+    website_url: 'https://www.asoundeffect.com',
+    specialties: ['independent publishers', 'curated bundles', 'niche material'],
+    summary: 'Marketplace + editorial platform for independent SFX publishers — aggregates dozens of small libraries. Behind the popular Soundlister directory of post-sound talent.',
+  },
+  {
+    slug: 'sound-ideas',
+    name: 'Sound Ideas',
+    publisher: 'Sound Ideas Inc.',
+    country: 'CA', founded_year: 1978,
+    website_url: 'https://www.sound-ideas.com',
+    specialties: ['general', 'archival broadcast', 'Hanna-Barbera + Series 6000'],
+    summary: 'Canadian publisher; the Series 6000 + Series 7000 libraries date to the 1980s-90s and are credited on hundreds of films from the analog era forward.',
+  },
+  {
+    slug: 'soundly',
+    name: 'Soundly',
+    publisher: 'Soundly ApS',
+    country: 'DK', founded_year: 2017,
+    website_url: 'https://getsoundly.com',
+    specialties: ['cloud-native catalog', 'tagged metadata', 'streaming workflow'],
+    summary: 'Subscription + free catalog; cloud-native macOS-first app. Widely adopted by indie + commercial sound designers for fast search across publisher libraries.',
+  },
+  {
+    slug: 'krotos',
+    name: 'Krotos Audio',
+    publisher: 'Krotos Ltd.',
+    country: 'GB', founded_year: 2014,
+    website_url: 'https://www.krotosaudio.com',
+    specialties: ['creature design', 'weapons', 'plugins (Reformer)'],
+    summary: 'Edinburgh-based publisher; known for the Reformer real-time SFX plugin in addition to traditional libraries. Frequent credit on horror + creature features.',
+  },
+  {
+    slug: 'tonsturm',
+    name: 'Tonsturm',
+    publisher: 'Tonsturm',
+    country: 'DE', founded_year: 2008,
+    website_url: 'https://www.tonsturm.com',
+    specialties: ['cinematic risers + impacts', 'designed sound', 'whoosh'],
+    summary: 'Hamburg-based publisher; designed-sound libraries (risers, impacts, whooshes) widely credited on trailer + tentpole picture work.',
+  },
+];
+
+for (const sl of SOUND_LIBRARIES) {
+  await db.execute(sql`
+    INSERT INTO sound_libraries (
+      slug, name, publisher, country, founded_year, website_url,
+      specialties, summary, data_tier, last_verified_at
+    ) VALUES (
+      ${sl.slug}, ${sl.name}, ${sl.publisher}, ${sl.country}, ${sl.founded_year}, ${sl.website_url},
+      ${sl.specialties}, ${sl.summary}, 'curated', NOW()
+    )
+    ON CONFLICT (slug) DO UPDATE SET
+      name = EXCLUDED.name,
+      publisher = EXCLUDED.publisher,
+      country = EXCLUDED.country,
+      founded_year = EXCLUDED.founded_year,
+      website_url = EXCLUDED.website_url,
+      specialties = EXCLUDED.specialties,
+      summary = EXCLUDED.summary,
+      data_tier = 'curated',
+      last_verified_at = NOW(),
+      updated_at = NOW()
+  `);
+}
+console.log(`[+] sound_libraries: ${SOUND_LIBRARIES.length} rows upserted`);
 
 // ─────────────────────────────────────────────────────────────────
 // 3. Flagship music cues
