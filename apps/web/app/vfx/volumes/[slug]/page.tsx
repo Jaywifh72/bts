@@ -12,7 +12,8 @@ export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> },
 ): Promise<Metadata> {
   const { slug } = await params;
-  const v = await getVpVolumeBySlug(db, slug);
+  let v: Awaited<ReturnType<typeof getVpVolumeBySlug>> = null;
+  try { v = await getVpVolumeBySlug(db, slug); } catch { /* table missing */ }
   if (!v) return { title: 'LED volume' };
   return {
     title: `${v.name} — LED volume`,
@@ -26,10 +27,16 @@ export default async function VpVolumeDetailPage(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params;
-  const v = await getVpVolumeBySlug(db, slug);
+  // Defensive against missing 0078 schema on prod.
+  let v: Awaited<ReturnType<typeof getVpVolumeBySlug>> = null;
+  let productions: Awaited<ReturnType<typeof listProductionsForVpVolume>> = [];
+  try {
+    v = await getVpVolumeBySlug(db, slug);
+    if (v) productions = await listProductionsForVpVolume(db, v.id, 200);
+  } catch (err) {
+    console.warn('[vp_volumes] detail query failed (table missing?)', err);
+  }
   if (!v) notFound();
-
-  const productions = await listProductionsForVpVolume(db, v.id, 200);
 
   return (
     <>

@@ -16,7 +16,15 @@ export const metadata: Metadata = {
 export const dynamic = 'force-dynamic';
 
 export default async function VpVolumesPage() {
-  const volumes = await listVpVolumes(db, { withCreditsOnly: false, limit: 200 });
+  // Defensive — vp_volumes table is from migration 0078 which is still
+  // queued for dispatch on prod. Catch + show empty state instead of
+  // letting the page throw to error.tsx.
+  let volumes: Awaited<ReturnType<typeof listVpVolumes>> = [];
+  try {
+    volumes = await listVpVolumes(db, { withCreditsOnly: false, limit: 200 });
+  } catch (err) {
+    console.warn('[vp_volumes] table missing or query failed; rendering empty state', err);
+  }
   const totalCredits = volumes.reduce((s, v) => s + v.production_count, 0);
 
   return (
