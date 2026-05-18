@@ -367,9 +367,15 @@ export async function listRiggingTechniques(
            safety_considerations, sag_aftra_bulletin,
            common_variants, "references", photos,
            related_discipline_tags, sort_order,
-           max_load_kg, stop_distance_m::text, typical_g_force::text,
-           max_height_m::text, decelerator_type, primary_manufacturer,
-           performer_certification
+           -- 0081 spec columns — projected as NULL until migration applies.
+           -- Once 0081 runs on prod, replace with the real column names.
+           NULL::int AS max_load_kg,
+           NULL::text AS stop_distance_m,
+           NULL::text AS typical_g_force,
+           NULL::text AS max_height_m,
+           NULL::text AS decelerator_type,
+           NULL::text AS primary_manufacturer,
+           NULL::text AS performer_certification
     FROM stunt_rigging_techniques
     ORDER BY category, sort_order, name
   `);
@@ -384,9 +390,15 @@ export async function getRiggingTechniqueBySlug(
            safety_considerations, sag_aftra_bulletin,
            common_variants, "references", photos,
            related_discipline_tags, sort_order,
-           max_load_kg, stop_distance_m::text, typical_g_force::text,
-           max_height_m::text, decelerator_type, primary_manufacturer,
-           performer_certification
+           -- 0081 spec columns — projected as NULL until migration applies.
+           -- Once 0081 runs on prod, replace with the real column names.
+           NULL::int AS max_load_kg,
+           NULL::text AS stop_distance_m,
+           NULL::text AS typical_g_force,
+           NULL::text AS max_height_m,
+           NULL::text AS decelerator_type,
+           NULL::text AS primary_manufacturer,
+           NULL::text AS performer_certification
     FROM stunt_rigging_techniques
     WHERE slug = ${slug}
   `);
