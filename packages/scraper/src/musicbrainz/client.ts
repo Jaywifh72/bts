@@ -85,6 +85,14 @@ export async function searchSoundtrackReleaseGroup(
     if (composerLc && rg['artist-credit']?.some((a) => a.name.toLowerCase().includes(composerLc))) {
       s += 80;
     }
+    // BOOST full-album release-group titles. These are the OST / soundtrack
+    // album we want, not the promo singles.
+    if (/original motion picture soundtrack|music from the motion picture|music inspired by/.test(rgTitle)) s += 80;
+    if (/^soundtrack$|^score$|complete score/.test(rgTitle)) s += 40;
+    // PENALIZE promo singles — '(from "X")', 'Theme from X', 'X (Single)',
+    // 'Main Title', solo-track release groups. These usually have one track.
+    if (/\(from ["']/.test(rgTitle)) s -= 80;
+    if (/\b(single|ep|promo|theme from|main title)\b/.test(rgTitle)) s -= 50;
     // Penalize compilation / various-artist titles.
     if (rg.title.toLowerCase().includes('various')) s -= 50;
     if (rg['artist-credit']?.some((a) => a.name.toLowerCase() === 'various artists')) s -= 30;
