@@ -90,16 +90,25 @@ export type MbRelease = {
   }[];
 };
 
-export async function getReleaseGroupDetail(
+/**
+ * List the releases under a release group. Only `releases` is a valid
+ * include for this endpoint — media / recordings are fetched per release.
+ */
+export async function getReleaseGroupReleases(
   releaseGroupId: string,
-): Promise<{ releases: MbRelease[] } | null> {
-  return fetchMb<{ releases: MbRelease[] }>(`/release-group/${releaseGroupId}`, {
-    inc: 'releases+labels+media+recordings+artist-credits',
+): Promise<MbRelease[]> {
+  const json = await fetchMb<{ releases: MbRelease[] }>(`/release-group/${releaseGroupId}`, {
+    inc: 'releases',
   });
+  return json?.releases ?? [];
 }
 
+/**
+ * Get a single release's tracklist + label info. media+recordings together
+ * give us position/title/length per track.
+ */
 export async function getReleaseDetail(releaseId: string): Promise<MbRelease | null> {
   return fetchMb<MbRelease>(`/release/${releaseId}`, {
-    inc: 'recordings+labels+artist-credits',
+    inc: 'recordings+labels+artist-credits+media',
   });
 }

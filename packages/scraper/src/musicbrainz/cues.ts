@@ -1,6 +1,6 @@
 import 'dotenv/config';
 import { db, sql } from '@bts/db';
-import { searchSoundtrackReleaseGroup, getReleaseGroupDetail } from './client.ts';
+import { searchSoundtrackReleaseGroup, getReleaseGroupReleases, getReleaseDetail } from './client.ts';
 
 /**
  * Populate music_cues from MusicBrainz soundtrack release tracklists.
@@ -82,19 +82,31 @@ export async function ingestCuesFromMusicBrainz(
         console.log(`  [-] no MB release-group: ${sw.production_title}`);
         continue;
       }
-      const detail = await getReleaseGroupDetail(rg.id);
-      if (!detail || detail.releases.length === 0) {
+      const releases = await getReleaseGroupReleases(rg.id);
+      if (releases.length === 0) {
         stats.score_works_skipped++;
         console.log(`  [-] no releases under MBID ${rg.id}: ${sw.production_title}`);
         continue;
       }
-      // Prefer the first release with a media tracklist.
-      const release = detail.releases.find((r) => r.media && r.media.length > 0)
-        ?? detail.releases[0]!;
-      const tracks = release.media?.flatMap((m) => m.tracks ?? []) ?? [];
-      if (tracks.length === 0) {
+      // MB returns releases in arbitrary order. Prefer the earliest dated
+      // release (usually the official OST album, not a deluxe reissue with
+      // bonus material). Fall back to first if no dates are set.
+      const sortedReleases = [...releases].sort((a, b) => {
+        const da = a.date ?? '9999'; const db = b.date ?? '9999';
+        return da.localeCompare(db);
+      });
+      // Now fetch the chosen release's tracklist. Walk releases until one
+      // returns tracks — some have no media attached.
+      let release = null as Awaited<ReturnType<typeof getReleaseDetail>>;
+      let tracks: NonNullable<NonNullable<typeof release>['media']>[number]['tracks'] = [];
+      for (const candidate of sortedReleases.slice(0, 3)) {
+        release = await getReleaseDetail(candidate.id);
+        tracks = release?.media?.flatMap((m) => m.tracks ?? []) ?? [];
+        if (tracks.length > 0) break;
+      }
+      if (tracks.length === 0 || !release) {
         stats.score_works_skipped++;
-        console.log(`  [-] empty tracklist on release ${release.id}: ${sw.production_title}`);
+        console.log(`  [-] no tracklist on any release for ${sw.production_title}`);
         continue;
       }
       stats.score_works_matched++;
