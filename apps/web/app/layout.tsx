@@ -41,8 +41,8 @@ export const metadata: Metadata = {
 export default async function RootLayout({ children }: { children: React.ReactNode }) {
   const session = await safeAuth();
   return (
-    <html lang="en" className={`${inter.variable} ${dmSerifDisplay.variable}`}>
-      <body data-logged-in={session ? 'true' : 'false'} className="min-h-screen bg-zinc-950 font-sans text-zinc-50 antialiased">
+    <html lang="en" className={`${inter.variable} ${dmSerifDisplay.variable}`} suppressHydrationWarning>
+      <body suppressHydrationWarning data-logged-in={session ? 'true' : 'false'} className="min-h-screen bg-zinc-950 font-sans text-zinc-50 antialiased">
         {/* T8-2: skip-to-content. Visually hidden until keyboard-focused. */}
         <a href="#main-content" className="skip-link">
           Skip to content
