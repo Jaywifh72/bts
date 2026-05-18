@@ -77,6 +77,30 @@ export async function listProductionsForScoringStage(
   `);
 }
 
+/**
+ * Scoring stages credited on a single production. Used by the film
+ * detail page to surface where the score was recorded.
+ */
+export async function getProductionScoringStages(
+  db: SeedDb = defaultDb,
+  productionId: number,
+) {
+  return db.execute<{
+    slug: string;
+    name: string;
+    facility_name: string | null;
+    city: string | null;
+    country: string | null;
+    notes: string | null;
+  }>(sql`
+    SELECT ss.slug, ss.name, ss.facility_name, ss.city, ss.country, pss.notes
+    FROM production_scoring_stages pss
+    JOIN scoring_stages ss ON ss.id = pss.scoring_stage_id
+    WHERE pss.production_id = ${productionId}
+    ORDER BY pss.sort_order, ss.name
+  `);
+}
+
 export async function listScoringStages(
   db: SeedDb = defaultDb,
   opts: { withCreditsOnly?: boolean; limit?: number } = {},

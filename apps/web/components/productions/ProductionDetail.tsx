@@ -104,6 +104,7 @@ export function ProductionDetail({
   collectionMembers,
   similar,
   postHouses,
+  scoringStages,
   keyFrames,
   citations,
   awards,
@@ -128,6 +129,14 @@ export function ProductionDetail({
   collectionMembers: readonly CollectionMember[];
   similar: readonly SimilarProduction[];
   postHouses: readonly PostHouse[];
+  scoringStages: readonly {
+    slug: string;
+    name: string;
+    facility_name: string | null;
+    city: string | null;
+    country: string | null;
+    notes: string | null;
+  }[];
   keyFrames: readonly KeyFrame[];
   citations: Citations;
   awards: readonly ProductionAward[];
@@ -193,6 +202,7 @@ export function ProductionDetail({
   const hasStuntSequences = stuntSequences.length > 0;
   const hasStuntDept = stuntCrew.length > 0 || stuntDoubling.length > 0 || stuntCompanies.length > 0;
   const hasPostHouses = postHouses.length > 0;
+  const hasScoringStages = scoringStages.length > 0;
   const hasVideos = videos.length > 0;
   const hasScenes = scenes.length > 0;
 
@@ -210,6 +220,7 @@ export function ProductionDetail({
     hasStuntSequences && { id: 'stunt-sequences', label: 'Stunt sequences' },
     hasStuntDept && { id: 'stunts', label: 'Stunts' },
     hasPostHouses && { id: 'post-houses', label: 'Post' },
+    hasScoringStages && { id: 'scoring-stages', label: 'Scoring' },
     hasVideos && { id: 'videos', label: 'Videos' },
     hasScenes && { id: 'scenes', label: 'Scenes' },
     hasReleaseDates && { id: 'release-dates', label: 'Releases' },
@@ -654,9 +665,22 @@ export function ProductionDetail({
                 p.role === 'sound_mix' || p.role === 'sound_design' ? '/sound'
                 : p.role === 'color_grading' || p.role === 'di' || p.role === 'finishing' || p.role === 'imax_remaster' || p.role === 'mastering' ? '/for-colorists'
                 : null;
+              // Sound-flavored post-houses now have routable detail pages
+              // at /sound/houses/[slug]. Picture-side ones (DI/color/finishing)
+              // don't yet — render name as plain text in that case.
+              const isSound = p.role === 'sound_mix' || p.role === 'sound_design';
               return (
                 <li key={`${p.slug}:${p.role}`} className="flex items-center gap-3">
-                  <span className="font-medium text-zinc-100">{p.name}</span>
+                  {isSound ? (
+                    <Link
+                      href={`/sound/houses/${p.slug}`}
+                      className="font-medium text-zinc-100 hover:text-amber-400"
+                    >
+                      {p.name}
+                    </Link>
+                  ) : (
+                    <span className="font-medium text-zinc-100">{p.name}</span>
+                  )}
                   {roleHref ? (
                     <Link
                       href={roleHref}
@@ -672,6 +696,36 @@ export function ProductionDetail({
                 </li>
               );
             })}
+          </ul>
+        </section>
+      )}
+
+      {/* Scoring stages — where the score was recorded. Mirrors the
+          post-houses pattern: name links to /music/scoring-stages/[slug],
+          location + notes shown inline. */}
+      {hasScoringStages && (
+        <section id="scoring-stages" className="scroll-mt-24 mt-6">
+          <SectionHeader label="Score" heading="Scoring stage" anchorId="scoring-stages" />
+          <ul className="space-y-1 text-sm">
+            {scoringStages.map((s) => (
+              <li key={s.slug} className="flex flex-wrap items-baseline gap-x-2">
+                <Link
+                  href={`/music/scoring-stages/${s.slug}`}
+                  className="font-medium text-zinc-100 hover:text-amber-400"
+                >
+                  {s.name}
+                </Link>
+                {s.facility_name && (
+                  <span className="text-xs text-zinc-400">{s.facility_name}</span>
+                )}
+                {(s.city || s.country) && (
+                  <span className="text-xs text-zinc-500">
+                    · {[s.city, s.country].filter(Boolean).join(', ')}
+                  </span>
+                )}
+                {s.notes && <span className="text-xs text-zinc-400">— {s.notes}</span>}
+              </li>
+            ))}
           </ul>
         </section>
       )}

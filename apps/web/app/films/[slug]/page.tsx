@@ -9,6 +9,7 @@ import {
   getCollectionMembers,
   getSimilarProductions,
   getProductionPostHouses,
+  getProductionScoringStages,
   getProductionKeyFrames,
   getProductionCitations,
   getProductionAwards,
@@ -95,7 +96,7 @@ export default async function FilmDetailPage(props: Props) {
   if (!data) notFound();
 
   const collectionId = data.production.tmdb_collection_id;
-  const [vfx, videos, collectionMembersRaw, similar, postHouses, keyFrames, citations, awards, confidence, semanticSimilar, locations, lightingSetups, colorPipelines, claims, videoTimestamps, stuntSequences, stuntDoubling, stuntCompanies, stuntCrew] = await Promise.all([
+  const [vfx, videos, collectionMembersRaw, similar, postHouses, scoringStages, keyFrames, citations, awards, confidence, semanticSimilar, locations, lightingSetups, colorPipelines, claims, videoTimestamps, stuntSequences, stuntDoubling, stuntCompanies, stuntCrew] = await Promise.all([
     getProductionVfxData(db, data.production.id),
     getProductionVideos(db, data.production.id),
     collectionId
@@ -103,6 +104,7 @@ export default async function FilmDetailPage(props: Props) {
       : Promise.resolve(null),
     getSimilarProductions(db, data.production.id, 6),
     getProductionPostHouses(db, data.production.id),
+    getProductionScoringStages(db, data.production.id),
     getProductionKeyFrames(db, data.production.id),
     getProductionCitations(db, data.production.id),
     getProductionAwards(db, data.production.id),
@@ -187,7 +189,7 @@ export default async function FilmDetailPage(props: Props) {
     <>
       <JsonLd data={jsonLd} />
       <JsonLd data={breadcrumbJsonLd} />
-      <ProductionDetail data={data} vfx={vfx} videos={videos} videoTimestamps={videoTimestamps} collectionMembers={collectionMembers} similar={similar} postHouses={postHouses} keyFrames={keyFrames} citations={citations} awards={awards} confidence={confidence} semanticSimilar={semanticSimilar} locations={locations} lightingSetups={lightingSetups} colorPipelines={colorPipelines} claims={claims} sourcesByClaimId={sourcesByClaimId} evidenceByClaimId={evidenceByClaimId} stuntSequences={stuntSequences} stuntDoubling={stuntDoubling} stuntCompanies={stuntCompanies} stuntCrew={stuntCrew} similarShots={similarShots} />
+      <ProductionDetail data={data} vfx={vfx} videos={videos} videoTimestamps={videoTimestamps} collectionMembers={collectionMembers} similar={similar} postHouses={postHouses} scoringStages={scoringStages} keyFrames={keyFrames} citations={citations} awards={awards} confidence={confidence} semanticSimilar={semanticSimilar} locations={locations} lightingSetups={lightingSetups} colorPipelines={colorPipelines} claims={claims} sourcesByClaimId={sourcesByClaimId} evidenceByClaimId={evidenceByClaimId} stuntSequences={stuntSequences} stuntDoubling={stuntDoubling} stuntCompanies={stuntCompanies} stuntCrew={stuntCrew} similarShots={similarShots} />
     </>
   );
 }
