@@ -596,6 +596,13 @@
       "when": 1785024000000,
       "tag": "0088_phase2_facility_houses",
       "breakpoints": true
+    },
+    {
+      "idx": 85,
+      "version": "7",
+      "when": 1785110400000,
+      "tag": "0089_production_craft_dossiers",
+      "breakpoints": true
     }
   ]
 }

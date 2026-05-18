@@ -31,6 +31,7 @@ export default async function ProductionDesignPage() {
       <nav aria-label="Production design sub-disciplines" className="mb-6 flex flex-wrap gap-2 text-sm">
         <span className="self-center text-[10px] uppercase tracking-widest text-zinc-500">Drill into</span>
         <Link href="/production-design/designers" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Designers + art dept</Link>
+        <Link href="/production-design/works" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">PD dossiers</Link>
         <Link href="/for-production-designers" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">For designers</Link>
         <Link href="/awards/craft/production-design" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">PD awards</Link>
         <Link href="/awards/craft/art-direction" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Art-direction (legacy)</Link>

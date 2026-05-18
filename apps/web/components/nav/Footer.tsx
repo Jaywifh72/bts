@@ -61,6 +61,9 @@ export function Footer() {
             <Link href="/references" className="hover:text-zinc-300">References graph</Link>
             <Link href="/partnerships" className="hover:text-zinc-300">Creative partnerships</Link>
             <Link href="/decisions" className="hover:text-zinc-300">Craft decisions</Link>
+            <Link href="/production-design/works" className="hover:text-zinc-300">PD dossiers</Link>
+            <Link href="/costume-hair-makeup/costume-works" className="hover:text-zinc-300">Costume dossiers</Link>
+            <Link href="/costume-hair-makeup/makeup-works" className="hover:text-zinc-300">MU & hair dossiers</Link>
             <Link href="/awards" className="hover:text-zinc-300">Awards</Link>
             <Link href="/locations" className="hover:text-zinc-300">Locations atlas</Link>
             <Link href="/decades" className="hover:text-zinc-300">By decade</Link>
