@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import Image from 'next/image';
-import { db, searchProductionsCombined } from '@bts/db';
+import { db, searchProductionsCombined, recordAskQuery } from '@bts/db';
 import { extractFilters, MissingApiKeyError, type SearchFilters } from '@/lib/nl-extract';
 import { posterUrl } from '@/lib/tmdb-image';
 import { SectionHeader } from '@/components/ui/SectionHeader';
@@ -60,9 +60,11 @@ export default async function AskPage(props: Props) {
   const omit = parseOmit(searchParams.omit);
   const key = process.env.OPENAI_API_KEY;
 
+  const startTime = Date.now();
   let filters: SearchFilters | null = null;
   let results: Awaited<ReturnType<typeof searchProductionsCombined>> = [];
   let errorMsg: string | null = null;
+  let queryEmbedding: number[] | null = null;
 
   if (query) {
     if (!key) {
@@ -78,7 +80,6 @@ export default async function AskPage(props: Props) {
         if (omit.has('aspect_ratio'))   filters = { ...filters, aspect_ratio: null };
         if (omit.has('format_keyword')) filters = { ...filters, format_keyword: null };
         if (omit.has('themes'))         filters = { ...filters, themes: '' };
-        let queryEmbedding: number[] | null = null;
         if (filters.themes.trim()) {
           queryEmbedding = await embedThemes(filters.themes, key);
         }
@@ -92,6 +93,18 @@ export default async function AskPage(props: Props) {
               : String(e);
       }
     }
+
+    // Fire-and-forget log for the AEO observatory's prompt-curator.
+    // Never await — must not block the response.
+    void recordAskQuery(db, {
+      queryText: query,
+      filtersJson: filters ?? undefined,
+      resultCount: results.length,
+      usedEmbedding: queryEmbedding !== null,
+      totalLatencyMs: Date.now() - startTime,
+      queryEmbedding,
+      source: 'web',
+    });
   }
 
   return (
