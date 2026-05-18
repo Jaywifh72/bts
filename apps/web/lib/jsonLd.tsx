@@ -431,3 +431,153 @@ export function buildVideoJsonLd(v: VideoInput): JsonLdObject {
       : undefined,
   };
 }
+
+// ---------------------------------------------------------------------------
+// ClaimReview — CineCanon-Sentinel (migration 0091+).
+//
+// DEVIATION from patches/claimreview.md: the patch assumed a T7-1..T7-7
+// grading column. The actual repo (claims.ts) uses two enums:
+//   - status: candidate | needs_source | sourced | reviewed | verified | ...
+//   - confidence: primary | secondary | manufacturer | rental_house |
+//                 bts_visual | inferred | speculative | conflicting
+//
+// Mapping to Schema.org reviewRating (1..5):
+//   verified  + primary                                       -> 5  "Verified — Primary Source"
+//   verified  + secondary | manufacturer | rental_house       -> 5  "Verified — Authority"
+//   verified  + bts_visual                                    -> 4  "Verified — Visual Evidence"
+//   reviewed  + primary | secondary | manufacturer | rental_house -> 4 "Confirmed"
+//   reviewed  + bts_visual                                    -> 3  "Confirmed — Visual"
+//   sourced   + primary | secondary | manufacturer | rental_house -> 3 "Reported"
+// Anything else (candidate, needs_source, disputed, deprecated, rejected;
+// or confidence inferred/speculative/conflicting) is NOT emitted as
+// structured data — the on-page UI still shows the badge.
+// ---------------------------------------------------------------------------
+
+type ClaimStatusForReview =
+  | 'candidate'
+  | 'needs_source'
+  | 'sourced'
+  | 'reviewed'
+  | 'verified'
+  | 'disputed'
+  | 'deprecated'
+  | 'rejected';
+
+type ClaimConfidenceForReview =
+  | 'primary'
+  | 'secondary'
+  | 'manufacturer'
+  | 'rental_house'
+  | 'bts_visual'
+  | 'inferred'
+  | 'speculative'
+  | 'conflicting';
+
+const PRIMARY_LIKE = new Set<ClaimConfidenceForReview>([
+  'primary',
+  'secondary',
+  'manufacturer',
+  'rental_house',
+]);
+
+type RatingResult = { rating: 1 | 2 | 3 | 4 | 5; label: string };
+
+function gradeFor(
+  status: ClaimStatusForReview,
+  confidence: ClaimConfidenceForReview,
+): RatingResult | null {
+  if (status === 'verified') {
+    if (confidence === 'primary') return { rating: 5, label: 'Verified — Primary Source' };
+    if (PRIMARY_LIKE.has(confidence)) return { rating: 5, label: 'Verified — Authority' };
+    if (confidence === 'bts_visual') return { rating: 4, label: 'Verified — Visual Evidence' };
+  }
+  if (status === 'reviewed') {
+    if (PRIMARY_LIKE.has(confidence)) return { rating: 4, label: 'Confirmed' };
+    if (confidence === 'bts_visual') return { rating: 3, label: 'Confirmed — Visual' };
+  }
+  if (status === 'sourced' && PRIMARY_LIKE.has(confidence)) {
+    return { rating: 3, label: 'Reported' };
+  }
+  return null;
+}
+
+/**
+ * Returns true if a claim's (status, confidence) pair should be emitted as
+ * Schema.org ClaimReview. Callers should filter their claim list with this
+ * before building the JSON-LD blocks. Low-confidence claims (inferred,
+ * speculative, conflicting) and unverified statuses (candidate, needs_source,
+ * disputed, deprecated, rejected) are kept in the on-page UI as badges but
+ * never surfaced to AI engines as verified claims.
+ */
+export function shouldEmitClaimReview(
+  status: string,
+  confidence: string,
+): boolean {
+  return gradeFor(
+    status as ClaimStatusForReview,
+    confidence as ClaimConfidenceForReview,
+  ) !== null;
+}
+
+export type ClaimReviewInput = {
+  /** Stable claim id — becomes the URL anchor. Pass String(claim.id). */
+  claimId: string;
+  /** The page this claim appears on, e.g. /films/dune-part-two-2024 */
+  pageUrl: string;
+  /** Claim statement text as it appears on the page. */
+  claimReviewed: string;
+  /** Claim editorial workflow status. */
+  status: string;
+  /** Claim source-confidence enum value. */
+  confidence: string;
+  /** ISO-8601 date (YYYY-MM-DD) the claim was verified/published. */
+  datePublished: string;
+  /** Optional first-appearance URL (the primary source we cite). */
+  firstAppearanceUrl?: string | null;
+  /** Optional human-readable name of the primary source. */
+  firstAppearanceName?: string | null;
+};
+
+export function buildClaimReviewJsonLd(c: ClaimReviewInput): JsonLdObject {
+  const meta = gradeFor(
+    c.status as ClaimStatusForReview,
+    c.confidence as ClaimConfidenceForReview,
+  );
+  // Caller is expected to have filtered with shouldEmitClaimReview() — if
+  // they didn't, fall back to the lowest valid rating so we never emit
+  // something Google Rich Results would warn on.
+  const rating: RatingResult = meta ?? { rating: 3, label: 'Reported' };
+  const claimUrl = `${absoluteUrl(c.pageUrl)}#claim-${c.claimId}`;
+  return {
+    '@context': 'https://schema.org',
+    '@type': 'ClaimReview',
+    '@id': claimUrl,
+    url: claimUrl,
+    datePublished: c.datePublished,
+    claimReviewed: c.claimReviewed,
+    itemReviewed: {
+      '@type': 'Claim',
+      appearance: absoluteUrl(c.pageUrl),
+      datePublished: c.datePublished,
+      firstAppearance: c.firstAppearanceUrl
+        ? {
+            '@type': 'CreativeWork',
+            url: c.firstAppearanceUrl,
+            name: c.firstAppearanceName ?? undefined,
+          }
+        : undefined,
+    },
+    author: {
+      '@type': 'Organization',
+      name: 'CineCanon',
+      url: absoluteUrl('/'),
+    },
+    reviewRating: {
+      '@type': 'Rating',
+      ratingValue: rating.rating,
+      bestRating: 5,
+      worstRating: 1,
+      alternateName: rating.label,
+    },
+  };
+}
