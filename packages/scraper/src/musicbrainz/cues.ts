@@ -102,22 +102,33 @@ export async function ingestCuesFromMusicBrainz(
         console.log(`  [-] no releases under MBID ${rg.id}: ${grp.production_title}`);
         continue;
       }
-      // MB returns releases in arbitrary order. Prefer the earliest dated
-      // release (usually the official OST album, not a deluxe reissue with
-      // bonus material). Fall back to first if no dates are set.
+      // Pick the BEST release for tracklist, not just the earliest.
+      // 'Earliest' was picking single-track promo releases over the full
+      // OST album (e.g. The Batman, Soul, The Social Network — all came
+      // back with 1-5 cues instead of 20-30).
+      //
+      // Strategy: fetch up to 5 candidate releases, prefer the one with
+      // the most tracks. Tie-breaker: earliest date. Sort releases by
+      // date first so the slice fetches roughly the right neighborhood.
       const sortedReleases = [...releases].sort((a, b) => {
         const da = a.date ?? '9999'; const db = b.date ?? '9999';
         return da.localeCompare(db);
       });
-      // Now fetch the chosen release's tracklist. Walk releases until one
-      // returns tracks — some have no media attached.
-      let release = null as Awaited<ReturnType<typeof getReleaseDetail>>;
-      let tracks: NonNullable<NonNullable<typeof release>['media']>[number]['tracks'] = [];
-      for (const candidate of sortedReleases.slice(0, 3)) {
-        release = await getReleaseDetail(candidate.id);
-        tracks = release?.media?.flatMap((m) => m.tracks ?? []) ?? [];
-        if (tracks.length > 0) break;
+      type ReleaseFetch = {
+        release: Awaited<ReturnType<typeof getReleaseDetail>>;
+        tracks: NonNullable<NonNullable<Awaited<ReturnType<typeof getReleaseDetail>>>['media']>[number]['tracks'];
+      };
+      const fetched: ReleaseFetch[] = [];
+      for (const candidate of sortedReleases.slice(0, 5)) {
+        const r = await getReleaseDetail(candidate.id);
+        const t = r?.media?.flatMap((m) => m.tracks ?? []) ?? [];
+        fetched.push({ release: r, tracks: t });
       }
+      // Pick max-tracks (with ≥3 to filter out 1-track promo singles).
+      fetched.sort((a, b) => b.tracks.length - a.tracks.length);
+      const best = fetched.find((f) => f.tracks.length >= 3) ?? fetched[0];
+      const release = best?.release ?? null;
+      const tracks = best?.tracks ?? [];
       if (tracks.length === 0 || !release) {
         stats.score_works_skipped += swIds.length;
         console.log(`  [-] no tracklist on any release for ${grp.production_title}`);
