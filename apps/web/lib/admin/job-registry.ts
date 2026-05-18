@@ -34,7 +34,8 @@ export type JobDef = {
     | 'embeddings'
     | 'editorial'
     | 'deep_dive'
-    | 'social';
+    | 'social'
+    | 'music';
   /** Short human label. Becomes the card title. */
   label: string;
   /** One-line description of what this job does. */
@@ -705,12 +706,41 @@ const SOCIAL_JOBS: JobDef[] = [
   },
 ];
 
+const MUSIC_JOBS: JobDef[] = [
+  {
+    id: 'musicbrainz:cues',
+    group: 'music',
+    label: 'MusicBrainz — soundtrack cue tracklists',
+    description:
+      'For every score_works row, look up the matching MusicBrainz release group (filter: secondarytype=soundtrack), pull the first release\'s tracklist, and insert music_cues rows with slugified titles, track number, runtime. Skips score_works that already have cues unless Refresh is on. Throttled to ≤ 1 req/sec by the client. Set MUSICBRAINZ_USER_AGENT in env (defaults to a CineCanon UA).',
+    command: { args: ['--filter', '@bts/scraper', 'cli', 'musicbrainz:cues'] },
+    inputs: [
+      { name: 'limit', label: 'Limit (score_works to consider)', type: 'number', placeholder: '50' },
+      { name: 'refresh', label: 'Refresh (re-pull all, ignoring existing cues)', type: 'boolean' },
+    ],
+    weight: 'long',
+  },
+  {
+    id: 'seed:scoring-stages-and-scores',
+    group: 'music',
+    label: 'Seed — scoring stages + curated score_works',
+    description:
+      'Hand-curated seed: 8 canonical scoring stages (Newman, Eastwood, Sony, Abbey Road Studio One, AIR Lyndhurst, Synchron Vienna, Skywalker, Galaxy Jupiter) + 8 score_works rows for curated films (Blade Runner 2049, Gravity, NCFOM, Revenant, Parasite, Brutalist, Top Gun Maverick) + 6 flagship music_cues. Idempotent.',
+    command: {
+      bin: 'pnpm',
+      args: ['--filter', '@bts/db', 'tsx', 'scripts/seed-scoring-stages-and-scores.ts'],
+    },
+    weight: 'fast',
+  },
+];
+
 export const JOBS: JobDef[] = [
   ...TMDB_JOBS,
   ...WIKIDATA_JOBS,
   ...SOURCE_JOBS,
   ...EMBEDDING_JOBS,
   ...EDITORIAL_JOBS,
+  ...MUSIC_JOBS,
   ...SOCIAL_JOBS,
 ];
 
@@ -748,6 +778,11 @@ export const JOB_GROUPS: Array<{
     key: 'deep_dive',
     label: 'Film deep dives',
     blurb: 'Per-film hand-curated seed scripts (camera, lighting, color, locations). Re-run to refresh a single dossier.',
+  },
+  {
+    key: 'music',
+    label: 'Music & score',
+    blurb: 'Score works, music cues, scoring stages — MusicBrainz tracklist sync and seed scripts.',
   },
   {
     key: 'social',

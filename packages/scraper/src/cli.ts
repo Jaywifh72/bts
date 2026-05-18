@@ -24,6 +24,7 @@ import { postNewlyCurated } from './social/post.ts';
 import { draftNewsletter } from './newsletter/draft.ts';
 import { ingestStudio } from './vfx-studios/ingest.ts';
 import { STUDIOS } from './vfx-studios/studios.ts';
+import { ingestCuesFromMusicBrainz } from './musicbrainz/cues.ts';
 
 const [, , command, ...args] = process.argv;
 const slugFlag = args.find((_, i) => args[i - 1] === '--slug');
@@ -165,6 +166,12 @@ async function main() {
       }
       break;
     }
+    case 'musicbrainz:cues':
+      await ingestCuesFromMusicBrainz({
+        limit: numberFlag('limit'),
+        refresh: args.includes('--refresh'),
+      });
+      break;
     case 'rss:ingest': {
       const feedArg = args.find((a, i) => args[i - 1] === '--feed');
       if (!feedArg) {
