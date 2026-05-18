@@ -1,0 +1,48 @@
+name: Seed music suite (Neon prod)
+
+# Runs the music-suite seed scripts against the production Neon DB.
+# Idempotent — every insert is ON CONFLICT DO UPDATE / DO NOTHING.
+#
+# Trigger: gh workflow run seed-music.yml.
+# Order: scoring stages + score_works + flagship cues first; then
+#        MusicBrainz cue ingest for the long-tail tracklists.
+
+on:
+  workflow_dispatch:
+    inputs:
+      run_musicbrainz:
+        description: 'Run MusicBrainz cue ingest after seeding (slow — ~1 req/sec)'
+        required: false
+        type: boolean
+        default: true
+      mb_limit:
+        description: 'MusicBrainz: max score_works to process'
+        required: false
+        type: string
+        default: '20'
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Seed scoring stages + score_works + flagship cues
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm --filter @bts/db exec tsx scripts/seed-scoring-stages-and-scores.ts
+      - name: MusicBrainz cue ingest (refresh)
+        if: ${{ inputs.run_musicbrainz }}
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          MUSICBRAINZ_USER_AGENT: 'CineCanon/1.0 (https://www.cinecanon.com; ops@cinecanon.com)'
+        run: pnpm --filter @bts/scraper cli musicbrainz:cues --refresh --limit ${{ inputs.mb_limit }}

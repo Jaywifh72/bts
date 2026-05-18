@@ -38,11 +38,12 @@ interface Props { params: Promise<{ slug: string }> }
 // QA — crew detail pages change slowly; daily revalidation is plenty.
 export const revalidate = 86400;
 
-export async function generateStaticParams() {
-  // Don't pre-render 11k crew pages — let Next render on-demand for the long
-  // tail. The handful of curated profiles are still warm via the homepage.
-  return [];
-}
+// Next.js 16 / Turbopack production builds error with "Page changed
+// from static to dynamic at runtime" when generateStaticParams() returns
+// [] AND the route reads headers/cookies (safeAuth does). Declaring the
+// route explicitly dynamic avoids the static-tree → dynamic-runtime
+// mismatch. Pages still cache for 24h per `revalidate` above.
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(props: Props): Promise<Metadata> {
   const params = await props.params;
