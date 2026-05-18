@@ -7,13 +7,14 @@ import { FacilityProfile } from '@/components/facility/FacilityProfile';
 import { JsonLd } from '@/lib/jsonLd';
 import { siteUrl, absoluteUrl } from '@/lib/site';
 
-export const revalidate = 86400;
+export const dynamic = 'force-dynamic';
 
 export async function generateMetadata(
   { params }: { params: Promise<{ slug: string }> },
 ): Promise<Metadata> {
   const { slug } = await params;
-  const lib = await getSoundLibraryBySlug(db, slug);
+  let lib: Awaited<ReturnType<typeof getSoundLibraryBySlug>> = null;
+  try { lib = await getSoundLibraryBySlug(db, slug); } catch { /* table missing */ }
   if (!lib) return { title: 'Sound library' };
   return {
     title: `${lib.name} — sound library`,
@@ -27,10 +28,17 @@ export default async function SoundLibraryDetailPage(
   { params }: { params: Promise<{ slug: string }> },
 ) {
   const { slug } = await params;
-  const lib = await getSoundLibraryBySlug(db, slug);
+  let lib: Awaited<ReturnType<typeof getSoundLibraryBySlug>> = null;
+  try { lib = await getSoundLibraryBySlug(db, slug); } catch (err) { console.warn('[sound-library] detail query failed', err); }
   if (!lib) notFound();
 
-  const productions = await listProductionsForSoundLibrary(db, lib.id, 200);
+  type ProdRow = Awaited<ReturnType<typeof listProductionsForSoundLibrary>>[number];
+  let productions: ProdRow[] = [];
+  try {
+    productions = [...(await listProductionsForSoundLibrary(db, lib.id, 200))];
+  } catch (err) {
+    console.warn('[sound-library] productions query failed', err);
+  }
 
   return (
     <>

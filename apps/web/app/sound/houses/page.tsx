@@ -29,11 +29,17 @@ export default async function SoundHousesPage(
   const kind = sp.kind && sp.kind in KIND_LABELS ? sp.kind : 'all';
   const kindsFilter = kind === 'all' ? ['sound_mix', 'sound_design'] : [kind];
 
-  const houses = await listPostHouses(db, {
-    kinds: kindsFilter,
-    withCreditsOnly: true,
-    limit: 200,
-  });
+  type HouseRow = Awaited<ReturnType<typeof listPostHouses>>[number];
+  let houses: HouseRow[] = [];
+  try {
+    houses = [...(await listPostHouses(db, {
+      kinds: kindsFilter,
+      withCreditsOnly: true,
+      limit: 200,
+    }))];
+  } catch (err) {
+    console.warn('[sound-houses] query failed', err);
+  }
 
   const totalCredits = houses.reduce((sum, h) => sum + h.production_count, 0);
 

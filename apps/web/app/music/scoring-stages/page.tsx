@@ -12,10 +12,16 @@ export const metadata: Metadata = {
   alternates: { canonical: `${siteUrl()}/music/scoring-stages` },
 };
 
-export const revalidate = 86400;
+export const dynamic = 'force-dynamic';
 
 export default async function ScoringStagesPage() {
-  const stages = await listScoringStages(db, { withCreditsOnly: true, limit: 200 });
+  type StageRow = Awaited<ReturnType<typeof listScoringStages>>[number];
+  let stages: StageRow[] = [];
+  try {
+    stages = [...(await listScoringStages(db, { withCreditsOnly: true, limit: 200 }))];
+  } catch (err) {
+    console.warn('[scoring-stages] query failed', err);
+  }
   const totalCredits = stages.reduce((sum, s) => sum + s.production_count, 0);
   const stagesWithCapacity = stages.filter((s) => s.capacity_orchestra !== null);
   const avgCapacity = stagesWithCapacity.length === 0

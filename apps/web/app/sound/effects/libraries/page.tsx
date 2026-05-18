@@ -12,10 +12,16 @@ export const metadata: Metadata = {
   alternates: { canonical: `${siteUrl()}/sound/effects/libraries` },
 };
 
-export const revalidate = 86400;
+export const dynamic = 'force-dynamic';
 
 export default async function SoundLibrariesPage() {
-  const libraries = await listSoundLibraries(db, { withCreditsOnly: false, limit: 200 });
+  type LibRow = Awaited<ReturnType<typeof listSoundLibraries>>[number];
+  let libraries: LibRow[] = [];
+  try {
+    libraries = [...(await listSoundLibraries(db, { withCreditsOnly: false, limit: 200 }))];
+  } catch (err) {
+    console.warn('[sound-libraries] query failed', err);
+  }
   const totalCredits = libraries.reduce((s, l) => s + l.production_count, 0);
 
   return (
