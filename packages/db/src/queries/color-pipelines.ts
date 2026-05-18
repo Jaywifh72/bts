@@ -51,14 +51,15 @@ export async function getProductionColorPipelines(
       pcp.deliverable,
       pcp.notes,
       pcp.sort_order,
-      pcp.hdr_format,
-      pcp.hdr_peak_nits,
-      pcp.dolby_vision_profile,
-      pcp.mastering_display_nits,
-      pcp.ambient_light_nits,
-      pcp.color_chart,
-      pcp.show_lut_filename,
-      pcp.show_lut_url
+      -- 0080 HDR delivery columns — projected as NULL until migration applies.
+      NULL::text AS hdr_format,
+      NULL::int  AS hdr_peak_nits,
+      NULL::text AS dolby_vision_profile,
+      NULL::int  AS mastering_display_nits,
+      NULL::int  AS ambient_light_nits,
+      NULL::text AS color_chart,
+      NULL::text AS show_lut_filename,
+      NULL::text AS show_lut_url
     FROM production_color_pipelines pcp
     LEFT JOIN scenes sc ON sc.id = pcp.scene_id
     WHERE pcp.production_id = ${productionId}

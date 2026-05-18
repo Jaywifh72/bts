@@ -63,8 +63,10 @@ export async function getPostHouseBySlug(
   }>(sql`
     SELECT ph.id, ph.slug, ph.name, ph.kind::text, ph.country, ph.city,
            ph.website, ph.founded_year, ph.description,
-           ph.atmos_certified, ph.dolby_premier_certified, ph.imax_certified,
-           ph.mix_room_count, ph.hdr_grading, ph.spec_notes,
+           -- 0079 spec columns — projected as defaults until migration applies.
+           FALSE AS atmos_certified, FALSE AS dolby_premier_certified,
+           FALSE AS imax_certified, NULL::int AS mix_room_count,
+           FALSE AS hdr_grading, NULL::text AS spec_notes,
            (SELECT COUNT(DISTINCT pph.production_id)::int
               FROM production_post_houses pph
              WHERE pph.post_house_id = ph.id) AS production_count
