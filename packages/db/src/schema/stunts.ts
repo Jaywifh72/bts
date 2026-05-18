@@ -173,6 +173,14 @@ export const stuntRiggingTechniques = pgTable('stunt_rigging_techniques', {
     .$type<Array<{ url: string; caption: string; credit?: string }>>(),
   relatedDisciplineTags: text('related_discipline_tags').array().notNull().default(sql`'{}'::text[]`),
   sortOrder: integer('sort_order').notNull().default(0),
+  // 0081 — engineering spec fields.
+  maxLoadKg: integer('max_load_kg'),
+  stopDistanceM: numeric('stop_distance_m', { precision: 5, scale: 2 }),
+  typicalGForce: numeric('typical_g_force', { precision: 4, scale: 1 }),
+  maxHeightM: numeric('max_height_m', { precision: 5, scale: 1 }),
+  deceleratorType: text('decelerator_type'),
+  primaryManufacturer: text('primary_manufacturer'),
+  performerCertification: text('performer_certification'),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({

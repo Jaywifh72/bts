@@ -17,6 +17,15 @@ export type ColorPipelineRow = {
   deliverable: string | null;
   notes: string | null;
   sort_order: number;
+  // 0080 — HDR delivery specs.
+  hdr_format: string | null;
+  hdr_peak_nits: number | null;
+  dolby_vision_profile: string | null;
+  mastering_display_nits: number | null;
+  ambient_light_nits: number | null;
+  color_chart: string | null;
+  show_lut_filename: string | null;
+  show_lut_url: string | null;
 };
 
 /**
@@ -41,7 +50,15 @@ export async function getProductionColorPipelines(
       pcp.odt,
       pcp.deliverable,
       pcp.notes,
-      pcp.sort_order
+      pcp.sort_order,
+      pcp.hdr_format,
+      pcp.hdr_peak_nits,
+      pcp.dolby_vision_profile,
+      pcp.mastering_display_nits,
+      pcp.ambient_light_nits,
+      pcp.color_chart,
+      pcp.show_lut_filename,
+      pcp.show_lut_url
     FROM production_color_pipelines pcp
     LEFT JOIN scenes sc ON sc.id = pcp.scene_id
     WHERE pcp.production_id = ${productionId}

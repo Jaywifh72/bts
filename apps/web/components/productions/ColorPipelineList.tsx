@@ -77,6 +77,30 @@ function PipelineCard({ p }: { p: ColorPipelineRow }) {
         })}
       </ol>
 
+      {/* HDR delivery specs — migration 0080. */}
+      {(p.hdr_format || p.hdr_peak_nits || p.dolby_vision_profile || p.show_lut_filename || p.color_chart) && (
+        <div className="border-t border-zinc-800 px-3 py-2">
+          <div className="mb-1.5 text-[10px] uppercase tracking-widest text-zinc-500">HDR delivery</div>
+          <dl className="grid gap-x-4 gap-y-0.5 text-xs sm:grid-cols-3">
+            {p.hdr_format && <div><dt className="text-zinc-500">Format</dt><dd className="font-mono text-zinc-200">{p.hdr_format.replace(/_/g, ' ').toUpperCase()}</dd></div>}
+            {p.hdr_peak_nits != null && <div><dt className="text-zinc-500">Peak nits</dt><dd className="font-mono text-zinc-200">{p.hdr_peak_nits}</dd></div>}
+            {p.dolby_vision_profile && <div><dt className="text-zinc-500">DV profile</dt><dd className="font-mono text-zinc-200">{p.dolby_vision_profile}</dd></div>}
+            {p.mastering_display_nits != null && <div><dt className="text-zinc-500">Mastering display</dt><dd className="font-mono text-zinc-200">{p.mastering_display_nits} nits</dd></div>}
+            {p.color_chart && <div><dt className="text-zinc-500">Color chart</dt><dd className="text-zinc-300">{p.color_chart}</dd></div>}
+            {p.show_lut_filename && (
+              <div>
+                <dt className="text-zinc-500">Show LUT</dt>
+                <dd className="font-mono text-zinc-200">
+                  {p.show_lut_url ? (
+                    <a href={p.show_lut_url} className="text-amber-400 hover:underline">{p.show_lut_filename}</a>
+                  ) : p.show_lut_filename}
+                </dd>
+              </div>
+            )}
+          </dl>
+        </div>
+      )}
+
       {p.notes && (
         <p className="border-t border-zinc-800 px-3 py-2 text-xs text-zinc-400">{p.notes}</p>
       )}

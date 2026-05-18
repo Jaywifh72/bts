@@ -533,6 +533,20 @@
       "when": 1784246400000,
       "tag": "0079_post_house_scoring_stage_specs",
       "breakpoints": true
+    },
+    {
+      "idx": 76,
+      "version": "7",
+      "when": 1784332800000,
+      "tag": "0080_hdr_delivery_specs",
+      "breakpoints": true
+    },
+    {
+      "idx": 77,
+      "version": "7",
+      "when": 1784419200000,
+      "tag": "0081_stunt_rigging_specs",
+      "breakpoints": true
     }
   ]
 }
