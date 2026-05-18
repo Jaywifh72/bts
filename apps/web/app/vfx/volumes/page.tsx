@@ -19,9 +19,11 @@ export default async function VpVolumesPage() {
   // Defensive — vp_volumes table is from migration 0078 which is still
   // queued for dispatch on prod. Catch + show empty state instead of
   // letting the page throw to error.tsx.
-  let volumes: Awaited<ReturnType<typeof listVpVolumes>> = [];
+  type VolumeRow = Awaited<ReturnType<typeof listVpVolumes>>[number];
+  let volumes: VolumeRow[] = [];
   try {
-    volumes = await listVpVolumes(db, { withCreditsOnly: false, limit: 200 });
+    const rows = await listVpVolumes(db, { withCreditsOnly: false, limit: 200 });
+    volumes = [...rows];
   } catch (err) {
     console.warn('[vp_volumes] table missing or query failed; rendering empty state', err);
   }

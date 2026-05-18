@@ -29,10 +29,14 @@ export default async function VpVolumeDetailPage(
   const { slug } = await params;
   // Defensive against missing 0078 schema on prod.
   let v: Awaited<ReturnType<typeof getVpVolumeBySlug>> = null;
-  let productions: Awaited<ReturnType<typeof listProductionsForVpVolume>> = [];
+  type ProductionRow = Awaited<ReturnType<typeof listProductionsForVpVolume>>[number];
+  let productions: ProductionRow[] = [];
   try {
     v = await getVpVolumeBySlug(db, slug);
-    if (v) productions = await listProductionsForVpVolume(db, v.id, 200);
+    if (v) {
+      const rows = await listProductionsForVpVolume(db, v.id, 200);
+      productions = [...rows];
+    }
   } catch (err) {
     console.warn('[vp_volumes] detail query failed (table missing?)', err);
   }
