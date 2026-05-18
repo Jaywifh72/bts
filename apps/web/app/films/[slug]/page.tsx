@@ -30,7 +30,13 @@ import {
   getSimilarKeyFramesForProduction,
 } from '@bts/db';
 import { ProductionDetail } from '@/components/productions/ProductionDetail';
-import { JsonLd, buildMovieJsonLd, buildBreadcrumbJsonLd } from '@/lib/jsonLd';
+import {
+  JsonLd,
+  buildMovieJsonLd,
+  buildBreadcrumbJsonLd,
+  buildClaimReviewJsonLd,
+  shouldEmitClaimReview,
+} from '@/lib/jsonLd';
 import { posterUrl } from '@/lib/tmdb-image';
 
 interface Props {
@@ -181,6 +187,27 @@ export default async function FilmDetailPage(props: Props) {
       })),
   });
 
+  // CineCanon-Sentinel ClaimReview emission. Uses the same 12-claim
+  // window as visibleClaimIds so structured data matches the on-page
+  // presentation. Filter via shouldEmitClaimReview before building so
+  // we never emit low-confidence claims as Schema.org-verified.
+  const claimReviewJsonLds = claims
+    .slice(0, 12)
+    .filter((claim) => shouldEmitClaimReview(claim.status, claim.confidence))
+    .map((claim) => {
+      const firstSource = sourcesByClaimId[claim.id]?.[0];
+      return buildClaimReviewJsonLd({
+        claimId: String(claim.id),
+        pageUrl: `/films/${data.production.slug}`,
+        claimReviewed: claim.statement,
+        status: claim.status,
+        confidence: claim.confidence,
+        datePublished: (claim.updated_at ?? claim.created_at).slice(0, 10),
+        firstAppearanceUrl: firstSource?.url ?? null,
+        firstAppearanceName: firstSource?.title ?? firstSource?.publication ?? null,
+      });
+    });
+
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([
     { name: 'CineCanon', path: '/' },
     { name: 'Films', path: '/films' },
@@ -191,6 +218,9 @@ export default async function FilmDetailPage(props: Props) {
     <>
       <JsonLd data={jsonLd} />
       <JsonLd data={breadcrumbJsonLd} />
+      {claimReviewJsonLds.map((cr, i) => (
+        <JsonLd key={`claim-review-${i}`} data={cr} />
+      ))}
       <ProductionDetail data={data} vfx={vfx} videos={videos} videoTimestamps={videoTimestamps} collectionMembers={collectionMembers} similar={similar} postHouses={postHouses} scoringStages={scoringStages} scoreWorks={scoreWorks} keyFrames={keyFrames} citations={citations} awards={awards} confidence={confidence} semanticSimilar={semanticSimilar} locations={locations} lightingSetups={lightingSetups} colorPipelines={colorPipelines} claims={claims} sourcesByClaimId={sourcesByClaimId} evidenceByClaimId={evidenceByClaimId} stuntSequences={stuntSequences} stuntDoubling={stuntDoubling} stuntCompanies={stuntCompanies} stuntCrew={stuntCrew} similarShots={similarShots} />
     </>
   );
