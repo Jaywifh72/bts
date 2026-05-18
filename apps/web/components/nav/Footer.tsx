@@ -58,6 +58,7 @@ export function Footer() {
             <Link href="/ask" className="hover:text-zinc-300">Ask anything</Link>
             <Link href="/queries" className="hover:text-zinc-300">Killer queries</Link>
             <Link href="/references" className="hover:text-zinc-300">References graph</Link>
+            <Link href="/partnerships" className="hover:text-zinc-300">Creative partnerships</Link>
             <Link href="/awards" className="hover:text-zinc-300">Awards</Link>
             <Link href="/locations" className="hover:text-zinc-300">Locations atlas</Link>
             <Link href="/decades" className="hover:text-zinc-300">By decade</Link>

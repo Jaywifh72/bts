@@ -34,3 +34,4 @@ export * from './queries/rental-houses.ts';
 export * from './queries/recording-orchestras.ts';
 export * from './queries/specialty-houses.ts';
 export * from './queries/person-style-profiles.ts';
+export * from './queries/practitioner-partnerships.ts';

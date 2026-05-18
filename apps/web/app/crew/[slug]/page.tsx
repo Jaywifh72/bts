@@ -12,6 +12,7 @@ import {
   getKnownForByPerson,
   getAwardsForPerson,
   getStyleProfileForPerson,
+  listPartnershipsForPerson,
   getScoreWorksForComposer,
   getStuntContextForPerson,
   getStuntLineage,
@@ -25,6 +26,7 @@ import { FilmographyTable } from '@/components/people/FilmographyTable';
 import { EquipmentUsedTable } from '@/components/people/EquipmentUsedTable';
 import { CareerStats } from '@/components/people/CareerStats';
 import { StyleProfile } from '@/components/people/StyleProfile';
+import { PartnershipsList } from '@/components/people/PartnershipsList';
 import { PersonAvatar } from '@/components/people/PersonAvatar';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { EntityProvenanceFooter } from '@/components/ui/EntityProvenanceFooter';
@@ -91,6 +93,13 @@ export default async function CrewDetailPage(props: Props) {
   // Style profile — migration 0085. Defensive against missing table on prod.
   let styleProfile: Awaited<ReturnType<typeof getStyleProfileForPerson>> = null;
   try { styleProfile = await getStyleProfileForPerson(db, params.slug); } catch { /* table missing */ }
+  // Partnerships — migration 0086. Same defensive guard.
+  type PartnershipRow = Awaited<ReturnType<typeof listPartnershipsForPerson>>[number];
+  let partnerships: PartnershipRow[] = [];
+  try {
+    const rows = await listPartnershipsForPerson(db, params.slug);
+    partnerships = [...rows];
+  } catch { /* table missing */ }
   if (!person) notFound();
   // F2 — fetch the polymorphic claims bundle for this person.
   const claimsBundle = await getClaimsBundleForEntity(db, 'person', person.id, person.slug);
@@ -703,6 +712,9 @@ export default async function CrewDetailPage(props: Props) {
             notes, influences, career arc, sourced references. Self-hides
             when no profile exists for this person. */}
         <StyleProfile profile={styleProfile} />
+
+        {/* Long-term partnerships — migration 0086. */}
+        <PartnershipsList partnerships={partnerships} currentSlug={params.slug} />
 
         {/* T3-5 — awards this person has won or been nominated for, joined
             back to the production they're for. Self-hides when none. */}
