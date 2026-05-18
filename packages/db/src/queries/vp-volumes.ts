@@ -63,6 +63,18 @@ export async function getVpVolumeBySlug(db: SeedDb = defaultDb, slug: string) {
     atmos_capable: boolean;
     website_url: string | null;
     summary: string | null;
+    // 0082 editorial parity.
+    tagline: string | null;
+    headquarters: string | null;
+    parent_company: string | null;
+    employee_count: number | null;
+    wikidata_id: string | null;
+    careers_url: string | null;
+    reel_url: string | null;
+    curated_by: string | null;
+    curated_by_url: string | null;
+    references: Array<{ title: string; url: string; publication?: string; kind?: string }>;
+    last_verified_at: string | null;
     production_count: number;
   }>(sql`
     SELECT v.id, v.slug, v.name, v.facility_name, v.operator, v.country, v.city,
@@ -70,6 +82,13 @@ export async function getVpVolumeBySlug(db: SeedDb = defaultDb, slug: string) {
            v.ceiling_present, v.ceiling_height_m::text,
            v.tracking_system, v.render_engine, v.color_pipeline,
            v.completion_year, v.atmos_capable, v.website_url, v.summary,
+           -- 0082 editorial parity (NULL until migration applies).
+           NULL::text AS tagline, NULL::text AS headquarters,
+           NULL::text AS parent_company, NULL::int AS employee_count,
+           NULL::text AS wikidata_id, NULL::text AS careers_url,
+           NULL::text AS reel_url, NULL::text AS curated_by,
+           NULL::text AS curated_by_url, '[]'::jsonb AS references,
+           v.last_verified_at::text,
            (SELECT COUNT(*)::int FROM production_vp_volumes WHERE volume_id = v.id) AS production_count
     FROM vp_volumes v
     WHERE v.slug = ${slug}

@@ -1,6 +1,7 @@
 import {
-  pgTable, bigserial, bigint, integer, text, timestamp, primaryKey, index,
+  pgTable, bigserial, bigint, integer, text, jsonb, timestamp, primaryKey, index,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { productions, productionDataTierEnum } from './productions.ts';
 import { sources } from './sources.ts';
 import { sourceConfidenceEnum } from './enums.ts';
@@ -20,6 +21,17 @@ export const soundLibraries = pgTable('sound_libraries', {
   websiteUrl: text('website_url'),
   summary: text('summary'),
   specialties: text('specialties').array(),
+  // 0082 — VFX-house editorial parity.
+  tagline: text('tagline'),
+  headquarters: text('headquarters'),
+  parentCompany: text('parent_company'),
+  employeeCount: integer('employee_count'),
+  wikidataId: text('wikidata_id').unique(),
+  references: jsonb('references').notNull().default(sql`'[]'::jsonb`)
+    .$type<Array<{ title: string; url: string; publication?: string; kind?: string }>>(),
+  curatedBy: text('curated_by'),
+  curatedByUrl: text('curated_by_url'),
+  lastCuratedReview: timestamp('last_curated_review', { withTimezone: true }),
   dataTier: productionDataTierEnum('data_tier').notNull().default('imported'),
   lastVerifiedAt: timestamp('last_verified_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

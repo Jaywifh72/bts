@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { db, getScoringStageBySlug, listProductionsForScoringStage } from '@bts/db';
 import { PageHero, PageHeroStat } from '@/components/ui/PageHero';
+import { FacilityProfile } from '@/components/facility/FacilityProfile';
 import { JsonLd } from '@/lib/jsonLd';
 import { siteUrl, absoluteUrl } from '@/lib/site';
 
@@ -61,6 +62,20 @@ export default async function ScoringStageDetailPage(
             <PageHeroStat label="Location" value={[stage.city, stage.country].filter(Boolean).join(', ') || '—'} />
           </div>
         }
+      />
+
+      <FacilityProfile
+        summary={stage.summary}
+        tagline={stage.tagline}
+        parent_company={stage.parent_company}
+        website={stage.website}
+        careers_url={stage.careers_url}
+        reel_url={stage.reel_url}
+        wikidata_id={stage.wikidata_id}
+        references={stage.references}
+        curated_by={stage.curated_by}
+        curated_by_url={stage.curated_by_url}
+        last_verified_at={stage.last_verified_at}
       />
 
       {(stage.facility_name || stage.website) && (

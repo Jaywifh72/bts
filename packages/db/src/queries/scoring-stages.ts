@@ -37,11 +37,27 @@ export async function getScoringStageBySlug(
     website: string | null;
     notes: string | null;
     last_verified_at: string | null;
+    // 0082 editorial parity.
+    summary: string | null;
+    tagline: string | null;
+    parent_company: string | null;
+    wikidata_id: string | null;
+    careers_url: string | null;
+    reel_url: string | null;
+    curated_by: string | null;
+    curated_by_url: string | null;
+    references: Array<{ title: string; url: string; publication?: string; kind?: string }>;
     production_count: number;
   }>(sql`
     SELECT ss.id, ss.slug, ss.name, ss.facility_name, ss.country, ss.city,
            ss.capacity_orchestra, ss.capacity_chorus, ss.website, ss.notes,
            ss.last_verified_at::text,
+           -- 0082 editorial parity (NULL until migration applies).
+           NULL::text AS summary, NULL::text AS tagline,
+           NULL::text AS parent_company, NULL::text AS wikidata_id,
+           NULL::text AS careers_url, NULL::text AS reel_url,
+           NULL::text AS curated_by, NULL::text AS curated_by_url,
+           COALESCE(ss.references, '[]'::jsonb) AS references,
            (SELECT COUNT(DISTINCT pss.production_id)::int
               FROM production_scoring_stages pss
              WHERE pss.scoring_stage_id = ss.id) AS production_count

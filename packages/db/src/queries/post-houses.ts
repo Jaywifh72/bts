@@ -59,6 +59,19 @@ export async function getPostHouseBySlug(
     mix_room_count: number | null;
     hdr_grading: boolean;
     spec_notes: string | null;
+    // 0082 editorial parity.
+    summary: string | null;
+    tagline: string | null;
+    headquarters: string | null;
+    parent_company: string | null;
+    employee_count: number | null;
+    careers_url: string | null;
+    reel_url: string | null;
+    wikidata_id: string | null;
+    references: Array<{ title: string; url: string; publication?: string; kind?: string }>;
+    curated_by: string | null;
+    curated_by_url: string | null;
+    last_verified_at: string | null;
     production_count: number;
   }>(sql`
     SELECT ph.id, ph.slug, ph.name, ph.kind::text, ph.country, ph.city,
@@ -67,6 +80,14 @@ export async function getPostHouseBySlug(
            FALSE AS atmos_certified, FALSE AS dolby_premier_certified,
            FALSE AS imax_certified, NULL::int AS mix_room_count,
            FALSE AS hdr_grading, NULL::text AS spec_notes,
+           -- 0082 editorial-parity columns — projected as NULL until migration applies.
+           NULL::text AS summary, NULL::text AS tagline,
+           NULL::text AS headquarters, NULL::text AS parent_company,
+           NULL::int  AS employee_count, NULL::text AS careers_url,
+           NULL::text AS reel_url, NULL::text AS wikidata_id,
+           '[]'::jsonb AS references,
+           NULL::text AS curated_by, NULL::text AS curated_by_url,
+           NULL::text AS last_verified_at,
            (SELECT COUNT(DISTINCT pph.production_id)::int
               FROM production_post_houses pph
              WHERE pph.post_house_id = ph.id) AS production_count

@@ -547,6 +547,13 @@
       "when": 1784419200000,
       "tag": "0081_stunt_rigging_specs",
       "breakpoints": true
+    },
+    {
+      "idx": 78,
+      "version": "7",
+      "when": 1784505600000,
+      "tag": "0082_facility_profile_parity",
+      "breakpoints": true
     }
   ]
 }

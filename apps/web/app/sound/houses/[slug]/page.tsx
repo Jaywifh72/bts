@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { db, getPostHouseBySlug, listProductionsForPostHouse } from '@bts/db';
 import { PageHero, PageHeroStat } from '@/components/ui/PageHero';
+import { FacilityProfile } from '@/components/facility/FacilityProfile';
 import { JsonLd } from '@/lib/jsonLd';
 import { siteUrl, absoluteUrl } from '@/lib/site';
 
@@ -139,14 +140,22 @@ export default async function SoundHouseDetailPage(
         </section>
       )}
 
-      {house.website && (
-        <p className="mb-6 text-sm">
-          <a href={house.website} target="_blank" rel="noopener noreferrer"
-             className="text-amber-400 hover:text-amber-300">
-            {house.website.replace(/^https?:\/\//, '').replace(/\/$/, '')} <span aria-hidden="true">↗</span>
-          </a>
-        </p>
-      )}
+      {/* Editorial profile: summary, tagline, company stats, references. */}
+      <FacilityProfile
+        summary={house.summary}
+        tagline={house.tagline}
+        headquarters={house.headquarters}
+        parent_company={house.parent_company}
+        employee_count={house.employee_count}
+        website={house.website}
+        careers_url={house.careers_url}
+        reel_url={house.reel_url}
+        wikidata_id={house.wikidata_id}
+        references={house.references}
+        curated_by={house.curated_by}
+        curated_by_url={house.curated_by_url}
+        last_verified_at={house.last_verified_at}
+      />
 
       <section className="mb-12">
         <div className="mb-3 flex items-baseline justify-between">

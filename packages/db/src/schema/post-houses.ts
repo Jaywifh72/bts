@@ -1,7 +1,9 @@
 import {
   pgTable, pgEnum, bigserial, bigint, boolean, text, integer, timestamp,
-  primaryKey, index,
+  jsonb, primaryKey, index,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
+import { productionDataTierEnum } from './productions.ts';
 import { productions } from './productions.ts';
 
 /**
@@ -37,6 +39,22 @@ export const postHouses = pgTable('post_houses', {
   mixRoomCount: integer('mix_room_count'),
   hdrGrading: boolean('hdr_grading').notNull().default(false),
   specNotes: text('spec_notes'),
+  // 0082 — VFX-house editorial parity.
+  summary: text('summary'),
+  tagline: text('tagline'),
+  headquarters: text('headquarters'),
+  parentCompany: text('parent_company'),
+  employeeCount: integer('employee_count'),
+  careersUrl: text('careers_url'),
+  reelUrl: text('reel_url'),
+  wikidataId: text('wikidata_id').unique(),
+  references: jsonb('references').notNull().default(sql`'[]'::jsonb`)
+    .$type<Array<{ title: string; url: string; publication?: string; kind?: string }>>(),
+  dataTier: productionDataTierEnum('data_tier').notNull().default('imported'),
+  curatedBy: text('curated_by'),
+  curatedByUrl: text('curated_by_url'),
+  lastCuratedReview: timestamp('last_curated_review', { withTimezone: true }),
+  lastVerifiedAt: timestamp('last_verified_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
 }, (t) => ({

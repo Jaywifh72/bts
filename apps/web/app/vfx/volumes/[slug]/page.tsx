@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { db, getVpVolumeBySlug, listProductionsForVpVolume } from '@bts/db';
 import { PageHero, PageHeroStat } from '@/components/ui/PageHero';
+import { FacilityProfile } from '@/components/facility/FacilityProfile';
 import { JsonLd } from '@/lib/jsonLd';
 import { siteUrl, absoluteUrl } from '@/lib/site';
 
@@ -100,6 +101,22 @@ export default async function VpVolumeDetailPage(
           </p>
         )}
       </section>
+
+      <FacilityProfile
+        summary={v.summary}
+        tagline={v.tagline}
+        headquarters={v.headquarters}
+        parent_company={v.parent_company}
+        employee_count={v.employee_count}
+        website_url={v.website_url}
+        careers_url={v.careers_url}
+        reel_url={v.reel_url}
+        wikidata_id={v.wikidata_id}
+        references={v.references}
+        curated_by={v.curated_by}
+        curated_by_url={v.curated_by_url}
+        last_verified_at={v.last_verified_at}
+      />
 
       <section className="mb-12">
         <div className="mb-3 flex items-baseline justify-between">

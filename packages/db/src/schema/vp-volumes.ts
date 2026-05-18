@@ -1,7 +1,8 @@
 import {
   pgTable, bigserial, bigint, integer, text, boolean, timestamp,
-  numeric, primaryKey, index,
+  numeric, jsonb, primaryKey, index,
 } from 'drizzle-orm/pg-core';
+import { sql } from 'drizzle-orm';
 import { productions, productionDataTierEnum } from './productions.ts';
 import { sources } from './sources.ts';
 import { sourceConfidenceEnum } from './enums.ts';
@@ -33,6 +34,19 @@ export const vpVolumes = pgTable('vp_volumes', {
   atmosCapable: boolean('atmos_capable').notNull().default(false),
   websiteUrl: text('website_url'),
   summary: text('summary'),
+  // 0082 — VFX-house editorial parity.
+  tagline: text('tagline'),
+  headquarters: text('headquarters'),
+  parentCompany: text('parent_company'),
+  employeeCount: integer('employee_count'),
+  wikidataId: text('wikidata_id').unique(),
+  careersUrl: text('careers_url'),
+  reelUrl: text('reel_url'),
+  curatedBy: text('curated_by'),
+  curatedByUrl: text('curated_by_url'),
+  lastCuratedReview: timestamp('last_curated_review', { withTimezone: true }),
+  references: jsonb('references').notNull().default(sql`'[]'::jsonb`)
+    .$type<Array<{ title: string; url: string; publication?: string; kind?: string }>>(),
   dataTier: productionDataTierEnum('data_tier').notNull().default('imported'),
   lastVerifiedAt: timestamp('last_verified_at', { withTimezone: true }),
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),

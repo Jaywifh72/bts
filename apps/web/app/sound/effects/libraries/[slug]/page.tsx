@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { db, getSoundLibraryBySlug, listProductionsForSoundLibrary } from '@bts/db';
 import { PageHero, PageHeroStat } from '@/components/ui/PageHero';
+import { FacilityProfile } from '@/components/facility/FacilityProfile';
 import { JsonLd } from '@/lib/jsonLd';
 import { siteUrl, absoluteUrl } from '@/lib/site';
 
@@ -58,6 +59,20 @@ export default async function SoundLibraryDetailPage(
             <PageHeroStat label="Founded" value={lib.founded_year ?? '—'} />
           </div>
         }
+      />
+
+      <FacilityProfile
+        summary={lib.summary}
+        tagline={lib.tagline}
+        headquarters={lib.headquarters}
+        parent_company={lib.parent_company}
+        employee_count={lib.employee_count}
+        website_url={lib.website_url}
+        wikidata_id={lib.wikidata_id}
+        references={lib.references}
+        curated_by={lib.curated_by}
+        curated_by_url={lib.curated_by_url}
+        last_verified_at={lib.last_verified_at}
       />
 
       {lib.website_url && (

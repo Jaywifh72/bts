@@ -29,8 +29,14 @@ export const scoringStages = pgTable('scoring_stages', {
   yearOpened: integer('year_opened'),
   console: text('console'),
   primaryMicChain: text('primary_mic_chain'),
-  references: jsonb('references').notNull().default(sql`'[]'::jsonb`)
-    .$type<Array<{ title: string; url: string; publication?: string; kind?: string }>>(),
+  // 0082 — VFX-house editorial parity. (Note: curated_by / curated_by_url /
+  // last_curated_review / references already existed pre-0082.)
+  summary: text('summary'),
+  tagline: text('tagline'),
+  parentCompany: text('parent_company'),
+  wikidataId: text('wikidata_id').unique(),
+  careersUrl: text('careers_url'),
+  reelUrl: text('reel_url'),
   // F1-aligned provenance.
   dataTier: productionDataTierEnum('data_tier').notNull().default('imported'),
   curatedBy: text('curated_by'),

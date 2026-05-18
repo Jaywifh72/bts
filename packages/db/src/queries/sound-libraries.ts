@@ -44,10 +44,26 @@ export async function getSoundLibraryBySlug(db: SeedDb = defaultDb, slug: string
     website_url: string | null;
     summary: string | null;
     specialties: string[] | null;
+    // 0082 editorial parity.
+    tagline: string | null;
+    headquarters: string | null;
+    parent_company: string | null;
+    employee_count: number | null;
+    wikidata_id: string | null;
+    references: Array<{ title: string; url: string; publication?: string; kind?: string }>;
+    curated_by: string | null;
+    curated_by_url: string | null;
+    last_verified_at: string | null;
     production_count: number;
   }>(sql`
     SELECT sl.id, sl.slug, sl.name, sl.publisher, sl.country, sl.founded_year,
            sl.website_url, sl.summary, sl.specialties,
+           -- 0082 editorial parity (NULL until migration applies).
+           NULL::text AS tagline, NULL::text AS headquarters,
+           NULL::text AS parent_company, NULL::int AS employee_count,
+           NULL::text AS wikidata_id, '[]'::jsonb AS references,
+           NULL::text AS curated_by, NULL::text AS curated_by_url,
+           sl.last_verified_at::text,
            (SELECT COUNT(*)::int FROM production_sound_libraries WHERE library_id = sl.id) AS production_count
     FROM sound_libraries sl
     WHERE sl.slug = ${slug}
