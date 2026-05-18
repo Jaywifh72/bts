@@ -1,0 +1,51 @@
+name: Scraper job (Neon prod)
+
+# General-purpose workflow to run any `@bts/scraper cli` command
+# against the production Neon DB. Avoids the /admin/ingest UI
+# round-trip when the operator already knows what command to run.
+#
+# Examples:
+#   gh workflow run scraper-job.yml -f command=tmdb:credits -f args="--limit 500"
+#   gh workflow run scraper-job.yml -f command=musicbrainz:cues -f args="--limit 50 --refresh"
+#   gh workflow run scraper-job.yml -f command=wikidata:awards
+#
+# Same secret set as admin-job + scraper-weekly.
+
+on:
+  workflow_dispatch:
+    inputs:
+      command:
+        description: 'Scraper CLI command (e.g. tmdb:credits, musicbrainz:cues)'
+        required: true
+        type: string
+      args:
+        description: 'Extra args (e.g. "--limit 500")'
+        required: false
+        type: string
+        default: ''
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Run scraper command
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+          TMDB_READ_ACCESS_TOKEN: ${{ secrets.TMDB_READ_ACCESS_TOKEN }}
+          YOUTUBE_API_KEY: ${{ secrets.YOUTUBE_API_KEY }}
+          VIMEO_ACCESS_TOKEN: ${{ secrets.VIMEO_ACCESS_TOKEN }}
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          REPLICATE_API_TOKEN: ${{ secrets.REPLICATE_API_TOKEN }}
+          MUSICBRAINZ_USER_AGENT: 'CineCanon/1.0 (https://www.cinecanon.com; ops@cinecanon.com)'
+        run: pnpm --filter @bts/scraper cli ${{ inputs.command }} ${{ inputs.args }}
