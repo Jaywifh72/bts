@@ -18,9 +18,12 @@ const EXPECTED = [
   'harold-faltermeyer', 'lorne-balfe', 'alva-noto', 'bryce-dessner',
 ];
 
+// drizzle's sql template flattens JS arrays to a (.., .., ..) list.
+// Build a Postgres text[] literal manually so we can cast it cleanly.
+const expectedLit = '{' + EXPECTED.map((s) => '"' + s + '"').join(',') + '}';
 const found = await db.execute<{ slug: string; display_name: string }>(sql`
   SELECT slug, display_name FROM people
-  WHERE slug = ANY(${EXPECTED}::text[])
+  WHERE slug = ANY(${expectedLit}::text[])
   ORDER BY slug
 `);
 const foundSet = new Set(found.map((r) => r.slug));
