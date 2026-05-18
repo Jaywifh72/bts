@@ -85,6 +85,7 @@ export default async function VfxPage({ searchParams }: { searchParams: Promise<
       <nav aria-label="VFX sub-disciplines" className="mb-6 flex flex-wrap gap-2 text-sm">
         <span className="self-center text-[10px] uppercase tracking-widest text-zinc-500">Drill into</span>
         <Link href="/vfx/volumes" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">LED volumes</Link>
+        <Link href="/vfx/title-houses" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Title sequence houses</Link>
         <Link href="/awards/craft/visual-effects" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">VFX awards</Link>
       </nav>
 

@@ -32,6 +32,7 @@ export function Footer() {
             <Link href="/gear/rentals" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ rental houses</Link>
             <Link href="/vfx" className="hover:text-zinc-300">VFX houses</Link>
             <Link href="/vfx/volumes" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ LED volumes</Link>
+            <Link href="/vfx/title-houses" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ title sequence houses</Link>
             <Link href="/stunts" className="hover:text-zinc-300">Stunts</Link>
             <Link href="/sound" className="hover:text-zinc-300">Sound</Link>
             <Link href="/sound/post" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ post sound</Link>
@@ -50,6 +51,7 @@ export function Footer() {
             <Link href="/production-design/designers" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ designers + art dept</Link>
             <Link href="/costume-hair-makeup" className="hover:text-zinc-300">Costume / Hair / Makeup</Link>
             <Link href="/costume-hair-makeup/designers" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ designers + dept heads</Link>
+            <Link href="/costume-hair-makeup/effects-houses" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ effects houses</Link>
           </div>
           <div className="flex flex-col gap-1">
             <p className="text-[10px] uppercase tracking-widest text-zinc-300">Cross-cuts</p>

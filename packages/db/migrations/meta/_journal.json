@@ -561,6 +561,13 @@
       "when": 1784592000000,
       "tag": "0083_rental_houses_orchestras",
       "breakpoints": true
+    },
+    {
+      "idx": 80,
+      "version": "7",
+      "when": 1784678400000,
+      "tag": "0084_makeup_title_houses",
+      "breakpoints": true
     }
   ]
 }
