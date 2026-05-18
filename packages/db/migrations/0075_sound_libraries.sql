@@ -41,7 +41,7 @@ CREATE TABLE "production_sound_library_sources" (
   "production_id"  bigint NOT NULL,
   "library_id"     bigint NOT NULL,
   "source_id"      bigint NOT NULL REFERENCES "sources"("id") ON DELETE RESTRICT,
-  "confidence"     source_confidence NOT NULL,
+  "confidence"     source_confidence_enum NOT NULL,
   "claim_quote"    text,
   "notes"          text,
   "created_at"     timestamp with time zone NOT NULL DEFAULT now(),

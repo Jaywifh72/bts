@@ -484,6 +484,27 @@
       "when": 1783641600000,
       "tag": "0068_ignored_duplicates",
       "breakpoints": true
+    },
+    {
+      "idx": 69,
+      "version": "7",
+      "when": 1783728000000,
+      "tag": "0073_score_works",
+      "breakpoints": true
+    },
+    {
+      "idx": 70,
+      "version": "7",
+      "when": 1783814400000,
+      "tag": "0074_music_cues",
+      "breakpoints": true
+    },
+    {
+      "idx": 71,
+      "version": "7",
+      "when": 1783900800000,
+      "tag": "0075_sound_libraries",
+      "breakpoints": true
     }
   ]
 }

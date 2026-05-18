@@ -55,7 +55,7 @@ CREATE INDEX "music_cues_function_idx"   ON "music_cues" ("cue_function");
 CREATE TABLE "music_cue_sources" (
   "cue_id"        bigint NOT NULL REFERENCES "music_cues"("id") ON DELETE CASCADE,
   "source_id"     bigint NOT NULL REFERENCES "sources"("id")    ON DELETE RESTRICT,
-  "confidence"    source_confidence NOT NULL,
+  "confidence"    source_confidence_enum NOT NULL,
   "claim_quote"   text,
   "notes"         text,
   "created_at"    timestamp with time zone NOT NULL DEFAULT now(),

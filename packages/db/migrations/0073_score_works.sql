@@ -42,7 +42,7 @@ CREATE INDEX "score_works_stage_idx"      ON "score_works" ("scoring_stage_id") 
 CREATE TABLE "score_work_sources" (
   "score_work_id"  bigint NOT NULL REFERENCES "score_works"("id") ON DELETE CASCADE,
   "source_id"      bigint NOT NULL REFERENCES "sources"("id")      ON DELETE RESTRICT,
-  "confidence"     source_confidence NOT NULL,
+  "confidence"     source_confidence_enum NOT NULL,
   "claim_quote"    text,
   "notes"          text,
   "created_at"     timestamp with time zone NOT NULL DEFAULT now(),

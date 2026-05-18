@@ -1,6 +1,8 @@
 # Sound & Music expansion — proposed migrations 0073-0075
 
-Status: **DRAFT — not in `_journal.json`. Review before promoting.**
+Status: **PROMOTED.** Migrations 0073-0075 now live in `packages/db/migrations/` and registered in `meta/_journal.json`. Drizzle TS schema in `packages/db/src/schema/{score-works,music-cues,sound-libraries}.ts`. Query helpers under `packages/db/src/queries/`.
+
+To apply on Neon: run `pnpm --filter @bts/db migrate` (or whatever the project's migrate script is), or copy the three SQL files into the Neon SQL editor.
 
 Adds per-production scoring metadata, music cue catalog (full curated
 coverage target ~500), and a sound-libraries entity for SFX library

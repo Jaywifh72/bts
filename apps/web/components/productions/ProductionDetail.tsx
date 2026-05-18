@@ -105,6 +105,7 @@ export function ProductionDetail({
   similar,
   postHouses,
   scoringStages,
+  scoreWorks,
   keyFrames,
   citations,
   awards,
@@ -136,6 +137,17 @@ export function ProductionDetail({
     city: string | null;
     country: string | null;
     notes: string | null;
+  }[];
+  scoreWorks: readonly {
+    id: number;
+    composer_slug: string;
+    composer_name: string;
+    scoring_stage_slug: string | null;
+    scoring_stage_name: string | null;
+    recording_orchestra: string | null;
+    recording_location: string | null;
+    cue_count_estimate: number | null;
+    summary: string | null;
   }[];
   keyFrames: readonly KeyFrame[];
   citations: Citations;
@@ -203,6 +215,7 @@ export function ProductionDetail({
   const hasStuntDept = stuntCrew.length > 0 || stuntDoubling.length > 0 || stuntCompanies.length > 0;
   const hasPostHouses = postHouses.length > 0;
   const hasScoringStages = scoringStages.length > 0;
+  const hasScoreWorks = scoreWorks.length > 0;
   const hasVideos = videos.length > 0;
   const hasScenes = scenes.length > 0;
 
@@ -221,6 +234,7 @@ export function ProductionDetail({
     hasStuntDept && { id: 'stunts', label: 'Stunts' },
     hasPostHouses && { id: 'post-houses', label: 'Post' },
     hasScoringStages && { id: 'scoring-stages', label: 'Scoring' },
+    hasScoreWorks && { id: 'score', label: 'Score' },
     hasVideos && { id: 'videos', label: 'Videos' },
     hasScenes && { id: 'scenes', label: 'Scenes' },
     hasReleaseDates && { id: 'release-dates', label: 'Releases' },
@@ -697,6 +711,47 @@ export function ProductionDetail({
               );
             })}
           </ul>
+        </section>
+      )}
+
+      {/* Score deep-dive — composer + orchestra + cue catalog when populated. */}
+      {hasScoreWorks && (
+        <section id="score" className="scroll-mt-24 mt-6">
+          <SectionHeader label="Score" heading="Composer & cues" anchorId="score" />
+          <ul className="space-y-2 text-sm">
+            {scoreWorks.map((sw) => (
+              <li key={sw.id} className="rounded border border-zinc-800 bg-zinc-900/40 p-3">
+                <div className="flex flex-wrap items-baseline gap-x-2">
+                  <Link href={`/crew/${sw.composer_slug}`}
+                        className="font-medium text-zinc-100 hover:text-amber-400">
+                    {sw.composer_name}
+                  </Link>
+                  {sw.recording_orchestra && (
+                    <span className="text-xs text-zinc-400">
+                      · {sw.recording_orchestra}
+                    </span>
+                  )}
+                  {sw.scoring_stage_slug ? (
+                    <Link href={`/music/scoring-stages/${sw.scoring_stage_slug}`}
+                          className="text-xs text-amber-400 hover:text-amber-300">
+                      at {sw.scoring_stage_name} ↗
+                    </Link>
+                  ) : sw.recording_location ? (
+                    <span className="text-xs text-zinc-400">at {sw.recording_location}</span>
+                  ) : null}
+                </div>
+                {sw.summary && (
+                  <p className="mt-1 text-xs leading-relaxed text-zinc-400">{sw.summary}</p>
+                )}
+              </li>
+            ))}
+          </ul>
+          <p className="mt-3 text-xs text-zinc-500">
+            <Link href={`/music/scores/${data.production.slug}`}
+                  className="text-amber-400 hover:text-amber-300">
+              Open the full score deep-dive →
+            </Link>
+          </p>
         </section>
       )}
 
