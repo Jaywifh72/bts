@@ -61,6 +61,7 @@ export function Footer() {
             <Link href="/references" className="hover:text-zinc-300">References graph</Link>
             <Link href="/partnerships" className="hover:text-zinc-300">Creative partnerships</Link>
             <Link href="/decisions" className="hover:text-zinc-300">Craft decisions</Link>
+            <Link href="/tools" className="hover:text-zinc-300">Tools (calculators + pickers)</Link>
             <Link href="/editing/walkthroughs" className="hover:text-zinc-300">Edit walkthroughs</Link>
             <Link href="/music/cue-guides" className="hover:text-zinc-300">Cue guides</Link>
             <Link href="/vfx/shot-breakdowns" className="hover:text-zinc-300">VFX shot breakdowns</Link>

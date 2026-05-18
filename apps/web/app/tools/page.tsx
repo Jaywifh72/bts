@@ -12,7 +12,7 @@ type Tool = {
   href: string;
   title: string;
   summary: string;
-  phase: 'Prep' | 'On set' | 'Post';
+  phase: 'Prep' | 'On set' | 'Post' | 'Decision';
   inputs: string;
   outputs: string;
   /** Pulls from the CineCanon catalog vs. pure-math calculator. */
@@ -86,9 +86,57 @@ const TOOLS: Tool[] = [
     pdfExport: false,
     offlineOk: true,
   },
+  {
+    href: '/tools/scoring-session-cost',
+    title: 'Scoring session cost calculator',
+    summary: 'Estimate a live orchestral session: players × hours × stage rate + conductor, contractor, AFM minimums.',
+    phase: 'Decision',
+    inputs: 'Players · session hours · stage tier · conductor · contractor',
+    outputs: 'Per-session $ + per-cue $ + total estimate band',
+    backedByCatalog: false,
+    urlAsState: true,
+    pdfExport: false,
+    offlineOk: true,
+  },
+  {
+    href: '/tools/stunt-rig-picker',
+    title: 'Stunt rig decision picker',
+    summary: 'Wire descent vs decelerator vs airbag — 4 questions, ranked recommendation with rationale.',
+    phase: 'Decision',
+    inputs: 'Fall height · framing · takes needed · performer experience',
+    outputs: 'Ranked rig recommendation with reasoning',
+    backedByCatalog: false,
+    urlAsState: true,
+    pdfExport: false,
+    offlineOk: true,
+  },
+  {
+    href: '/tools/hdr-target-picker',
+    title: 'HDR delivery target picker',
+    summary: 'Dolby Vision, HDR10, HDR10+, HLG — recommend a target based on platform, budget, and finishing constraints.',
+    phase: 'Decision',
+    inputs: 'Platform · finishing budget · master deliverables · dynamic-metadata need',
+    outputs: 'Primary target + fallback chain',
+    backedByCatalog: false,
+    urlAsState: true,
+    pdfExport: false,
+    offlineOk: true,
+  },
+  {
+    href: '/tools/anamorphic-vs-spherical',
+    title: 'Anamorphic vs spherical matrix',
+    summary: 'Score your project across six axes (aspect, character, budget, weight, close-focus, VFX integration) for a defensible call.',
+    phase: 'Decision',
+    inputs: 'Six weighted-axis sliders',
+    outputs: 'Composite score + recommendation',
+    backedByCatalog: false,
+    urlAsState: true,
+    pdfExport: false,
+    offlineOk: true,
+  },
 ];
 
-const PHASES: Tool['phase'][] = ['Prep', 'On set', 'Post'];
+const PHASES: Tool['phase'][] = ['Prep', 'On set', 'Post', 'Decision'];
 
 function CapChip({ on, label }: { on: boolean; label: string }) {
   return on ? (
