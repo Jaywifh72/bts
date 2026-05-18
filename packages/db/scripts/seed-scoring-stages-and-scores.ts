@@ -357,7 +357,7 @@ const SCORES: ScoreSeed[] = [
   // Hildur Guðnadóttir
   {
     production_slug: 'joker-2019',
-    composer_slug: 'hildur-gudnadottir',
+    composer_slug: 'hildur-gu-nadottir',
     scoring_stage_slug: 'synchron-stage-vienna',
     recording_orchestra: 'Solo cello + orchestral overlay',
     recording_location: 'Synchron Stage Vienna + Berlin sessions',
@@ -368,7 +368,7 @@ const SCORES: ScoreSeed[] = [
   },
   {
     production_slug: 'tar-2022',
-    composer_slug: 'hildur-gudnadottir',
+    composer_slug: 'hildur-gu-nadottir',
     scoring_stage_slug: null,
     recording_orchestra: 'Mahler\'s Fifth (existing concert recording) + original cues',
     recording_location: 'Various',
