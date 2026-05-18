@@ -77,21 +77,28 @@ export async function ingestCuesFromMusicBrainz(
   console.log(`musicbrainz:cues — ${groups.length} productions to consider`);
 
   for (const grp of groups) {
-    stats.score_works_considered += grp.score_work_ids.length;
+    // postgres-js flattens single-element arrays into scalars; coerce
+    // back so subsequent .length / ANY() calls work uniformly.
+    const rawIds = (grp as unknown as { score_work_ids: number[] | number }).score_work_ids;
+    const swIds: number[] = Array.isArray(rawIds) ? rawIds : [rawIds];
+    const composerNames = Array.isArray(grp.composer_names)
+      ? grp.composer_names
+      : [grp.composer_names as unknown as string];
+    stats.score_works_considered += swIds.length;
     try {
       // Use the FIRST composer name for search ranking — composers in the
       // same score share the artist-credit on the release in MB.
       const rg = await searchSoundtrackReleaseGroup(
-        grp.production_title, grp.release_year, grp.composer_names[0],
+        grp.production_title, grp.release_year, composerNames[0],
       );
       if (!rg) {
-        stats.score_works_skipped += grp.score_work_ids.length;
+        stats.score_works_skipped += swIds.length;
         console.log(`  [-] no MB release-group: ${grp.production_title}`);
         continue;
       }
       const releases = await getReleaseGroupReleases(rg.id);
       if (releases.length === 0) {
-        stats.score_works_skipped += grp.score_work_ids.length;
+        stats.score_works_skipped += swIds.length;
         console.log(`  [-] no releases under MBID ${rg.id}: ${grp.production_title}`);
         continue;
       }
@@ -112,11 +119,11 @@ export async function ingestCuesFromMusicBrainz(
         if (tracks.length > 0) break;
       }
       if (tracks.length === 0 || !release) {
-        stats.score_works_skipped += grp.score_work_ids.length;
+        stats.score_works_skipped += swIds.length;
         console.log(`  [-] no tracklist on any release for ${grp.production_title}`);
         continue;
       }
-      stats.score_works_matched += grp.score_work_ids.length;
+      stats.score_works_matched += swIds.length;
 
       // Stash the release label on all score_works for this production.
       const label = release['label-info']?.[0]?.label?.name;
@@ -125,7 +132,7 @@ export async function ingestCuesFromMusicBrainz(
           UPDATE score_works
           SET release_label = COALESCE(NULLIF(release_label, ''), ${label}),
               updated_at = NOW()
-          WHERE id = ANY(${grp.score_work_ids}::bigint[])
+          WHERE id = ANY(${swIds}::bigint[])
         `);
       }
 
@@ -135,12 +142,12 @@ export async function ingestCuesFromMusicBrainz(
       for (const t of tracks) {
         const lower = t.title.toLowerCase();
         if (/performed by|recorded by|featuring/.test(lower)) {
-          stats.cues_skipped += grp.score_work_ids.length;
+          stats.cues_skipped += swIds.length;
           continue;
         }
         const cueSlug = slugify(t.title) || `track-${t.position}`;
         const runtimeSeconds = t.length ? Math.round(t.length / 1000) : null;
-        for (const swId of grp.score_work_ids) {
+        for (const swId of swIds) {
           await db.execute(sql`
             INSERT INTO music_cues (
               score_work_id, slug, title, track_number, runtime_seconds,
@@ -154,9 +161,9 @@ export async function ingestCuesFromMusicBrainz(
           stats.cues_inserted++;
         }
       }
-      console.log(`  [+] ${tracks.length} cues × ${grp.score_work_ids.length} composer(s) for ${grp.production_title}`);
+      console.log(`  [+] ${tracks.length} cues × ${swIds.length} composer(s) for ${grp.production_title}`);
     } catch (err) {
-      stats.score_works_skipped += grp.score_work_ids.length;
+      stats.score_works_skipped += swIds.length;
       console.error(`  [!] failed: ${grp.production_title} — ${err}`);
     }
   }
