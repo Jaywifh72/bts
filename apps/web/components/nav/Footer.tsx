@@ -31,6 +31,9 @@ export function Footer() {
             <Link href="/vfx" className="hover:text-zinc-300">VFX houses</Link>
             <Link href="/stunts" className="hover:text-zinc-300">Stunts</Link>
             <Link href="/sound" className="hover:text-zinc-300">Sound</Link>
+            <Link href="/sound/post" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ post sound</Link>
+            <Link href="/sound/effects" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ effects & design</Link>
+            <Link href="/sound/foley" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ foley</Link>
             <Link href="/sound/houses" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ sound houses</Link>
             <Link href="/editing" className="hover:text-zinc-300">Editing</Link>
             <Link href="/music" className="hover:text-zinc-300">Music</Link>
