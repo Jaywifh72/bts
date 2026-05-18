@@ -37,6 +37,66 @@ export async function listPostHouses(
 }
 
 /**
+ * Detail-page lookup. Returns NULL when the slug doesn't match.
+ */
+export async function getPostHouseBySlug(
+  db: SeedDb = defaultDb,
+  slug: string,
+) {
+  const rows = await db.execute<{
+    id: number;
+    slug: string;
+    name: string;
+    kind: string;
+    country: string | null;
+    city: string | null;
+    website: string | null;
+    founded_year: number | null;
+    description: string | null;
+    production_count: number;
+  }>(sql`
+    SELECT ph.id, ph.slug, ph.name, ph.kind::text, ph.country, ph.city,
+           ph.website, ph.founded_year, ph.description,
+           (SELECT COUNT(DISTINCT pph.production_id)::int
+              FROM production_post_houses pph
+             WHERE pph.post_house_id = ph.id) AS production_count
+    FROM post_houses ph
+    WHERE ph.slug = ${slug}
+    LIMIT 1
+  `);
+  return rows[0] ?? null;
+}
+
+/**
+ * Productions credited at a post house. Used by the detail-page
+ * filmography panel; one row per (production, role) so a film that
+ * uses the same house for both DI and sound mix appears twice (with
+ * different `role`).
+ */
+export async function listProductionsForPostHouse(
+  db: SeedDb = defaultDb,
+  postHouseId: number,
+  limit: number = 200,
+) {
+  return db.execute<{
+    slug: string;
+    title: string;
+    release_year: number | null;
+    poster_path: string | null;
+    role: string;
+    notes: string | null;
+  }>(sql`
+    SELECT p.slug, p.title, p.release_year, p.poster_path,
+           pph.role::text AS role, pph.notes
+    FROM production_post_houses pph
+    JOIN productions p ON p.id = pph.production_id
+    WHERE pph.post_house_id = ${postHouseId}
+    ORDER BY p.release_year DESC NULLS LAST, p.title, pph.role
+    LIMIT ${limit}
+  `);
+}
+
+/**
  * Post-house roles for a single production. Used by the production
  * detail page to surface DI / color / sound mix credits.
  */

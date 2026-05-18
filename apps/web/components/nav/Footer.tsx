@@ -31,8 +31,12 @@ export function Footer() {
             <Link href="/vfx" className="hover:text-zinc-300">VFX houses</Link>
             <Link href="/stunts" className="hover:text-zinc-300">Stunts</Link>
             <Link href="/sound" className="hover:text-zinc-300">Sound</Link>
+            <Link href="/sound/houses" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ sound houses</Link>
             <Link href="/editing" className="hover:text-zinc-300">Editing</Link>
             <Link href="/music" className="hover:text-zinc-300">Music</Link>
+            <Link href="/music/composers" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ composers</Link>
+            <Link href="/music/scoring-stages" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ scoring stages</Link>
+            <Link href="/music/supervisors" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ music supervisors</Link>
             <Link href="/production-design" className="hover:text-zinc-300">Production design</Link>
             <Link href="/costume-hair-makeup" className="hover:text-zinc-300">Costume / Hair / Makeup</Link>
           </div>
@@ -54,6 +58,10 @@ export function Footer() {
             <Link href="/for-colorists" className="hover:text-zinc-300">For Colorists</Link>
             <Link href="/for-coordinators" className="hover:text-zinc-300">For Stunt Coordinators</Link>
             <Link href="/for-gaffers" className="hover:text-zinc-300">For Gaffers</Link>
+            <Link href="/for-sound-mixers" className="hover:text-zinc-300">For Sound Mixers</Link>
+            <Link href="/for-sound-designers" className="hover:text-zinc-300">For Sound Designers</Link>
+            <Link href="/for-composers" className="hover:text-zinc-300">For Composers</Link>
+            <Link href="/for-music-supervisors" className="hover:text-zinc-300">For Music Supervisors</Link>
           </div>
           <div className="flex flex-col gap-1">
             <p className="text-[10px] uppercase tracking-widest text-zinc-300">About</p>
