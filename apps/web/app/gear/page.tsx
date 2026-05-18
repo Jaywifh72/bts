@@ -62,6 +62,16 @@ export default async function GearPage() {
         }
       />
 
+      {/* Drill-into strip — surfaces the spec browser + compare tool. */}
+      <nav aria-label="Gear sub-tools" className="mb-6 flex flex-wrap gap-2 text-sm">
+        <span className="self-center text-[10px] uppercase tracking-widest text-zinc-500">Drill into</span>
+        <Link href="/equipment/specs" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Spec browser</Link>
+        <Link href="/equipment/specs?category=camera_body" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Cameras</Link>
+        <Link href="/equipment/specs?category=lens_set" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Lenses</Link>
+        <Link href="/equipment/specs?category=lighting_fixture" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Lighting</Link>
+        <Link href="/gear/compare" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Compare 2-4 items</Link>
+      </nav>
+
       {KIND_ORDER.flatMap((kind) => {
         const group = byKind.get(kind);
         if (!group || group.length === 0) return [];

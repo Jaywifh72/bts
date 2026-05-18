@@ -28,6 +28,7 @@ export function Footer() {
             <Link href="/films" className="hover:text-zinc-300">All films</Link>
             <Link href="/crew" className="hover:text-zinc-300">Crew</Link>
             <Link href="/gear" className="hover:text-zinc-300">Gear</Link>
+            <Link href="/equipment/specs" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ spec browser</Link>
             <Link href="/vfx" className="hover:text-zinc-300">VFX houses</Link>
             <Link href="/vfx/volumes" className="hover:text-zinc-300 pl-3 text-zinc-500">↳ LED volumes</Link>
             <Link href="/stunts" className="hover:text-zinc-300">Stunts</Link>
