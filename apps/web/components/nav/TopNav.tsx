@@ -28,11 +28,14 @@ const links = [
 ] as const;
 
 const craftLinks = [
-  { href: '/vfx',    label: 'VFX',    blurb: 'Houses, supervisors, breakdowns' },
-  { href: '/stunts', label: 'Stunts', blurb: 'Companies, performers, sequences, rigging' },
-  { href: '/sound',  label: 'Sound',  blurb: 'Mixers, designers, foley, dub stages' },
-  { href: '/music',  label: 'Music',  blurb: 'Composers, scoring stages, supervisors' },
-  { href: '/gear',   label: 'Gear',   blurb: 'Cameras, lenses, lighting, grip' },
+  { href: '/vfx',                  label: 'VFX',               blurb: 'Houses, supervisors, breakdowns, LED volumes' },
+  { href: '/stunts',               label: 'Stunts',            blurb: 'Companies, performers, sequences, rigging' },
+  { href: '/sound',                label: 'Sound',             blurb: 'Mixers, designers, foley, dub stages' },
+  { href: '/music',                label: 'Music',             blurb: 'Composers, scoring stages, supervisors' },
+  { href: '/editing',              label: 'Editing',           blurb: 'Picture editors + the cutting room' },
+  { href: '/production-design',    label: 'Production Design', blurb: 'Designers, art directors, set decorators' },
+  { href: '/costume-hair-makeup',  label: 'Costume / Hair / Makeup', blurb: 'Costume + makeup + hair department heads' },
+  { href: '/gear',                 label: 'Gear',              blurb: 'Cameras, lenses, lighting, grip' },
 ] as const;
 
 function isActive(href: string, pathname: string): boolean {
