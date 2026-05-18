@@ -29,3 +29,4 @@ export * from './queries/score-works.ts';
 export * from './queries/music-cues.ts';
 export * from './queries/sound-libraries.ts';
 export * from './queries/vp-volumes.ts';
+export * from './queries/equipment-specs.ts';
