@@ -61,12 +61,29 @@ export async function searchSoundtrackReleaseGroup(
   // so the post-filter ranking has enough to chew on — soundtrack
   // titles often look like "X: Original Motion Picture Soundtrack",
   // "X (Music From the Motion Picture)", "X Vol. 1", etc.
+  //
+  // When the composer is known, ADD an artist clause: 'artist:"X"'.
+  // This is decisive for generic-title films like "Soul" (Pixar) —
+  // without the artist constraint, MB returns 1000+ random "Soul"
+  // releases and the correct OST falls below the limit.
   const parts = [`releasegroup:"${filmTitle.replace(/"/g, '')}"`, 'secondarytype:soundtrack'];
   if (year) parts.push(`firstreleasedate:[${year - 1}-01 TO ${year + 1}-12]`);
+  if (composerName) parts.push(`artist:"${composerName.replace(/"/g, '')}"`);
   const q = parts.join(' AND ');
-  const json = await fetchMb<{ 'release-groups': MbReleaseGroup[] }>('/release-group', {
+  let json = await fetchMb<{ 'release-groups': MbReleaseGroup[] }>('/release-group', {
     query: q, limit: '10',
   });
+
+  // Fallback: if artist-constrained search returned zero, try without
+  // the artist clause. Composer may be credited under a stage name
+  // ('Mica Levi' vs 'Micachu') or a co-composer credit.
+  if (composerName && (!json || json['release-groups'].length === 0)) {
+    const q2 = parts.filter((p) => !p.startsWith('artist:')).join(' AND ');
+    json = await fetchMb<{ 'release-groups': MbReleaseGroup[] }>('/release-group', {
+      query: q2, limit: '10',
+    });
+  }
+
   if (!json || json['release-groups'].length === 0) return null;
 
   const titleLc = filmTitle.toLowerCase();
