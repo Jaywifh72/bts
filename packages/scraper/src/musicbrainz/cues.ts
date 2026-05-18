@@ -47,45 +47,52 @@ export async function ingestCuesFromMusicBrainz(
     cues_inserted: 0, cues_skipped: 0,
   };
 
-  // Candidate score_works: prefer ones with NO cues yet, then ones
-  // below their cue_count_estimate. --refresh re-pulls everything.
-  const candidates = await db.execute<{
-    score_work_id: number;
+  // Group by production so multi-composer films (Reznor/Ross, Zimmer/
+  // Wallfisch) yield ONE MusicBrainz lookup, with the resulting cues
+  // inserted under both score_works rows. The aggregated row includes
+  // all composers so the search can use either to disambiguate.
+  const groups = await db.execute<{
+    production_id: number;
     production_title: string;
     release_year: number | null;
-    composer_name: string;
-    existing_cue_count: number;
+    score_work_ids: number[];
+    composer_names: string[];
   }>(sql`
-    SELECT sw.id  AS score_work_id,
+    SELECT p.id   AS production_id,
            p.title AS production_title,
            p.release_year,
-           c.display_name AS composer_name,
-           (SELECT COUNT(*)::int FROM music_cues mc WHERE mc.score_work_id = sw.id) AS existing_cue_count
+           array_agg(sw.id ORDER BY sw.id) AS score_work_ids,
+           array_agg(c.display_name ORDER BY sw.id) AS composer_names
     FROM score_works sw
     JOIN productions p ON p.id = sw.production_id
     JOIN people c ON c.id = sw.composer_person_id
     ${opts.refresh
       ? sql``
       : sql`WHERE NOT EXISTS (SELECT 1 FROM music_cues mc WHERE mc.score_work_id = sw.id)`}
+    GROUP BY p.id, p.title, p.release_year, p.popularity
     ORDER BY p.popularity DESC NULLS LAST
     ${opts.limit ? sql`LIMIT ${opts.limit}` : sql``}
   `);
 
-  console.log(`musicbrainz:cues — ${candidates.length} score_works to consider`);
+  console.log(`musicbrainz:cues — ${groups.length} productions to consider`);
 
-  for (const sw of candidates) {
-    stats.score_works_considered++;
+  for (const grp of groups) {
+    stats.score_works_considered += grp.score_work_ids.length;
     try {
-      const rg = await searchSoundtrackReleaseGroup(sw.production_title, sw.release_year);
+      // Use the FIRST composer name for search ranking — composers in the
+      // same score share the artist-credit on the release in MB.
+      const rg = await searchSoundtrackReleaseGroup(
+        grp.production_title, grp.release_year, grp.composer_names[0],
+      );
       if (!rg) {
-        stats.score_works_skipped++;
-        console.log(`  [-] no MB release-group: ${sw.production_title}`);
+        stats.score_works_skipped += grp.score_work_ids.length;
+        console.log(`  [-] no MB release-group: ${grp.production_title}`);
         continue;
       }
       const releases = await getReleaseGroupReleases(rg.id);
       if (releases.length === 0) {
-        stats.score_works_skipped++;
-        console.log(`  [-] no releases under MBID ${rg.id}: ${sw.production_title}`);
+        stats.score_works_skipped += grp.score_work_ids.length;
+        console.log(`  [-] no releases under MBID ${rg.id}: ${grp.production_title}`);
         continue;
       }
       // MB returns releases in arbitrary order. Prefer the earliest dated
@@ -105,51 +112,52 @@ export async function ingestCuesFromMusicBrainz(
         if (tracks.length > 0) break;
       }
       if (tracks.length === 0 || !release) {
-        stats.score_works_skipped++;
-        console.log(`  [-] no tracklist on any release for ${sw.production_title}`);
+        stats.score_works_skipped += grp.score_work_ids.length;
+        console.log(`  [-] no tracklist on any release for ${grp.production_title}`);
         continue;
       }
-      stats.score_works_matched++;
+      stats.score_works_matched += grp.score_work_ids.length;
 
-      // Stash the release label on score_works if empty.
+      // Stash the release label on all score_works for this production.
       const label = release['label-info']?.[0]?.label?.name;
       if (label) {
         await db.execute(sql`
           UPDATE score_works
           SET release_label = COALESCE(NULLIF(release_label, ''), ${label}),
               updated_at = NOW()
-          WHERE id = ${sw.score_work_id}
+          WHERE id = ANY(${grp.score_work_ids}::bigint[])
         `);
       }
 
-      // Insert tracks. Skip ones with parenthetical descriptions like
-      // "(performed by …)" — those are licensed song appearances, not
-      // composer cues.
+      // Insert tracks under EACH score_work for this production. Skip
+      // titles with "(performed by …)" — those are licensed song
+      // appearances, not composer cues.
       for (const t of tracks) {
-        // Skip if title looks like a non-score appearance.
         const lower = t.title.toLowerCase();
         if (/performed by|recorded by|featuring/.test(lower)) {
-          stats.cues_skipped++;
+          stats.cues_skipped += grp.score_work_ids.length;
           continue;
         }
         const cueSlug = slugify(t.title) || `track-${t.position}`;
         const runtimeSeconds = t.length ? Math.round(t.length / 1000) : null;
-        await db.execute(sql`
-          INSERT INTO music_cues (
-            score_work_id, slug, title, track_number, runtime_seconds,
-            cue_function, data_tier
-          ) VALUES (
-            ${sw.score_work_id}, ${cueSlug}, ${t.title}, ${t.position}, ${runtimeSeconds},
-            'underscore', 'imported'
-          )
-          ON CONFLICT (score_work_id, slug) DO NOTHING
-        `);
-        stats.cues_inserted++;
+        for (const swId of grp.score_work_ids) {
+          await db.execute(sql`
+            INSERT INTO music_cues (
+              score_work_id, slug, title, track_number, runtime_seconds,
+              cue_function, data_tier
+            ) VALUES (
+              ${swId}, ${cueSlug}, ${t.title}, ${t.position}, ${runtimeSeconds},
+              'underscore', 'imported'
+            )
+            ON CONFLICT (score_work_id, slug) DO NOTHING
+          `);
+          stats.cues_inserted++;
+        }
       }
-      console.log(`  [+] ${tracks.length} cues for ${sw.production_title}`);
+      console.log(`  [+] ${tracks.length} cues × ${grp.score_work_ids.length} composer(s) for ${grp.production_title}`);
     } catch (err) {
-      stats.score_works_skipped++;
-      console.error(`  [!] failed: ${sw.production_title} — ${err}`);
+      stats.score_works_skipped += grp.score_work_ids.length;
+      console.error(`  [!] failed: ${grp.production_title} — ${err}`);
     }
   }
 

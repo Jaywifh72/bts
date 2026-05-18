@@ -54,21 +54,50 @@ export type MbReleaseGroup = {
 export async function searchSoundtrackReleaseGroup(
   filmTitle: string,
   year?: number | null,
+  composerName?: string,
 ): Promise<MbReleaseGroup | null> {
-  // Lucene-style query: title:"X" AND secondarytype:soundtrack
-  // Optionally constrain by release year ±1.
+  // Lucene-style query: title:"X" AND secondarytype:soundtrack.
+  // Constrain by release year ±1 when known. We fetch 10 candidates
+  // so the post-filter ranking has enough to chew on — soundtrack
+  // titles often look like "X: Original Motion Picture Soundtrack",
+  // "X (Music From the Motion Picture)", "X Vol. 1", etc.
   const parts = [`releasegroup:"${filmTitle.replace(/"/g, '')}"`, 'secondarytype:soundtrack'];
   if (year) parts.push(`firstreleasedate:[${year - 1}-01 TO ${year + 1}-12]`);
   const q = parts.join(' AND ');
   const json = await fetchMb<{ 'release-groups': MbReleaseGroup[] }>('/release-group', {
-    query: q, limit: '5',
+    query: q, limit: '10',
   });
   if (!json || json['release-groups'].length === 0) return null;
-  // Prefer the exact-title match closest to the requested year.
-  const exact = json['release-groups'].find(
-    (rg) => rg.title.toLowerCase() === filmTitle.toLowerCase(),
-  );
-  return exact ?? json['release-groups'][0] ?? null;
+
+  const titleLc = filmTitle.toLowerCase();
+  const composerLc = composerName?.toLowerCase();
+
+  // Score each candidate. Higher = better.
+  function score(rg: MbReleaseGroup): number {
+    let s = 0;
+    const rgTitle = rg.title.toLowerCase();
+    // Title contains the film name as a prefix/word.
+    if (rgTitle === titleLc) s += 100;
+    else if (rgTitle.startsWith(titleLc)) s += 60;
+    else if (rgTitle.includes(titleLc)) s += 30;
+    // Composer in artist-credit (decisive — eliminates wrong-film matches
+    // like "Gravity Falls Main Title Theme" by Brad Breeck).
+    if (composerLc && rg['artist-credit']?.some((a) => a.name.toLowerCase().includes(composerLc))) {
+      s += 80;
+    }
+    // Penalize compilation / various-artist titles.
+    if (rg.title.toLowerCase().includes('various')) s -= 50;
+    if (rg['artist-credit']?.some((a) => a.name.toLowerCase() === 'various artists')) s -= 30;
+    return s;
+  }
+
+  const ranked = [...json['release-groups']].sort((a, b) => score(b) - score(a));
+  const top = ranked[0];
+  // Only accept matches with a non-negative score. If the best we can do
+  // is "Gravity Falls" (zero score for Gravity-the-film + composer
+  // mismatch = negative), reject the whole search.
+  if (!top || score(top) < 30) return null;
+  return top;
 }
 
 // ── Release group detail: tracklist + labels ───────────────────────
