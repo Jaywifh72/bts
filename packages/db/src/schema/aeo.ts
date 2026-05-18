@@ -223,6 +223,30 @@ export const aeoSchemaValidations = pgTable('aeo_schema_validations', {
   checkedAt: timestamp('checked_at', { withTimezone: true }).notNull().defaultNow(),
 });
 
+// ask_query_log — migration 0092. Fire-and-forget log of /ask queries
+// for the prompt-curator flywheel. See queries/askLog.ts.
+export const askQueryLog = pgTable(
+  'ask_query_log',
+  {
+    id: uuid('id').primaryKey().defaultRandom(),
+    queryText: text('query_text').notNull(),
+    userId: uuid('user_id'),
+    filtersJson: jsonb('filters_json'),
+    resultCount: integer('result_count'),
+    usedEmbedding: boolean('used_embedding').notNull().default(false),
+    totalLatencyMs: integer('total_latency_ms'),
+    queryEmbedding: vector('query_embedding', { dimensions: 1536 }),
+    source: text('source').notNull().default('web'),
+    assignedCluster: text('assigned_cluster'),
+    promotedToPromptId: uuid('promoted_to_prompt_id'),
+    observedAt: timestamp('observed_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (t) => ({
+    observedIdx: index('idx_ask_query_log_observed').on(t.observedAt),
+    clusterIdx: index('idx_ask_query_log_cluster').on(t.assignedCluster),
+  }),
+);
+
 export const aeoCycleDecisions = pgTable('aeo_cycle_decisions', {
   id: uuid('id').primaryKey().defaultRandom(),
   cycleId: uuid('cycle_id').notNull(),
