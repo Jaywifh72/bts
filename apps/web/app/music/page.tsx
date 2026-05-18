@@ -34,6 +34,8 @@ export default async function MusicPage() {
       <nav aria-label="Music sub-disciplines" className="mb-6 flex flex-wrap gap-2 text-sm">
         <span className="self-center text-[10px] uppercase tracking-widest text-zinc-500">Drill into</span>
         <Link href="/music/composers" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Composers</Link>
+        <Link href="/music/cue-guides" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Cue guides</Link>
+        <Link href="/music/supervision-agencies" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Supervision agencies</Link>
         <Link href="/music/supervisors" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Music supervisors</Link>
         <Link href="/music/scoring-stages" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Scoring stages</Link>
         <Link href="/music/orchestras" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Orchestras</Link>

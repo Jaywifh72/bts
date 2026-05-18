@@ -35,6 +35,7 @@ export * from './practitioner-partnerships.ts';
 export * from './craft-decision-trees.ts';
 export * from './phase2-facility-houses.ts';
 export * from './production-craft-dossiers.ts';
+export * from './annotated-walkthroughs.ts';
 export * from './auth.ts';
 export * from './bookmarks.ts';
 export * from './ignored-duplicates.ts';

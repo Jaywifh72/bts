@@ -603,6 +603,13 @@
       "when": 1785110400000,
       "tag": "0089_production_craft_dossiers",
       "breakpoints": true
+    },
+    {
+      "idx": 86,
+      "version": "7",
+      "when": 1785196800000,
+      "tag": "0090_annotated_walkthroughs",
+      "breakpoints": true
     }
   ]
 }
