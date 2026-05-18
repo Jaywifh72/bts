@@ -610,6 +610,20 @@
       "when": 1785196800000,
       "tag": "0090_annotated_walkthroughs",
       "breakpoints": true
+    },
+    {
+      "idx": 87,
+      "version": "7",
+      "when": 1785283200000,
+      "tag": "0091_aeo_observatory",
+      "breakpoints": true
+    },
+    {
+      "idx": 88,
+      "version": "7",
+      "when": 1785369600000,
+      "tag": "0092_ask_query_log",
+      "breakpoints": true
     }
   ]
 }
