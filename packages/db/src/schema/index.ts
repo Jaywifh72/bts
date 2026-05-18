@@ -26,6 +26,7 @@ export * from './scoring-stages.ts';
 export * from './score-works.ts';
 export * from './music-cues.ts';
 export * from './sound-libraries.ts';
+export * from './vp-volumes.ts';
 export * from './auth.ts';
 export * from './bookmarks.ts';
 export * from './ignored-duplicates.ts';

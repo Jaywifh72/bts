@@ -35,6 +35,11 @@ const LENS_FIELDS: Record<string, Renderer> = {
       View MTF chart →
     </a>
   ) },
+  iris_blade_count:   { label: 'Iris blades',     render: (v) => `${v}` },
+  character_notes:    { label: 'Character' },
+  year_introduced:    { label: 'Year introduced', render: (v) => `${v}` },
+  filter_thread_mm:   { label: 'Filter thread',   render: (v) => `${v} mm` },
+  length_mm:          { label: 'Length',          render: (v) => `${v} mm` },
 };
 
 function formatValue(value: unknown): string {
@@ -62,11 +67,51 @@ const CAMERA_FIELDS: Record<string, Renderer> = {
       View lab report →
     </a>
   ) },
+  native_iso:                 { label: 'Native ISO',
+    render: (v) => Array.isArray(v) ? `Dual: ${v[0]} / ${v[1]}` : `${v}` },
+  sensor_w_mm:                { label: 'Sensor width',     render: (v) => `${v} mm` },
+  sensor_h_mm:                { label: 'Sensor height',    render: (v) => `${v} mm` },
+  olpf_type:                  { label: 'OLPF' },
+  recording_media:            { label: 'Recording media',  render: (v) => Array.isArray(v) ? v.join(', ') : String(v) },
+  log_curves:                 { label: 'Log curves',       render: (v) => Array.isArray(v) ? v.join(', ') : String(v) },
+  bit_depth:                  { label: 'Bit depth',        render: (v) => `${v}-bit` },
+  max_fps_by_resolution:      { label: 'Max FPS / res',
+    render: (v) => typeof v === 'object' && v
+      ? Object.entries(v as Record<string, number>).map(([res, fps]) => `${res}: ${fps}`).join(' · ')
+      : String(v) },
+  built_in_nd:                { label: 'Built-in ND' },
+  power_input:                { label: 'Power input' },
+  year_introduced:            { label: 'Year introduced',  render: (v) => `${v}` },
+  dp_notes:                   { label: 'DP notes' },
+};
+
+const LIGHTING_FIELDS: Record<string, Renderer> = {
+  fixture_kind:                { label: 'Type', render: (v) => String(v).replace(/_/g, ' ') },
+  color_temperature_range_k:   { label: 'CCT (text)', render: (v) => `${v} K` },
+  cct_min_k:                   { label: 'CCT min', render: (v) => `${v} K` },
+  cct_max_k:                   { label: 'CCT max', render: (v) => `${v} K` },
+  cri:                         { label: 'CRI', render: (v) => `${v}` },
+  tlci:                        { label: 'TLCI', render: (v) => `${v}` },
+  duv:                         { label: 'Δuv', render: (v) => `${v}` },
+  beam_angle_min_deg:          { label: 'Beam ° min', render: (v) => `${v}°` },
+  beam_angle_max_deg:          { label: 'Beam ° max', render: (v) => `${v}°` },
+  power_watts:                 { label: 'Power', render: (v) => `${v} W` },
+  dmx_channels:                { label: 'DMX channels', render: (v) => `${v}` },
+  lux_at_3m:                   { label: 'Lux @ 3m', render: (v) => `${v} lx` },
+  max_output_lumens:           { label: 'Max output', render: (v) => `${v} lm` },
+  rgb_color_mixing:            { label: 'RGB mixing', render: (v) => v ? 'Yes' : 'No' },
+  power_inputs:                { label: 'Power inputs', render: (v) => Array.isArray(v) ? v.join(', ') : String(v) },
+  ip_rating:                   { label: 'IP rating' },
+  form_factor:                 { label: 'Form factor' },
+  weight_kg:                   { label: 'Weight', render: (v) => `${v} kg` },
+  year_introduced:             { label: 'Year introduced', render: (v) => `${v}` },
+  gaffer_notes:                { label: 'Gaffer notes' },
 };
 
 function getRenderer(category: string, key: string): Renderer | undefined {
   if (category === 'lens_set') return LENS_FIELDS[key];
   if (category === 'camera_body') return CAMERA_FIELDS[key];
+  if (category === 'lighting_fixture') return LIGHTING_FIELDS[key];
   return undefined;
 }
 
