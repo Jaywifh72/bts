@@ -22,6 +22,7 @@ import { ColorPipelineList } from './ColorPipelineList';
 import { StuntSequencesList } from './StuntSequencesList';
 import { ProductionClaims } from './ProductionClaims';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import { craftFromAward, getCraft, type CraftSlug } from '@/lib/awards/crafts';
 import { SourcesList } from '@/components/ui/SourcesList';
 import { BookmarkButton } from '@/components/ui/BookmarkButton';
 import { posterUrl, backdropUrl } from '@/lib/tmdb-image';
@@ -477,6 +478,63 @@ export function ProductionDetail({
       {/* T2-6 — awards (winners + nominees). */}
       {hasAwards && (
         <section id="awards" className="scroll-mt-24">
+          {/* Per-craft summary band — groups awards by craft via the
+              craftFromAward classifier so visitors can see at-a-glance
+              which departments earned recognition without scanning the
+              full list below. Each chip links to /awards/craft/<slug>. */}
+          {(() => {
+            const byCraft = new Map<CraftSlug, { wins: number; noms: number }>();
+            let uncategorized = 0;
+            for (const a of awards) {
+              const craft = craftFromAward(a.award_org, a.category);
+              if (!craft) { uncategorized++; continue; }
+              const e = byCraft.get(craft) ?? { wins: 0, noms: 0 };
+              if (a.is_winner) e.wins += 1; else e.noms += 1;
+              byCraft.set(craft, e);
+            }
+            const chips = Array.from(byCraft.entries())
+              .map(([slug, c]) => ({ slug, def: getCraft(slug), ...c }))
+              .filter((x) => x.def !== null)
+              .sort((a, b) => (b.wins - a.wins) || (b.noms - a.noms));
+            if (chips.length === 0) return null;
+            return (
+              <div className="mb-4">
+                <p className="mb-2 text-[10px] uppercase tracking-widest text-zinc-500">Recognition by craft</p>
+                <ul className="flex flex-wrap gap-1.5">
+                  {chips.map((c) => (
+                    <li key={c.slug}>
+                      <Link
+                        href={`/awards/craft/${c.slug}`}
+                        className="flex items-baseline gap-1.5 rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-xs text-zinc-200 hover:border-amber-700 hover:text-amber-400"
+                      >
+                        <span className="font-medium">{c.def!.name}</span>
+                        {c.wins > 0 && (
+                          <span className="font-mono text-[10px] text-amber-400">
+                            {c.wins}<span className="text-zinc-500">w</span>
+                          </span>
+                        )}
+                        {c.noms > 0 && (
+                          <span className="font-mono text-[10px] text-zinc-400">
+                            {c.noms}<span className="text-zinc-500">n</span>
+                          </span>
+                        )}
+                      </Link>
+                    </li>
+                  ))}
+                  {uncategorized > 0 && (
+                    <li>
+                      <span
+                        className="rounded border border-zinc-800 bg-zinc-950 px-2.5 py-1 text-[10px] uppercase tracking-wide text-zinc-500"
+                        title="Non-craft categories (Best Picture, Best Director, acting, etc.)"
+                      >
+                        +{uncategorized} non-craft
+                      </span>
+                    </li>
+                  )}
+                </ul>
+              </div>
+            );
+          })()}
           <AwardsList awards={awards} />
         </section>
       )}
