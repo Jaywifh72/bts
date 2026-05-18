@@ -11,6 +11,7 @@ import {
   getCollaboratorsForPerson,
   getKnownForByPerson,
   getAwardsForPerson,
+  getScoreWorksForComposer,
   getStuntContextForPerson,
   getStuntLineage,
   getDoublingHistoryForPerson,
@@ -73,13 +74,16 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
 
 export default async function CrewDetailPage(props: Props) {
   const params = await props.params;
-  const [person, filmography, equipment, collaborators, knownFor, awards] = await Promise.all([
+  const [person, filmography, equipment, collaborators, knownFor, awards, scoreWorks] = await Promise.all([
     getPersonBySlug(db, params.slug),
     getPersonFilmography(db, params.slug),
     getEquipmentUsedByPerson(db, params.slug),
     getCollaboratorsForPerson(db, params.slug, 12),
     getKnownForByPerson(db, params.slug, 4),
     getAwardsForPerson(db, params.slug),
+    // Composer-side score works. Empty for non-composers; the render
+    // path below hides the section entirely when zero rows.
+    getScoreWorksForComposer(db, params.slug),
   ]);
   if (!person) notFound();
   // F2 — fetch the polymorphic claims bundle for this person.
@@ -716,6 +720,51 @@ export default async function CrewDetailPage(props: Props) {
                     className="text-zinc-300 hover:text-amber-400"
                   >
                     {a.production_title}
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+
+        {/* Composer dossier — score works credited to this person. Hidden
+            when no rows (i.e. for non-composers). One row per scored
+            film with composer-credit; links to the score deep-dive. */}
+        {scoreWorks.length > 0 && (
+          <div className="mb-8">
+            <SectionHeader
+              label="Score works"
+              heading={`Scored ${scoreWorks.length} film${scoreWorks.length === 1 ? '' : 's'}`}
+            />
+            <ul className="mt-2 space-y-1.5 text-sm">
+              {scoreWorks.map((sw) => (
+                <li key={sw.production_slug} className="flex flex-wrap items-baseline gap-x-2">
+                  <span className="font-mono text-xs text-zinc-500">{sw.release_year ?? '—'}</span>
+                  <Link
+                    href={`/films/${sw.production_slug}`}
+                    className="text-zinc-200 hover:text-amber-400"
+                  >
+                    {sw.production_title}
+                  </Link>
+                  {sw.scoring_stage_slug && (
+                    <>
+                      <span className="text-zinc-500">·</span>
+                      <Link
+                        href={`/music/scoring-stages/${sw.scoring_stage_slug}`}
+                        className="text-xs text-zinc-400 hover:text-amber-400"
+                      >
+                        {sw.scoring_stage_name}
+                      </Link>
+                    </>
+                  )}
+                  {sw.recording_orchestra && (
+                    <span className="text-xs text-zinc-500">— {sw.recording_orchestra}</span>
+                  )}
+                  <Link
+                    href={`/music/scores/${sw.production_slug}`}
+                    className="ml-auto text-[10px] uppercase tracking-wide text-amber-400/70 hover:text-amber-400"
+                  >
+                    score →
                   </Link>
                 </li>
               ))}
