@@ -26,6 +26,20 @@ export const ORG_LABELS: Record<AwardOrg, string> = {
   eca: 'Emerging Cinematographer Award',
   taurus_world_stunt_awards: 'Taurus World Stunt Award',
   sag_stunt_ensemble: 'SAG Stunt Ensemble',
+  // Migration 0077 — sound/music/craft society additions.
+  academy_stunt_design: 'Academy Award (Stunt Design)',
+  mpse_golden_reel: 'MPSE Golden Reel',
+  cas_award: 'CAS Award',
+  hpa_award: 'HPA Award',
+  ace_eddie: 'ACE Eddie',
+  scl_award: 'SCL Award',
+  ascap_film_award: 'ASCAP Film Music Award',
+  bmi_film_award: 'BMI Film Music Award',
+  ivor_novello: 'Ivor Novello',
+  gms_award: 'Guild of Music Supervisors',
+  adg_award: 'ADG Award',
+  cdg_award: 'CDG Award',
+  muahs_award: 'MUAHS Award',
   other: 'Other',
 };
 

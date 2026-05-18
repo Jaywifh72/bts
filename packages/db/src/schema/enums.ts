@@ -86,6 +86,11 @@ export const awardOrgEnum = pgEnum('award_org_enum', [
   'academy_awards', 'bafta', 'cannes', 'golden_globes',
   'critics_choice', 'asc_award', 'aso_award', 'csc_award',
   'bsc_award', 'spirit_awards', 'venice', 'berlin', 'ves_award', 'eca', 'other',
+  // Migration 0077 — sound/music/stunt/craft society additions.
+  'camerimage', 'taurus_world_stunt_awards', 'sag_stunt_ensemble', 'academy_stunt_design',
+  'mpse_golden_reel', 'cas_award', 'hpa_award', 'ace_eddie',
+  'scl_award', 'ascap_film_award', 'bmi_film_award', 'ivor_novello', 'gms_award',
+  'adg_award', 'cdg_award', 'muahs_award',
 ]);
 
 export const vfxHouseKindEnum = pgEnum('vfx_house_kind_enum', [

@@ -8,7 +8,12 @@ export type AwardOrg =
   | 'critics_choice' | 'asc_award' | 'aso_award' | 'csc_award'
   | 'bsc_award' | 'spirit_awards' | 'venice' | 'berlin'
   | 'ves_award' | 'eca' | 'camerimage'
-  | 'taurus_world_stunt_awards' | 'sag_stunt_ensemble' | 'other';
+  | 'taurus_world_stunt_awards' | 'sag_stunt_ensemble' | 'other'
+  // Migration 0077 — sound/music/craft society additions.
+  | 'academy_stunt_design'
+  | 'mpse_golden_reel' | 'cas_award' | 'hpa_award' | 'ace_eddie'
+  | 'scl_award' | 'ascap_film_award' | 'bmi_film_award' | 'ivor_novello' | 'gms_award'
+  | 'adg_award' | 'cdg_award' | 'muahs_award';
 
 export type AwardRecipientType = 'person' | 'vfx_house' | 'stunt_company' | 'production';
 

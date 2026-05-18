@@ -76,6 +76,20 @@ const ORG_TO_CRAFT: Record<string, CraftSlug> = {
   ves_award: 'visual-effects',
   taurus_world_stunt_awards: 'stunts',
   sag_stunt_ensemble: 'stunts',
+  academy_stunt_design: 'stunts',
+  // Single-craft societies. MPSE is intentionally OMITTED — it spans
+  // three crafts (sound-design, dialogue-adr, music-editing), so we
+  // route via category keyword matching below.
+  ace_eddie: 'editing',
+  cas_award: 'dialogue-adr',
+  scl_award: 'score',
+  ascap_film_award: 'score',
+  bmi_film_award: 'score',
+  ivor_novello: 'score',
+  gms_award: 'music-supervision',
+  adg_award: 'production-design',
+  cdg_award: 'costume-design',
+  muahs_award: 'makeup-hairstyling',
 };
 
 /**
@@ -141,6 +155,17 @@ export function craftCaseSql(orgCol: SQL, catCol: SQL): SQL {
     WHEN ${orgCol} = 'ves_award'                  THEN 'visual-effects'
     WHEN ${orgCol} = 'taurus_world_stunt_awards'  THEN 'stunts'
     WHEN ${orgCol} = 'sag_stunt_ensemble'         THEN 'stunts'
+    WHEN ${orgCol} = 'academy_stunt_design'       THEN 'stunts'
+    WHEN ${orgCol} = 'ace_eddie'                  THEN 'editing'
+    WHEN ${orgCol} = 'cas_award'                  THEN 'dialogue-adr'
+    WHEN ${orgCol} = 'scl_award'                  THEN 'score'
+    WHEN ${orgCol} = 'ascap_film_award'           THEN 'score'
+    WHEN ${orgCol} = 'bmi_film_award'             THEN 'score'
+    WHEN ${orgCol} = 'ivor_novello'               THEN 'score'
+    WHEN ${orgCol} = 'gms_award'                  THEN 'music-supervision'
+    WHEN ${orgCol} = 'adg_award'                  THEN 'production-design'
+    WHEN ${orgCol} = 'cdg_award'                  THEN 'costume-design'
+    WHEN ${orgCol} = 'muahs_award'                THEN 'makeup-hairstyling'
     WHEN ${catCol} ILIKE '%stunt%'                THEN 'stunts'
     WHEN ${catCol} ILIKE '%cinematograph%'        THEN 'cinematography'
     WHEN ${catCol} ILIKE '%editing%' OR ${catCol} ILIKE '%edited%' OR ${catCol} ILIKE '%film editing%' THEN 'editing'
