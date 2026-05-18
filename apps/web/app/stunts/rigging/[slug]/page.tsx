@@ -127,6 +127,46 @@ export default async function RiggingDetailPage(props: Props) {
           </div>
         )}
       </header>
+      {/* Engineering spec band — 0081 fields. Rendered above the
+          mechanism narrative so coordinators see load / G-force /
+          decelerator type at a glance. */}
+      {(technique.max_load_kg != null
+        || technique.stop_distance_m != null
+        || technique.typical_g_force != null
+        || technique.max_height_m != null
+        || technique.decelerator_type
+        || technique.primary_manufacturer) && (
+        <section className="mb-8">
+          <h2 className="mb-2 text-[10px] uppercase tracking-widest text-zinc-500">Engineering specs</h2>
+          <dl className="grid gap-x-6 gap-y-1 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            {technique.max_load_kg != null && (
+              <div><dt className="text-zinc-500">Max load</dt><dd className="font-mono text-zinc-200">{technique.max_load_kg} kg</dd></div>
+            )}
+            {technique.stop_distance_m != null && (
+              <div><dt className="text-zinc-500">Stop distance</dt><dd className="font-mono text-zinc-200">{Number(technique.stop_distance_m)} m</dd></div>
+            )}
+            {technique.typical_g_force != null && (
+              <div><dt className="text-zinc-500">Typical G-force</dt><dd className="font-mono text-zinc-200">{Number(technique.typical_g_force)} G</dd></div>
+            )}
+            {technique.max_height_m != null && (
+              <div><dt className="text-zinc-500">Max height</dt><dd className="font-mono text-zinc-200">{Number(technique.max_height_m)} m</dd></div>
+            )}
+            {technique.decelerator_type && (
+              <div><dt className="text-zinc-500">Decelerator</dt><dd className="text-zinc-200">{technique.decelerator_type}</dd></div>
+            )}
+            {technique.primary_manufacturer && (
+              <div><dt className="text-zinc-500">Manufacturer</dt><dd className="text-zinc-200">{technique.primary_manufacturer}</dd></div>
+            )}
+            {technique.performer_certification && (
+              <div className="sm:col-span-2 lg:col-span-3">
+                <dt className="text-zinc-500">Performer certification</dt>
+                <dd className="text-zinc-200">{technique.performer_certification}</dd>
+              </div>
+            )}
+          </dl>
+        </section>
+      )}
+
       {/* Mechanism — the meat of the page */}
       <section className="mb-10">
         <SectionHeader label="Mechanism" heading="How the rig works" />

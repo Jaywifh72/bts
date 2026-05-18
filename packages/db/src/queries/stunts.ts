@@ -343,6 +343,14 @@ export type RiggingTechniqueRow = {
   photos: Array<{ url: string; caption: string; credit?: string }>;
   related_discipline_tags: string[];
   sort_order: number;
+  // 0081 — engineering spec fields.
+  max_load_kg: number | null;
+  stop_distance_m: string | null;       // numeric returns as string
+  typical_g_force: string | null;
+  max_height_m: string | null;
+  decelerator_type: string | null;
+  primary_manufacturer: string | null;
+  performer_certification: string | null;
 };
 
 /**
@@ -358,7 +366,10 @@ export async function listRiggingTechniques(
     SELECT id, slug, name, category, tagline, mechanism,
            safety_considerations, sag_aftra_bulletin,
            common_variants, "references", photos,
-           related_discipline_tags, sort_order
+           related_discipline_tags, sort_order,
+           max_load_kg, stop_distance_m::text, typical_g_force::text,
+           max_height_m::text, decelerator_type, primary_manufacturer,
+           performer_certification
     FROM stunt_rigging_techniques
     ORDER BY category, sort_order, name
   `);
@@ -372,7 +383,10 @@ export async function getRiggingTechniqueBySlug(
     SELECT id, slug, name, category, tagline, mechanism,
            safety_considerations, sag_aftra_bulletin,
            common_variants, "references", photos,
-           related_discipline_tags, sort_order
+           related_discipline_tags, sort_order,
+           max_load_kg, stop_distance_m::text, typical_g_force::text,
+           max_height_m::text, decelerator_type, primary_manufacturer,
+           performer_certification
     FROM stunt_rigging_techniques
     WHERE slug = ${slug}
   `);

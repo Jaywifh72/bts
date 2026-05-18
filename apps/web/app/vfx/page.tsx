@@ -81,6 +81,13 @@ export default async function VfxPage({ searchParams }: { searchParams: Promise<
         }
       />
 
+      {/* Sub-discipline drill-into strip. */}
+      <nav aria-label="VFX sub-disciplines" className="mb-6 flex flex-wrap gap-2 text-sm">
+        <span className="self-center text-[10px] uppercase tracking-widest text-zinc-500">Drill into</span>
+        <Link href="/vfx/volumes" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">LED volumes</Link>
+        <Link href="/awards/craft/visual-effects" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">VFX awards</Link>
+      </nav>
+
       {/* Kind filter pills */}
       {kindsPresent.length > 0 && (
         <nav aria-label="Filter by kind" className="mb-4 flex flex-wrap gap-2 rounded border border-zinc-800 bg-zinc-900/40 p-2 text-xs">
