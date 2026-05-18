@@ -48,6 +48,21 @@ export default async function SoundPage() {
             'Sound department: mixers, designers, foley artists, dialog editors, re-recording mixers, supervising sound editors.',
         }}
       />
+
+      {/* Sub-discipline strip — surfaces the editorial / index sub-routes
+          so visitors can drill into a specific craft slice rather than
+          scanning the full people list. */}
+      <nav aria-label="Sound sub-disciplines" className="mb-6 flex flex-wrap gap-2 text-sm">
+        <span className="self-center text-[10px] uppercase tracking-widest text-zinc-500">Drill into</span>
+        <Link href="/sound/post" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Post sound</Link>
+        <Link href="/sound/effects" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Effects & design</Link>
+        <Link href="/sound/foley" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Foley</Link>
+        <Link href="/sound/houses" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Houses</Link>
+        <Link href="/for-sound-mixers" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">For mixers</Link>
+        <Link href="/for-sound-designers" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">For designers</Link>
+        <Link href="/awards/craft/sound-design" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Awards</Link>
+      </nav>
+
       <DepartmentIndex
         title="Sound"
         accent="blue"

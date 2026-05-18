@@ -28,6 +28,20 @@ export default async function MusicPage() {
   return (
     <>
       <JsonLd data={{ '@context': 'https://schema.org', '@type': 'CollectionPage', '@id': absoluteUrl('/music'), name: 'Music — CineCanon' }} />
+
+      {/* Sub-discipline strip — exposes the dedicated composer /
+          supervisor / scoring-stage indexes and the for-* role pages. */}
+      <nav aria-label="Music sub-disciplines" className="mb-6 flex flex-wrap gap-2 text-sm">
+        <span className="self-center text-[10px] uppercase tracking-widest text-zinc-500">Drill into</span>
+        <Link href="/music/composers" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Composers</Link>
+        <Link href="/music/supervisors" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Music supervisors</Link>
+        <Link href="/music/scoring-stages" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Scoring stages</Link>
+        <Link href="/for-composers" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">For composers</Link>
+        <Link href="/for-music-supervisors" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">For supervisors</Link>
+        <Link href="/awards/craft/score" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Score awards</Link>
+        <Link href="/awards/craft/music-supervision" className="rounded border border-zinc-700 bg-zinc-900/40 px-2.5 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Supervision awards</Link>
+      </nav>
+
       <DepartmentIndex
         title="Music"
         accent="amber"
