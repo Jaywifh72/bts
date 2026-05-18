@@ -53,6 +53,7 @@ export default async function SoundEffectsPage() {
         <Link href="/sound/post" className="rounded border border-zinc-700 bg-zinc-900/40 px-3 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Post sound</Link>
         <Link href="/sound/effects" aria-current="page" className="rounded border border-amber-500 bg-amber-900/30 px-3 py-1 text-amber-300">Effects & design</Link>
         <Link href="/sound/foley" className="rounded border border-zinc-700 bg-zinc-900/40 px-3 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Foley</Link>
+        <Link href="/sound/effects/libraries" className="rounded border border-zinc-700 bg-zinc-900/40 px-3 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Libraries</Link>
         <Link href="/awards/craft/sound-design" className="rounded border border-zinc-700 bg-zinc-900/40 px-3 py-1 text-zinc-300 hover:border-amber-700 hover:text-amber-400">Awards</Link>
       </nav>
 

@@ -27,3 +27,4 @@ export * from './queries/societies.ts';
 export * from './queries/scoring-stages.ts';
 export * from './queries/score-works.ts';
 export * from './queries/music-cues.ts';
+export * from './queries/sound-libraries.ts';
