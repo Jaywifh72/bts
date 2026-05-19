@@ -230,9 +230,6 @@ ${failures.slice(0, 10).map((f) => `- **${f.engine}** on "${f.prompt}…" — ${
 - Citation extraction is best-effort URL regex — replace with structured citations from each engine's web-search response shape.
 `;
 
-await Bun.write?.(`./output/aeo-digest-${TODAY}.md`, digest).catch(() => {
-  // Bun.write isn't available in Node — fall back below
-});
 const fs = await import('node:fs/promises');
 await fs.mkdir('./output', { recursive: true });
 await fs.writeFile(`./output/aeo-digest-${TODAY}.md`, digest, 'utf-8');
