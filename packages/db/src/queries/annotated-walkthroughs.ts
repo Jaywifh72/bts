@@ -12,6 +12,7 @@ export type WalkthroughRow = {
   lead_slug: string | null;
   lead_name: string | null;
   duration_s: number | null;
+  production_id: number;
   production_slug: string;
   production_title: string;
   release_year: number | null;
@@ -44,7 +45,7 @@ export async function listWalkthroughs(
     SELECT w.slug, w.kind, w.headline, w.scene_label, w.lead_credit,
            lp.slug AS lead_slug, lp.display_name AS lead_name,
            w.duration_s,
-           p.slug AS production_slug, p.title AS production_title, p.release_year,
+           p.id AS production_id, p.slug AS production_slug, p.title AS production_title, p.release_year,
            w.summary, w.body, w.tags,
            COALESCE(w."references", '[]'::jsonb) AS "references",
            w.data_tier
@@ -65,7 +66,7 @@ export async function getWalkthroughBySlug(
     SELECT w.slug, w.kind, w.headline, w.scene_label, w.lead_credit,
            lp.slug AS lead_slug, lp.display_name AS lead_name,
            w.duration_s,
-           p.slug AS production_slug, p.title AS production_title, p.release_year,
+           p.id AS production_id, p.slug AS production_slug, p.title AS production_title, p.release_year,
            w.summary, w.body, w.tags,
            COALESCE(w."references", '[]'::jsonb) AS "references",
            w.data_tier

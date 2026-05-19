@@ -10,6 +10,7 @@ export type CraftDossierRow = {
   lead_credit: string | null;
   lead_slug: string | null;
   lead_name: string | null;
+  production_id: number;
   production_slug: string;
   production_title: string;
   release_year: number | null;
@@ -32,7 +33,7 @@ export async function listCraftDossiers(
   return db.execute<CraftDossierRow>(sql`
     SELECT d.slug, d.craft, d.headline, d.lead_credit,
            lp.slug AS lead_slug, lp.display_name AS lead_name,
-           p.slug AS production_slug, p.title AS production_title, p.release_year,
+           p.id AS production_id, p.slug AS production_slug, p.title AS production_title, p.release_year,
            d.summary, d.body, d.signature_looks, d.techniques,
            d.references_consulted, d.collaborators,
            COALESCE(d."references", '[]'::jsonb) AS "references",
@@ -53,7 +54,7 @@ export async function getCraftDossierBySlug(
   const rows = await db.execute<CraftDossierRow>(sql`
     SELECT d.slug, d.craft, d.headline, d.lead_credit,
            lp.slug AS lead_slug, lp.display_name AS lead_name,
-           p.slug AS production_slug, p.title AS production_title, p.release_year,
+           p.id AS production_id, p.slug AS production_slug, p.title AS production_title, p.release_year,
            d.summary, d.body, d.signature_looks, d.techniques,
            d.references_consulted, d.collaborators,
            COALESCE(d."references", '[]'::jsonb) AS "references",
@@ -74,7 +75,7 @@ export async function listCraftDossiersForProduction(
   return db.execute<CraftDossierRow>(sql`
     SELECT d.slug, d.craft, d.headline, d.lead_credit,
            lp.slug AS lead_slug, lp.display_name AS lead_name,
-           p.slug AS production_slug, p.title AS production_title, p.release_year,
+           p.id AS production_id, p.slug AS production_slug, p.title AS production_title, p.release_year,
            d.summary, d.body, d.signature_looks, d.techniques,
            d.references_consulted, d.collaborators,
            COALESCE(d."references", '[]'::jsonb) AS "references",
