@@ -1,9 +1,18 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { db, getPartnershipBySlug, listJointFilmography } from '@bts/db';
+import {
+  db,
+  getPartnershipBySlug,
+  listJointFilmography,
+  getClaimsBundleForEntity,
+} from '@bts/db';
 import { PageHero, PageHeroStat } from '@/components/ui/PageHero';
-import { JsonLd } from '@/lib/jsonLd';
+import {
+  JsonLd,
+  buildClaimReviewJsonLd,
+  shouldEmitClaimReview,
+} from '@/lib/jsonLd';
 import { siteUrl, absoluteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
@@ -40,6 +49,28 @@ export default async function PartnershipDetailPage(
   }
   if (!p) notFound();
 
+  // Phase 2 follow-up — ClaimReview emission keyed on the partnership
+  // entity (migration 0093). Reuses the same status/confidence rubric.
+  const { claims, sourcesByClaimId } = await getClaimsBundleForEntity(
+    db, 'partnership', p.id, p.slug,
+  );
+  const claimReviewJsonLds = claims
+    .slice(0, 12)
+    .filter((c) => shouldEmitClaimReview(c.status, c.confidence))
+    .map((c) => {
+      const firstSource = sourcesByClaimId[c.id]?.[0];
+      return buildClaimReviewJsonLd({
+        claimId: String(c.id),
+        pageUrl: `/partnerships/${slug}`,
+        claimReviewed: c.statement,
+        status: c.status,
+        confidence: c.confidence,
+        datePublished: (c.updated_at ?? c.created_at).slice(0, 10),
+        firstAppearanceUrl: firstSource?.url ?? null,
+        firstAppearanceName: firstSource?.title ?? firstSource?.publication ?? null,
+      });
+    });
+
   const yearRange = p.year_first && p.year_last
     ? (p.year_first === p.year_last ? `${p.year_first}` : `${p.year_first}–${p.year_last}`)
     : null;
@@ -53,6 +84,9 @@ export default async function PartnershipDetailPage(
         '@id': absoluteUrl(`/partnerships/${slug}`),
         name: `${p.primary_name} × ${p.partner_name} — ${p.film_count} films`,
       }} />
+      {claimReviewJsonLds.map((cr, i) => (
+        <JsonLd key={`claim-review-${i}`} data={cr} />
+      ))}
 
       <PageHero
         eyebrow="Long-term partnership"
