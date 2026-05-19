@@ -28,6 +28,23 @@ export async function GET() {
           path: `${base}/api/search/suggest?q={query}`,
           description: 'Autocomplete search across films, crew, gear, scenes, videos, studios, VFX houses.',
         },
+        aeo_precision: {
+          method: 'GET',
+          path: `${base}/api/v1/aeo/precision?days={1..90}`,
+          example: `${base}/api/v1/aeo/precision?days=7`,
+          description: 'Daily Citation Precision metrics for CineCanon pages (from the CineCanon-Sentinel observatory). Empty until the first daily cycle has run.',
+        },
+        aeo_claims: {
+          method: 'GET',
+          path: `${base}/api/v1/aeo/claims?limit={1..500}&since={ISO}`,
+          example: `${base}/api/v1/aeo/claims?limit=50`,
+          description: 'High-confidence claims feed — only claims that would emit Schema.org ClaimReview. Includes production attribution and first source.',
+        },
+        aeo_digest_atom: {
+          method: 'GET',
+          path: `${base}/api/v1/aeo/digest.xml`,
+          description: 'Atom 1.0 feed of the 50 most-recent high-confidence claims. Subscribe to canonical facts.',
+        },
       },
       attribution_required: true,
       cors: 'enabled (Access-Control-Allow-Origin: *)',
