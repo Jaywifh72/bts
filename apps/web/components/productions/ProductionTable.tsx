@@ -37,6 +37,45 @@ const DEPTH_DOTS: Array<{ flag: keyof DepthFlags; label: string; cls: string }> 
 
 type SortKey = 'recent' | 'oldest' | 'title' | 'popularity' | 'rating';
 
+// Header helper — when sortable wiring is provided, render as a link with
+// an active-state arrow glyph; otherwise plain text. Declared at module
+// scope so React 19's static-components rule is satisfied; previously
+// nested inside ProductionTable, which caused state-resetting remounts.
+function SortHeader({
+  targetA,
+  targetB,
+  label,
+  currentSort,
+  buildSortHref,
+}: {
+  targetA: SortKey;
+  targetB?: SortKey;
+  label: string;
+  currentSort?: SortKey;
+  buildSortHref?: (target: SortKey) => string;
+}) {
+  if (!buildSortHref) {
+    return <th scope="col" className="px-3 py-2 text-left font-normal">{label}</th>;
+  }
+  const isActive = currentSort === targetA || (targetB && currentSort === targetB);
+  const next = currentSort === targetA && targetB ? targetB : targetA;
+  const glyph = !isActive ? '' : currentSort === 'oldest' || currentSort === 'title' ? ' ↑' : ' ↓';
+  return (
+    <th
+      scope="col"
+      aria-sort={isActive ? (currentSort === 'oldest' || currentSort === 'title' ? 'ascending' : 'descending') : 'none'}
+      className="px-3 py-2 text-left font-normal"
+    >
+      <Link
+        href={buildSortHref(next)}
+        className={`hover:text-amber-400 ${isActive ? 'text-amber-300' : ''}`}
+      >
+        {label}<span aria-hidden="true">{glyph}</span>
+      </Link>
+    </th>
+  );
+}
+
 export function ProductionTable({
   rows,
   currentSort,
@@ -48,31 +87,6 @@ export function ProductionTable({
   /** Build an href that sets `?sort=`. When omitted, headers render as plain text. */
   buildSortHref?: (target: SortKey) => string;
 }) {
-  // Header helper — when sortable wiring is provided, render as a link with
-  // an active-state arrow glyph; otherwise plain text.
-  function SortHeader({ targetA, targetB, label }: { targetA: SortKey; targetB?: SortKey; label: string }) {
-    if (!buildSortHref) {
-      return <th scope="col" className="px-3 py-2 text-left font-normal">{label}</th>;
-    }
-    const isActive = currentSort === targetA || (targetB && currentSort === targetB);
-    const next = currentSort === targetA && targetB ? targetB : targetA;
-    const glyph = !isActive ? '' : currentSort === 'oldest' || currentSort === 'title' ? ' ↑' : ' ↓';
-    return (
-      <th
-        scope="col"
-        aria-sort={isActive ? (currentSort === 'oldest' || currentSort === 'title' ? 'ascending' : 'descending') : 'none'}
-        className="px-3 py-2 text-left font-normal"
-      >
-        <Link
-          href={buildSortHref(next)}
-          className={`hover:text-amber-400 ${isActive ? 'text-amber-300' : ''}`}
-        >
-          {label}<span aria-hidden="true">{glyph}</span>
-        </Link>
-      </th>
-    );
-  }
-
   return (
     <div
       tabIndex={0}
@@ -83,12 +97,12 @@ export function ProductionTable({
       <table className="stack-on-mobile w-full text-sm">
         <thead className="border-b border-zinc-800 bg-zinc-900/60 text-[10px] uppercase tracking-wide text-zinc-300">
           <tr>
-            <SortHeader targetA="title" label="Title" />
-            <SortHeader targetA="recent" targetB="oldest" label="Year" />
+            <SortHeader targetA="title" label="Title" currentSort={currentSort} buildSortHref={buildSortHref} />
+            <SortHeader targetA="recent" targetB="oldest" label="Year" currentSort={currentSort} buildSortHref={buildSortHref} />
             <th scope="col" className="px-3 py-2 text-left font-normal">Format</th>
             <th scope="col" className="px-3 py-2 text-left font-normal">Aspect</th>
             <th scope="col" className="px-3 py-2 text-left font-normal" title="Editorial-depth flags: stunts, colour, lighting, locations, post">Depth</th>
-            <SortHeader targetA="rating" label="Rating" />
+            <SortHeader targetA="rating" label="Rating" currentSort={currentSort} buildSortHref={buildSortHref} />
             <th scope="col" className="px-3 py-2 text-left font-normal">Tier</th>
           </tr>
         </thead>

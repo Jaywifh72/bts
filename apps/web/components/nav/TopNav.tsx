@@ -51,8 +51,18 @@ export function TopNav({ session }: { session: Session | null }) {
   const drawerRef = useRef<HTMLDivElement>(null);
   const craftRef = useRef<HTMLLIElement>(null);
 
-  // Close craft dropdown on route change or outside click.
-  useEffect(() => { setCraftOpen(false); }, [pathname]);
+  // Close both dropdowns on route change. React 19 idiom: track the
+  // previous pathname in state and reset during render, instead of an
+  // effect that fires AFTER paint and causes a flash. The conditional
+  // setState during render is valid because it converges to fixed-point.
+  const [prevPathname, setPrevPathname] = useState(pathname);
+  if (pathname !== prevPathname) {
+    setPrevPathname(pathname);
+    setCraftOpen(false);
+    setMobileOpen(false);
+  }
+
+  // Close craft dropdown on outside click / Escape.
   useEffect(() => {
     if (!craftOpen) return;
     function onClick(e: MouseEvent) {
@@ -72,11 +82,6 @@ export function TopNav({ session }: { session: Session | null }) {
   }, [craftOpen]);
 
   const craftActive = craftLinks.some((l) => isActive(l.href, pathname));
-
-  // Close drawer on route change.
-  useEffect(() => {
-    setMobileOpen(false);
-  }, [pathname]);
 
   // A11y: when drawer opens, lock body scroll, move focus into it, trap Tab,
   // close on Escape, restore focus to hamburger on close.

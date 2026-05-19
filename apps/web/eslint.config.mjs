@@ -60,13 +60,13 @@ export default defineConfig([
             "@next/next/no-img-element": "warn",
             "react-hooks/exhaustive-deps": "warn",
             "react-hooks/rules-of-hooks": "error",
-            // New in react-hooks@7 (after our ESLint-10 unblock). These rules
-            // are correct React 19 guidance but the codebase pre-dates them
-            // and has existing violations. Keep them visible as warnings so
-            // they're addressed incrementally; flip to "error" once fixed.
-            "react-hooks/set-state-in-effect": "warn",
-            "react-hooks/static-components": "warn",
-            "react-hooks/purity": "warn",
+            // New in react-hooks@7. All real violations were fixed; the
+            // two remaining sites carry inline eslint-disable comments
+            // with rationale (server-component Date.now, fetch-loading
+            // state). Now strict.
+            "react-hooks/set-state-in-effect": "error",
+            "react-hooks/static-components": "error",
+            "react-hooks/purity": "error",
             ...disableBroken,
         },
     },

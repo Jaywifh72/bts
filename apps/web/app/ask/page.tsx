@@ -60,6 +60,7 @@ export default async function AskPage(props: Props) {
   const omit = parseOmit(searchParams.omit);
   const key = process.env.OPENAI_API_KEY;
 
+  // eslint-disable-next-line react-hooks/purity -- async server component: runs once per request, not a re-rendering function
   const startTime = Date.now();
   let filters: SearchFilters | null = null;
   let results: Awaited<ReturnType<typeof searchProductionsCombined>> = [];
@@ -101,6 +102,7 @@ export default async function AskPage(props: Props) {
       filtersJson: filters ?? undefined,
       resultCount: results.length,
       usedEmbedding: queryEmbedding !== null,
+      // eslint-disable-next-line react-hooks/purity -- async server component: latency capture, not render-time
       totalLatencyMs: Date.now() - startTime,
       queryEmbedding,
       source: 'web',
