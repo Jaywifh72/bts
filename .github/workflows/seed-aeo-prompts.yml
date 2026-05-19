@@ -1,0 +1,28 @@
+name: Seed AEO prompts (Neon prod)
+
+# Manual workflow — seeds the 30 starter prompts into Neon prod.
+# Idempotent (ON CONFLICT DO NOTHING). Re-running is safe.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  seed:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Seed aeo_prompts
+        working-directory: packages/db
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm exec tsx scripts/seed-aeo-prompts.ts
