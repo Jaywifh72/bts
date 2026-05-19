@@ -258,29 +258,56 @@ async function pollEngine(code: EngineCode, key: string, prompt: string): Promis
 }
 
 async function pollChatGPT(key: string, prompt: string): Promise<PollResult> {
-  const res = await fetch('https://api.openai.com/v1/chat/completions', {
+  // Use the Responses API with web_search tool so the model actually
+  // browses + returns structured citations (url_citation annotations).
+  const res = await fetch('https://api.openai.com/v1/responses', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
     body: JSON.stringify({
       model: 'gpt-4o-mini',
-      messages: [{ role: 'user', content: prompt }],
-      max_tokens: 600,
+      input: prompt,
+      tools: [{ type: 'web_search' }],
+      max_output_tokens: 800,
     }),
   });
   if (!res.ok) throw new Error(`OpenAI ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const json = (await res.json()) as {
-    choices: Array<{ message: { content: string } }>;
-    usage: { prompt_tokens: number; completion_tokens: number };
+    output?: Array<{
+      type: string;
+      content?: Array<{
+        type: string;
+        text?: string;
+        annotations?: Array<{ type: string; url?: string }>;
+      }>;
+    }>;
+    usage?: { input_tokens?: number; output_tokens?: number };
   };
-  const text = json.choices[0]?.message?.content ?? '';
-  // GPT-4o-mini Nov-2024 pricing: $0.15/M input, $0.60/M output.
-  const costCents = Math.round(
-    (json.usage.prompt_tokens * 0.000015 + json.usage.completion_tokens * 0.00006) * 100,
+  // Concatenate all output_text blocks; collect URLs from url_citation annotations.
+  const messages = (json.output ?? []).filter((o) => o.type === 'message');
+  const text = messages
+    .flatMap((m) => m.content ?? [])
+    .filter((c) => c.type === 'output_text')
+    .map((c) => c.text ?? '')
+    .join('\n');
+  const citations = uniqueUrls(
+    messages
+      .flatMap((m) => m.content ?? [])
+      .flatMap((c) => c.annotations ?? [])
+      .filter((a) => a.type === 'url_citation' && a.url)
+      .map((a) => a.url!),
   );
-  return { responseText: text, citations: extractUrls(text), raw: json, tokenCostCents: costCents };
+  // gpt-4o-mini pricing + web_search call fee (~$25/1k calls = $0.025/call).
+  const inTok = json.usage?.input_tokens ?? 0;
+  const outTok = json.usage?.output_tokens ?? 0;
+  const costCents = Math.round(
+    (inTok * 0.000015 + outTok * 0.00006) * 100 + 2.5, // 2.5 cents per web_search call
+  );
+  return { responseText: text, citations, raw: json, tokenCostCents: costCents };
 }
 
 async function pollClaude(key: string, prompt: string): Promise<PollResult> {
+  // Claude web_search tool (released 2025). Sonnet-class minimum for tool use
+  // depth; haiku may not support web_search reliably so we use sonnet.
   const res = await fetch('https://api.anthropic.com/v1/messages', {
     method: 'POST',
     headers: {
@@ -289,25 +316,39 @@ async function pollClaude(key: string, prompt: string): Promise<PollResult> {
       'anthropic-version': '2023-06-01',
     },
     body: JSON.stringify({
-      model: 'claude-3-5-haiku-latest',
-      max_tokens: 600,
+      model: 'claude-sonnet-4-6',
+      max_tokens: 800,
+      tools: [{ type: 'web_search_20250305', name: 'web_search', max_uses: 3 }],
       messages: [{ role: 'user', content: prompt }],
     }),
   });
   if (!res.ok) throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const json = (await res.json()) as {
-    content: Array<{ type: string; text?: string }>;
+    content: Array<{
+      type: string;
+      text?: string;
+      citations?: Array<{ type: string; url?: string }>;
+    }>;
     usage: { input_tokens: number; output_tokens: number };
   };
-  const text = json.content.filter((c) => c.type === 'text').map((c) => c.text).join('\n');
-  // Claude 3.5 Haiku pricing: $0.80/M input, $4/M output.
-  const costCents = Math.round(
-    (json.usage.input_tokens * 0.0000008 + json.usage.output_tokens * 0.000004) * 100,
+  const textBlocks = json.content.filter((c) => c.type === 'text');
+  const text = textBlocks.map((c) => c.text ?? '').join('\n');
+  const citations = uniqueUrls(
+    textBlocks
+      .flatMap((b) => b.citations ?? [])
+      .filter((c) => c.url)
+      .map((c) => c.url!),
   );
-  return { responseText: text, citations: extractUrls(text), raw: json, tokenCostCents: costCents };
+  // Claude Sonnet 4.6 pricing ~ $3/M input, $15/M output; web_search ~ $10/1k calls.
+  const costCents = Math.round(
+    (json.usage.input_tokens * 0.000003 + json.usage.output_tokens * 0.000015) * 100 + 1, // 1 cent per search
+  );
+  return { responseText: text, citations, raw: json, tokenCostCents: costCents };
 }
 
 async function pollGemini(key: string, prompt: string): Promise<PollResult> {
+  // Gemini 2.0+ supports the googleSearch tool for grounding. Returns
+  // groundingMetadata.groundingChunks with web URIs.
   const res = await fetch(
     `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${key}`,
     {
@@ -315,27 +356,37 @@ async function pollGemini(key: string, prompt: string): Promise<PollResult> {
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { maxOutputTokens: 600 },
+        tools: [{ googleSearch: {} }],
+        generationConfig: { maxOutputTokens: 800 },
       }),
     },
   );
   if (!res.ok) throw new Error(`Gemini ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const json = (await res.json()) as {
-    candidates: Array<{ content?: { parts?: Array<{ text?: string }> } }>;
+    candidates: Array<{
+      content?: { parts?: Array<{ text?: string }> };
+      groundingMetadata?: {
+        groundingChunks?: Array<{ web?: { uri?: string; title?: string } }>;
+      };
+    }>;
     usageMetadata?: { promptTokenCount?: number; candidatesTokenCount?: number };
   };
   const text = json.candidates[0]?.content?.parts?.map((p) => p.text ?? '').join('') ?? '';
-  // Gemini 2.0 Flash pricing: $0.10/M input, $0.40/M output.
+  const citations = uniqueUrls(
+    (json.candidates[0]?.groundingMetadata?.groundingChunks ?? [])
+      .map((c) => c.web?.uri)
+      .filter((u): u is string => Boolean(u)),
+  );
+  // Gemini 2.0 Flash pricing: $0.10/M input, $0.40/M output. Grounding is
+  // included free up to 1500 queries/day per project; assume free for now.
   const inTok = json.usageMetadata?.promptTokenCount ?? 0;
   const outTok = json.usageMetadata?.candidatesTokenCount ?? 0;
   const costCents = Math.round((inTok * 0.0000001 + outTok * 0.0000004) * 100);
-  return { responseText: text, citations: extractUrls(text), raw: json, tokenCostCents: costCents };
+  return { responseText: text, citations, raw: json, tokenCostCents: costCents };
 }
 
-function extractUrls(text: string): string[] {
-  // Best-effort. Strips trailing punctuation that's commonly stuck to URLs.
-  const matches = text.match(/https?:\/\/[^\s)"']+/g) ?? [];
-  return [...new Set(matches.map((u) => u.replace(/[.,;:!?]+$/, '')))];
+function uniqueUrls(urls: string[]): string[] {
+  return [...new Set(urls.map((u) => u.replace(/[.,;:!?]+$/, '')))];
 }
 
 function clampInt(raw: string | undefined, min: number, max: number, dflt: number): number {
