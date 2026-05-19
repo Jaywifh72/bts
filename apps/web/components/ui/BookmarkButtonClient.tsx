@@ -29,10 +29,11 @@ export function BookmarkButtonClient({
 }) {
   const store = useBookmarkStore(isLoggedIn);
   const [active, setActive] = useState(false);
-  const [hydrated, setHydrated] = useState(false);
 
+  // SSR renders the inactive state (☆); the effect runs only on the client
+  // and updates `active` to match the real store value. No hydration-gate
+  // state is needed — server and client agree on the initial DOM.
   useEffect(() => {
-    setHydrated(true);
     let cancelled = false;
     function refresh() {
       void store.has(kind, slug).then((v) => { if (!cancelled) setActive(v); });
@@ -46,10 +47,6 @@ export function BookmarkButtonClient({
       window.removeEventListener('storage', refresh);
     };
   }, [store, kind, slug]);
-
-  if (!hydrated) {
-    return <span aria-hidden className={size === 'sm' ? 'inline-block h-5 w-5' : 'inline-block h-6 w-6'} />;
-  }
 
   async function onClick(e: React.MouseEvent) {
     e.preventDefault();

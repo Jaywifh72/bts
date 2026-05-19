@@ -78,14 +78,16 @@ export function SearchBar() {
     return () => document.removeEventListener('mousedown', onClick);
   }, []);
 
+  // Whether the query is long enough to be a useful search. Derived
+  // from `q` rather than mirrored into state so we don't need a
+  // setState-in-effect bail-out to clear stale results.
+  const trimmed = q.trim();
+  const hasValidQuery = trimmed.length >= 2;
+  const showDropdown = open && hasValidQuery && suggestions.length > 0;
+
   // Debounced fetch of suggestions
   useEffect(() => {
-    const trimmed = q.trim();
-    if (trimmed.length < 2) {
-      setSuggestions([]);
-      setOpen(false);
-      return;
-    }
+    if (!hasValidQuery) return;  // dropdown auto-hides via `showDropdown` derived above
     const timer = window.setTimeout(async () => {
       abortRef.current?.abort();
       const ctrl = new AbortController();
@@ -104,7 +106,7 @@ export function SearchBar() {
       }
     }, 200);
     return () => window.clearTimeout(timer);
-  }, [q]);
+  }, [q, trimmed, hasValidQuery]);
 
   function followAt(idx: number) {
     const target = suggestions[idx];
@@ -148,15 +150,15 @@ export function SearchBar() {
         type="search"
         value={q}
         onChange={(e) => setQ(e.target.value)}
-        onFocus={() => suggestions.length > 0 && setOpen(true)}
+        onFocus={() => hasValidQuery && suggestions.length > 0 && setOpen(true)}
         onKeyDown={onKeyDown}
         placeholder="Search…"
         aria-label="Search productions, crew, gear, VFX"
         aria-autocomplete="list"
         // Only reference the listbox when it's actually in the DOM —
         // otherwise screen readers report a dangling controls relation.
-        aria-controls={open && suggestions.length > 0 ? 'search-suggest' : undefined}
-        aria-expanded={open && suggestions.length > 0}
+        aria-controls={showDropdown ? 'search-suggest' : undefined}
+        aria-expanded={showDropdown}
         // On small viewports the focus-expand to w-72 overflows; only
         // apply the expansion at sm+ widths.
         className="w-44 rounded border border-zinc-800 bg-zinc-900 py-1 pl-3 pr-9 text-sm text-zinc-200 placeholder:text-zinc-500 focus:border-amber-500 focus:outline-none sm:focus:w-72 transition-all"
@@ -164,7 +166,7 @@ export function SearchBar() {
       <kbd className="pointer-events-none absolute right-2 top-1/2 -translate-y-1/2 rounded border border-zinc-700 bg-zinc-800 px-1 font-mono text-[10px] text-zinc-500">
         /
       </kbd>
-      {open && suggestions.length > 0 && (
+      {showDropdown && (
         <ul
           id="search-suggest"
           role="listbox"

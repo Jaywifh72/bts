@@ -1,9 +1,18 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { db, getCraftDossierBySlug } from '@bts/db';
+import {
+  db,
+  getCraftDossierBySlug,
+  getClaimsForProduction,
+  getSourcesForClaims,
+} from '@bts/db';
 import { PageHero } from '@/components/ui/PageHero';
-import { JsonLd } from '@/lib/jsonLd';
+import {
+  JsonLd,
+  buildClaimReviewJsonLd,
+  shouldEmitClaimReview,
+} from '@/lib/jsonLd';
 import { siteUrl, absoluteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
@@ -34,9 +43,37 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   try { d = await getCraftDossierBySlug(db, slug); } catch (e) { console.warn(e); }
   if (!d) notFound();
 
+  // Phase 2 ClaimReview emission — same pattern as /films/[slug]. Reuses
+  // claims attached to the underlying production. See claimreview.md for
+  // the rollout strategy.
+  const claims = await getClaimsForProduction(db, d.production_id);
+  const visibleClaimIds = claims.slice(0, 12).map((c) => c.id);
+  const sourcesByClaimId = visibleClaimIds.length
+    ? await getSourcesForClaims(db, visibleClaimIds)
+    : {};
+  const claimReviewJsonLds = claims
+    .slice(0, 12)
+    .filter((c) => shouldEmitClaimReview(c.status, c.confidence))
+    .map((c) => {
+      const firstSource = sourcesByClaimId[c.id]?.[0];
+      return buildClaimReviewJsonLd({
+        claimId: String(c.id),
+        pageUrl: `/dossiers/${slug}`,
+        claimReviewed: c.statement,
+        status: c.status,
+        confidence: c.confidence,
+        datePublished: (c.updated_at ?? c.created_at).slice(0, 10),
+        firstAppearanceUrl: firstSource?.url ?? null,
+        firstAppearanceName: firstSource?.title ?? firstSource?.publication ?? null,
+      });
+    });
+
   return (
     <>
       <JsonLd data={{ '@context': 'https://schema.org', '@type': 'Article', '@id': absoluteUrl(`/dossiers/${slug}`), headline: d.headline }} />
+      {claimReviewJsonLds.map((cr, i) => (
+        <JsonLd key={`claim-review-${i}`} data={cr} />
+      ))}
 
       <PageHero
         eyebrow={`${CRAFT_LABELS[d.craft] ?? d.craft} dossier`}

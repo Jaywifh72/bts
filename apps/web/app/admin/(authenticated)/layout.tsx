@@ -151,6 +151,12 @@ export default async function AdminAuthenticatedLayout({
               Key frames
             </Link>
             <Link
+              href="/admin/aeo"
+              className="shrink-0 whitespace-nowrap text-sm text-zinc-300 hover:text-zinc-50"
+            >
+              AEO
+            </Link>
+            <Link
               href="/admin/sources"
               className="shrink-0 whitespace-nowrap text-sm text-zinc-300 hover:text-zinc-50"
             >

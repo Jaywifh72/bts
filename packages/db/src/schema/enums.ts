@@ -164,6 +164,10 @@ export const claimEntityTypeEnum = pgEnum('claim_entity_type_enum', [
   'stunt_school',
   'format',
   'society',
+  // Migration 0093 — CineCanon-Sentinel Phase 2 follow-up. Unblocks
+  // ClaimReview emission on /decisions/[slug] and /partnerships/[slug].
+  'decision_tree',
+  'partnership',
 ]);
 
 export const claimConflictKindEnum = pgEnum('claim_conflict_kind_enum', [

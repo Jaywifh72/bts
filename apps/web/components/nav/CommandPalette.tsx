@@ -78,14 +78,17 @@ export function CommandPalette() {
     };
   }, [open]);
 
-  // Reset state on close.
-  useEffect(() => {
+  // Reset state on close. React 19 idiom: track prev-open in state and
+  // reset during render, instead of a setState-in-effect anti-pattern.
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (prevOpen !== open) {
+    setPrevOpen(open);
     if (!open) {
       setQ('');
       setResults([]);
       setActive(0);
     }
-  }, [open]);
+  }
 
   // UX-audit Move 6 — prefix detection. `@text` filters to people,
   // `#text` to sources, `[n]` is numeric claim id (resolved on Enter),
@@ -98,17 +101,20 @@ export function CommandPalette() {
     : 'all';
   const queryBody = trimmed.replace(/^[@#[\]]+/, '').trim();
 
+  // Whether the current input warrants a suggest fetch. Derived from
+  // input rather than mirrored into state — so the bail-out branches
+  // below don't need to call setState (which `set-state-in-effect`
+  // flags as anti-pattern).
+  const shouldFetch = open && mode !== 'claim' && queryBody.length >= 2;
+  // Results to render — gated by `shouldFetch` so stale results from a
+  // prior query are hidden the moment input no longer qualifies, with
+  // no imperative clear required.
+  const displayResults: SuggestResult[] = shouldFetch ? results : [];
+
   // Debounced fetch.
   useEffect(() => {
-    if (!open) return;
-    if (mode === 'claim') {
-      // Claim ids are resolved on Enter, not via suggest. Show a hint instead.
-      setResults([]);
-      setLoading(false);
-      return;
-    }
-    if (queryBody.length < 2) {
-      setResults([]);
+    if (!shouldFetch) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- defensive reset when fetch is short-circuited
       setLoading(false);
       return;
     }
@@ -133,7 +139,7 @@ export function CommandPalette() {
       }
     }, 150);
     return () => clearTimeout(id);
-  }, [queryBody, mode, open]);
+  }, [queryBody, mode, shouldFetch]);
 
   function onInputKey(e: React.KeyboardEvent<HTMLInputElement>) {
     if (e.key === 'Escape') {
@@ -142,7 +148,7 @@ export function CommandPalette() {
     }
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setActive((i) => Math.min(i + 1, Math.max(0, results.length - 1)));
+      setActive((i) => Math.min(i + 1, Math.max(0, displayResults.length - 1)));
       return;
     }
     if (e.key === 'ArrowUp') {
@@ -163,7 +169,7 @@ export function CommandPalette() {
         }
         return;
       }
-      const target = results[active];
+      const target = displayResults[active];
       if (target) {
         setOpen(false);
         router.push(target.href);
@@ -203,7 +209,7 @@ export function CommandPalette() {
             placeholder="Search · @person · #source · [claim-id]"
             aria-label="Search query"
             aria-controls="cmdk-results"
-            aria-activedescendant={results[active] ? `cmdk-row-${active}` : undefined}
+            aria-activedescendant={displayResults[active] ? `cmdk-row-${active}` : undefined}
             className="flex-1 bg-transparent text-base text-zinc-100 placeholder:text-zinc-500 focus:outline-none"
           />
           {mode !== 'all' && (
@@ -241,14 +247,14 @@ export function CommandPalette() {
             {mode === 'source' && 'Source mode — type at least 2 characters of a publication or source title.'}
             {mode === 'all' && 'Type at least 2 characters to search the archive.'}
           </div>
-        ) : results.length === 0 && !loading ? (
+        ) : displayResults.length === 0 && !loading ? (
           <div className="px-4 py-6 text-center text-sm text-zinc-400">
             No matches. Press <kbd className="rounded border border-zinc-700 px-1 text-xs">Enter</kbd>{' '}
             to submit to <span className="text-amber-400">/search</span>.
           </div>
         ) : (
           <ul id="cmdk-results" role="listbox" aria-label="Search results" className="max-h-[60vh] overflow-y-auto">
-            {results.map((r, i) => (
+            {displayResults.map((r, i) => (
               <li
                 key={`${r.category}:${r.href}`}
                 id={`cmdk-row-${i}`}

@@ -4,6 +4,7 @@ type SeedDb = PostgresJsDatabase<Record<string, never>>;
 import { sql } from 'drizzle-orm';
 
 export type DecisionTreeRow = {
+  id: number;
   slug: string;
   craft: string;
   title: string;
@@ -37,7 +38,7 @@ export async function listDecisionTrees(
   const craft = opts.craft ?? null;
   const limit = opts.limit ?? 200;
   return db.execute<DecisionTreeRow>(sql`
-    SELECT slug, craft, title, question, summary, decision_factors,
+    SELECT id, slug, craft, title, question, summary, decision_factors,
            COALESCE("references", '[]'::jsonb) AS "references"
       FROM craft_decision_trees
      WHERE ${craft}::text IS NULL OR craft = ${craft}
@@ -51,7 +52,7 @@ export async function getDecisionTreeBySlug(
   slug: string,
 ): Promise<DecisionTreeWithOptions | null> {
   const trees = await db.execute<DecisionTreeRow>(sql`
-    SELECT slug, craft, title, question, summary, decision_factors,
+    SELECT id, slug, craft, title, question, summary, decision_factors,
            COALESCE("references", '[]'::jsonb) AS "references"
       FROM craft_decision_trees
      WHERE slug = ${slug}

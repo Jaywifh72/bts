@@ -1,9 +1,18 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
-import { db, getWalkthroughBySlug } from '@bts/db';
+import {
+  db,
+  getWalkthroughBySlug,
+  getClaimsForProduction,
+  getSourcesForClaims,
+} from '@bts/db';
 import { PageHero, PageHeroStat } from '@/components/ui/PageHero';
-import { JsonLd } from '@/lib/jsonLd';
+import {
+  JsonLd,
+  buildClaimReviewJsonLd,
+  shouldEmitClaimReview,
+} from '@/lib/jsonLd';
 import { siteUrl, absoluteUrl } from '@/lib/site';
 
 export const dynamic = 'force-dynamic';
@@ -41,9 +50,37 @@ export default async function Page({ params }: { params: Promise<{ slug: string 
   try { w = await getWalkthroughBySlug(db, slug); } catch (e) { console.warn(e); }
   if (!w) notFound();
 
+  // Phase 2 ClaimReview emission — same pattern as /films/[slug] and
+  // /dossiers/[slug]. Walkthroughs are pinned to a production; emit
+  // ClaimReview for that production's high-confidence claims.
+  const claims = await getClaimsForProduction(db, w.production_id);
+  const visibleClaimIds = claims.slice(0, 12).map((c) => c.id);
+  const sourcesByClaimId = visibleClaimIds.length
+    ? await getSourcesForClaims(db, visibleClaimIds)
+    : {};
+  const claimReviewJsonLds = claims
+    .slice(0, 12)
+    .filter((c) => shouldEmitClaimReview(c.status, c.confidence))
+    .map((c) => {
+      const firstSource = sourcesByClaimId[c.id]?.[0];
+      return buildClaimReviewJsonLd({
+        claimId: String(c.id),
+        pageUrl: `/walkthroughs/${slug}`,
+        claimReviewed: c.statement,
+        status: c.status,
+        confidence: c.confidence,
+        datePublished: (c.updated_at ?? c.created_at).slice(0, 10),
+        firstAppearanceUrl: firstSource?.url ?? null,
+        firstAppearanceName: firstSource?.title ?? firstSource?.publication ?? null,
+      });
+    });
+
   return (
     <>
       <JsonLd data={{ '@context': 'https://schema.org', '@type': 'Article', '@id': absoluteUrl(`/walkthroughs/${slug}`), headline: w.headline }} />
+      {claimReviewJsonLds.map((cr, i) => (
+        <JsonLd key={`claim-review-${i}`} data={cr} />
+      ))}
 
       <PageHero
         eyebrow={KIND_LABELS[w.kind] ?? w.kind}

@@ -63,7 +63,10 @@ export type ClaimEntityType =
   | 'stunt_company'
   | 'stunt_school'
   | 'format'
-  | 'society';
+  | 'society'
+  // Migration 0093 — CineCanon-Sentinel Phase 2.
+  | 'decision_tree'
+  | 'partnership';
 
 export type ClaimConflictKind =
   | 'direct_conflict'

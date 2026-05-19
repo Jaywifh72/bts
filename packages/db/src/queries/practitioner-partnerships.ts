@@ -4,6 +4,7 @@ type SeedDb = PostgresJsDatabase<Record<string, never>>;
 import { sql } from 'drizzle-orm';
 
 export type PartnershipRow = {
+  id: number;
   slug: string;
   primary_slug: string;
   primary_name: string;
@@ -41,7 +42,7 @@ export async function listPartnerships(
   const limit = opts.limit ?? 200;
   return db.execute<PartnershipRow>(sql`
     SELECT
-      pp.slug,
+      pp.id, pp.slug,
       a.slug AS primary_slug, a.display_name AS primary_name,
       b.slug AS partner_slug, b.display_name AS partner_name,
       pp.partner_role,
@@ -89,7 +90,7 @@ export async function listPartnershipsForPerson(
 ): Promise<PartnershipRow[]> {
   return db.execute<PartnershipRow>(sql`
     SELECT
-      pp.slug,
+      pp.id, pp.slug,
       a.slug AS primary_slug, a.display_name AS primary_name,
       b.slug AS partner_slug, b.display_name AS partner_name,
       pp.partner_role,
@@ -133,7 +134,7 @@ export async function getPartnershipBySlug(
 ): Promise<PartnershipRow | null> {
   const rows = await db.execute<PartnershipRow>(sql`
     SELECT
-      pp.slug,
+      pp.id, pp.slug,
       a.slug AS primary_slug, a.display_name AS primary_name,
       b.slug AS partner_slug, b.display_name AS partner_name,
       pp.partner_role,

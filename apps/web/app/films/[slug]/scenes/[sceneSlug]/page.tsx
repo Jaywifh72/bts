@@ -15,7 +15,12 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { SourcesList } from '@/components/ui/SourcesList';
 import { ProductionClaims } from '@/components/productions/ProductionClaims';
 import { CorrectionForm } from '@/components/ui/CorrectionForm';
-import { JsonLd, buildSceneJsonLd } from '@/lib/jsonLd';
+import {
+  JsonLd,
+  buildSceneJsonLd,
+  buildClaimReviewJsonLd,
+  shouldEmitClaimReview,
+} from '@/lib/jsonLd';
 
 type Props = {
   params: Promise<{
@@ -64,6 +69,26 @@ export default async function SceneDetailPage(props: Props) {
 
   const runtime = formatRuntime(data.scene.position_in_runtime_seconds);
 
+  // Phase 3 ClaimReview emission — per-scene. Reuses the already-loaded
+  // claims and sourcesByClaimId arrays; no new queries.
+  const sceneUrl = `/films/${data.production.slug}/scenes/${data.scene.slug}`;
+  const claimReviewJsonLds = claims
+    .slice(0, 12)
+    .filter((c) => shouldEmitClaimReview(c.status, c.confidence))
+    .map((c) => {
+      const firstSource = sourcesByClaimId[c.id]?.[0];
+      return buildClaimReviewJsonLd({
+        claimId: String(c.id),
+        pageUrl: sceneUrl,
+        claimReviewed: c.statement,
+        status: c.status,
+        confidence: c.confidence,
+        datePublished: (c.updated_at ?? c.created_at).slice(0, 10),
+        firstAppearanceUrl: firstSource?.url ?? null,
+        firstAppearanceName: firstSource?.title ?? firstSource?.publication ?? null,
+      });
+    });
+
   const sceneJsonLd = buildSceneJsonLd({
     productionSlug: data.production.slug,
     productionTitle: data.production.title,
@@ -78,6 +103,9 @@ export default async function SceneDetailPage(props: Props) {
   return (
     <article>
       <JsonLd data={sceneJsonLd} />
+      {claimReviewJsonLds.map((cr, i) => (
+        <JsonLd key={`claim-review-${i}`} data={cr} />
+      ))}
       <nav className="mb-6 text-sm text-zinc-500">
         <Link href={`/films/${data.production.slug}`} className="hover:text-amber-400">
           {data.production.title}

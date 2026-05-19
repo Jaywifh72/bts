@@ -20,6 +20,11 @@ next-env.d.ts
 
 # Claude Code session-local config
 .claude/
+# Exception: AEO observatory skill is a committed artifact
+!.claude/
+!.claude/skills/
+!.claude/skills/cinecanon-sentinel/
+!.claude/skills/cinecanon-sentinel/**
 
 # OS
 .DS_Store
