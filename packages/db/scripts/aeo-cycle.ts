@@ -183,6 +183,32 @@ const metricCount = await db.execute<{ n: number }>(sql`
 `);
 console.log(`[+] aeo_daily_metrics rows for ${TODAY}: ${metricCount[0]!.n}`);
 
+// 4b. Competitive landscape — top cited domains this cycle. Key operational signal:
+//     when our share-of-answer is 0, this is exactly who's winning the citations.
+const topDomains = await db.execute<{ cited_domain: string; hits: number; is_cinecanon: boolean }>(sql`
+  SELECT
+    s.cited_domain,
+    COUNT(*)::int AS hits,
+    bool_or(s.is_cinecanon) AS is_cinecanon
+  FROM aeo_response_observations o
+  JOIN aeo_citation_scores s ON s.observation_id = o.id
+  WHERE o.cycle_id = ${cycleId}::uuid
+  GROUP BY s.cited_domain
+  ORDER BY hits DESC
+  LIMIT 15
+`);
+const cinecanonShare = await db.execute<{ n: number; total: number }>(sql`
+  SELECT
+    COUNT(*) FILTER (WHERE s.is_cinecanon)::int AS n,
+    COUNT(*)::int AS total
+  FROM aeo_response_observations o
+  JOIN aeo_citation_scores s ON s.observation_id = o.id
+  WHERE o.cycle_id = ${cycleId}::uuid
+`);
+const share = cinecanonShare[0]!;
+const sharePct = share.total > 0 ? (share.n / share.total * 100).toFixed(1) : '0.0';
+console.log(`[+] cinecanon share-of-answer this cycle: ${share.n}/${share.total} (${sharePct}%)`);
+
 // 5. Finalize cycle
 const finalStatus = failures.length === 0
   ? 'succeeded'
@@ -218,6 +244,17 @@ const digest = `# AEO digest — ${TODAY}
 | Citations extracted | ${citationsWritten} |
 | Failures | ${failures.length} |
 | Daily-metrics rows | ${metricCount[0]!.n} |
+
+## Share of answer
+
+CineCanon citations: **${share.n} / ${share.total} (${sharePct}%)** this cycle.
+
+## Top cited domains (competitive landscape)
+
+${topDomains.length === 0
+  ? '_no citations this cycle_'
+  : '| domain | hits | cinecanon? |\n|---|---:|:---:|\n' +
+    topDomains.map((d) => `| \`${d.cited_domain}\` | ${d.hits} | ${d.is_cinecanon ? '**yes**' : '—'} |`).join('\n')}
 
 ## Failures (first 10)
 
