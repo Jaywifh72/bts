@@ -88,6 +88,46 @@ let citationsWritten = 0;
 let totalCostCents = 0;
 const failures: Array<{ engine: string; prompt: string; err: string }> = [];
 
+// Per-engine outcome counters — enables per-engine failure tolerance
+// (cycle is 'failed' only if every engine fails, 'partial' otherwise).
+const perEngine: Record<string, { ok: number; fail: number }> = {};
+for (const e of activeEngines) perEngine[e.code] = { ok: 0, fail: 0 };
+
+// Per-engine throttle. Gemini free tier is ~10 req/min on grounding; we space
+// to 6s between Gemini calls. Other engines have much higher limits.
+const MIN_DELAY_MS: Record<string, number> = {
+  gemini: 6000,
+  chatgpt: 100,
+  claude: 100,
+};
+const lastCallAt: Record<string, number> = {};
+
+// Retry with exponential backoff on 429.
+async function withRetry<T>(engineCode: string, fn: () => Promise<T>, maxRetries = 4): Promise<T> {
+  let lastErr: unknown;
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // Throttle before the call.
+      const minDelay = MIN_DELAY_MS[engineCode] ?? 0;
+      const since = Date.now() - (lastCallAt[engineCode] ?? 0);
+      if (since < minDelay) await sleep(minDelay - since);
+      lastCallAt[engineCode] = Date.now();
+      return await fn();
+    } catch (err) {
+      lastErr = err;
+      const msg = err instanceof Error ? err.message : String(err);
+      const is429 = /\b429\b/.test(msg) || /rate.?limit|quota/i.test(msg);
+      if (!is429 || attempt === maxRetries) throw err;
+      const backoff = Math.min(30000, 2000 * Math.pow(2, attempt));
+      console.warn(`[retry] ${engineCode} got 429 — sleeping ${backoff}ms (attempt ${attempt + 1}/${maxRetries})`);
+      await sleep(backoff);
+    }
+  }
+  throw lastErr;
+}
+
+function sleep(ms: number) { return new Promise<void>((r) => setTimeout(r, ms)); }
+
 for (const prompt of prompts) {
   for (const engine of activeEngines) {
     const engineId = engineIdByCode.get(engine.code);
@@ -98,9 +138,11 @@ for (const prompt of prompts) {
     for (let sampleIndex = 1; sampleIndex <= SAMPLES; sampleIndex++) {
       const t0 = Date.now();
       try {
-        const { responseText, citations, raw, tokenCostCents } = await pollEngine(
-          engine.code, engine.key!, prompt.prompt_text,
+        const { responseText, citations, raw, tokenCostCents } = await withRetry(
+          engine.code,
+          () => pollEngine(engine.code, engine.key!, prompt.prompt_text),
         );
+        perEngine[engine.code]!.ok++;
         totalCostCents += tokenCostCents;
         const obs = await db.execute<{ id: string }>(sql`
           INSERT INTO aeo_response_observations (
@@ -138,6 +180,7 @@ for (const prompt of prompts) {
         }
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
+        perEngine[engine.code]!.fail++;
         failures.push({ engine: engine.code, prompt: prompt.prompt_text.slice(0, 50), err: msg });
         await db.execute(sql`
           INSERT INTO aeo_response_observations (
@@ -209,12 +252,15 @@ const share = cinecanonShare[0]!;
 const sharePct = share.total > 0 ? (share.n / share.total * 100).toFixed(1) : '0.0';
 console.log(`[+] cinecanon share-of-answer this cycle: ${share.n}/${share.total} (${sharePct}%)`);
 
-// 5. Finalize cycle
-const finalStatus = failures.length === 0
-  ? 'succeeded'
-  : failures.length < totalCalls / 4
-    ? 'partial'
-    : 'failed';
+// 5. Finalize cycle. Per-engine failure tolerance: 'failed' only if every
+// engine produced zero observations. 'partial' if some engine succeeded
+// but at least one had any failures. 'succeeded' only if zero failures.
+const enginesDead = Object.values(perEngine).filter((e) => e.ok === 0).length;
+const finalStatus = enginesDead === Object.keys(perEngine).length
+  ? 'failed'
+  : failures.length === 0
+    ? 'succeeded'
+    : 'partial';
 await db.execute(sql`
   UPDATE aeo_cycles
   SET status = ${finalStatus},
@@ -244,6 +290,12 @@ const digest = `# AEO digest — ${TODAY}
 | Citations extracted | ${citationsWritten} |
 | Failures | ${failures.length} |
 | Daily-metrics rows | ${metricCount[0]!.n} |
+
+## Per-engine outcome
+
+| engine | succeeded | failed |
+|---|---:|---:|
+${activeEngines.map((e) => `| ${e.code} | ${perEngine[e.code]!.ok} | ${perEngine[e.code]!.fail} |`).join('\n')}
 
 ## Share of answer
 
