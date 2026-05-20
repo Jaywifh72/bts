@@ -631,6 +631,13 @@
       "when": 1785456000000,
       "tag": "0093_aeo_claim_entity_types",
       "breakpoints": true
+    },
+    {
+      "idx": 90,
+      "version": "7",
+      "when": 1785542400000,
+      "tag": "0094_aeo_citation_pools_expansion",
+      "breakpoints": true
     }
   ]
 }
