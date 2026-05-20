@@ -9,8 +9,9 @@ name: AEO cycle (daily)
 # Required secrets:
 #   DATABASE_URL          — Neon pooler URL (already set, used by migrate.yml)
 #   OPENAI_API_KEY        — already set
-#   ANTHROPIC_API_KEY     — ADD THIS
-#   GOOGLE_AI_API_KEY     — ADD THIS
+#   ANTHROPIC_API_KEY     — set
+#   GOOGLE_AI_API_KEY     — set (free-tier quota may 429; throttle handles it)
+#   FIRECRAWL_API_KEY     — set (covers the 'ai_overview' engine slot)
 #
 # Missing engine keys cause the cycle to skip that engine (no failure).
 # Cycle status:
@@ -57,6 +58,7 @@ jobs:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
+          FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
           AEO_SAMPLES_PER_PROMPT: ${{ inputs.samples_per_prompt || '3' }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
         run: pnpm exec tsx scripts/aeo-cycle.ts

@@ -31,9 +31,14 @@ const TODAY = new Date().toISOString().slice(0, 10);
 type EngineCode = 'chatgpt' | 'claude' | 'gemini' | 'perplexity' | 'ai_overview';
 
 const ENGINES: Array<{ code: EngineCode; envKey: string; key: string | undefined }> = [
-  { code: 'chatgpt', envKey: 'OPENAI_API_KEY',     key: process.env.OPENAI_API_KEY },
-  { code: 'claude',  envKey: 'ANTHROPIC_API_KEY',  key: process.env.ANTHROPIC_API_KEY },
-  { code: 'gemini',  envKey: 'GOOGLE_AI_API_KEY',  key: process.env.GOOGLE_AI_API_KEY },
+  { code: 'chatgpt',     envKey: 'OPENAI_API_KEY',    key: process.env.OPENAI_API_KEY },
+  { code: 'claude',      envKey: 'ANTHROPIC_API_KEY', key: process.env.ANTHROPIC_API_KEY },
+  { code: 'gemini',      envKey: 'GOOGLE_AI_API_KEY', key: process.env.GOOGLE_AI_API_KEY },
+  // 'ai_overview' is the aeo_engines row we use for Firecrawl-via-Google
+  // search results. Firecrawl /v1/search returns the top organic SERP
+  // results — a reasonable proxy for "what Google's index surfaces" since
+  // SerpAPI's actual AI Overview panel is paid-only.
+  { code: 'ai_overview', envKey: 'FIRECRAWL_API_KEY', key: process.env.FIRECRAWL_API_KEY },
 ];
 
 const activeEngines = ENGINES.filter((e) => e.key);
@@ -99,6 +104,7 @@ const MIN_DELAY_MS: Record<string, number> = {
   gemini: 6000,
   chatgpt: 100,
   claude: 100,
+  ai_overview: 500, // Firecrawl free tier ~5 req/s
 };
 const lastCallAt: Record<string, number> = {};
 
@@ -339,10 +345,11 @@ type PollResult = {
 
 async function pollEngine(code: EngineCode, key: string, prompt: string): Promise<PollResult> {
   switch (code) {
-    case 'chatgpt': return pollChatGPT(key, prompt);
-    case 'claude':  return pollClaude(key, prompt);
-    case 'gemini':  return pollGemini(key, prompt);
-    default:        throw new Error(`engine ${code} not implemented`);
+    case 'chatgpt':     return pollChatGPT(key, prompt);
+    case 'claude':      return pollClaude(key, prompt);
+    case 'gemini':      return pollGemini(key, prompt);
+    case 'ai_overview': return pollFirecrawl(key, prompt);
+    default:            throw new Error(`engine ${code} not implemented`);
   }
 }
 
@@ -472,6 +479,35 @@ async function pollGemini(key: string, prompt: string): Promise<PollResult> {
   const outTok = json.usageMetadata?.candidatesTokenCount ?? 0;
   const costCents = Math.round((inTok * 0.0000001 + outTok * 0.0000004) * 100);
   return { responseText: text, citations, raw: json, tokenCostCents: costCents };
+}
+
+async function pollFirecrawl(key: string, prompt: string): Promise<PollResult> {
+  // Firecrawl /v1/search returns top-N organic Google results for the query.
+  // We treat each result URL as a "citation" — what Google's index surfaces
+  // for this working-pro question, which is the input AI Overviews draw from.
+  // Pricing: ~1 credit per search (~$0.001 on standard plan).
+  const res = await fetch('https://api.firecrawl.dev/v1/search', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
+    body: JSON.stringify({ query: prompt, limit: 10 }),
+  });
+  if (!res.ok) throw new Error(`Firecrawl ${res.status}: ${(await res.text()).slice(0, 200)}`);
+  const json = (await res.json()) as {
+    success?: boolean;
+    data?: Array<{ url?: string; title?: string; description?: string }>;
+  };
+  const results = json.data ?? [];
+  // Synthesize a response_text from titles + descriptions so the row is
+  // useful for downstream judge-LLM scoring later (when we add it).
+  const responseText = results
+    .map((r, i) => `${i + 1}. ${r.title ?? '(no title)'}\n   ${r.url ?? ''}\n   ${r.description ?? ''}`)
+    .join('\n\n');
+  const citations = uniqueUrls(
+    results.map((r) => r.url).filter((u): u is string => Boolean(u)),
+  );
+  // Approximate cost: 1 credit per search ≈ $0.001 = 0.1 cent. Round up.
+  const costCents = 1;
+  return { responseText, citations, raw: json, tokenCostCents: costCents };
 }
 
 function uniqueUrls(urls: string[]): string[] {
