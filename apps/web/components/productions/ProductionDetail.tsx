@@ -247,6 +247,7 @@ export function ProductionDetail({
         <div className="relative -mx-4 mb-8 aspect-[21/9] overflow-hidden bg-zinc-900 sm:-mx-6 lg:-mx-8">
           <Image
             src={heroSrc}
+            unoptimized
             alt={`${production.title} backdrop`}
             fill
             priority
@@ -874,6 +875,7 @@ export function ProductionDetail({
                   <div className="relative h-16 w-11 shrink-0 overflow-hidden rounded">
                     <Image
                       src={posterUrl(m.poster_path, 'w154') ?? ''}
+                      unoptimized
                       alt=""
                       fill
                       sizes="44px"
@@ -916,6 +918,7 @@ export function ProductionDetail({
                   {s.poster_path && (
                     <Image
                       src={posterUrl(s.poster_path, 'w154') ?? ''}
+                      unoptimized
                       alt=""
                       fill
                       sizes="44px"
@@ -963,6 +966,7 @@ export function ProductionDetail({
                   {s.poster_path && (
                     <Image
                       src={posterUrl(s.poster_path, 'w154') ?? ''}
+                      unoptimized
                       alt=""
                       fill
                       sizes="44px"
@@ -1010,6 +1014,7 @@ export function ProductionDetail({
                     {s.image_url && (
                       <Image
                         src={s.image_url}
+                        unoptimized
                         alt={`Keyframe from ${s.production_title}${s.caption ? ': ' + s.caption : ''}`}
                         fill
                         sizes="(min-width: 640px) 22vw, 50vw"
