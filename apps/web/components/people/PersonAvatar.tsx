@@ -74,6 +74,9 @@ export function PersonAvatar({
       <div className={wrapCls}>
         <Image
           src={photo}
+          // QA 2026-05-21: unoptimized to bypass Vercel image quota.
+          // TMDb already serves the sized variant we asked for.
+          unoptimized
           // Used both as a standalone hero (size=xl on /crew/[slug]) and
           // in compact lists where adjacent text already names the
           // person. Setting the alt to the display name covers the

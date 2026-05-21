@@ -109,6 +109,7 @@ export default async function StuntsIndexPage() {
                       {poster ? (
                         <Image
                           src={poster}
+                          unoptimized
                           alt={s.production_title}
                           width={56}
                           height={80}

@@ -25,7 +25,7 @@ export function VfxFilmography({ rows }: { rows: FilmographyRow[] }) {
           >
             <Link href={`/films/${r.production_slug}`} className="block">
               <div className="relative h-9 w-6 overflow-hidden rounded bg-zinc-800" style={{ aspectRatio: '2/3' }}>
-                {poster && <Image src={poster} alt="" fill sizes="24px" className="object-cover" />}
+                {poster && <Image src={poster} unoptimized alt="" fill sizes="24px" className="object-cover" />}
               </div>
             </Link>
             <span className="w-10 shrink-0 text-xs text-zinc-500">{r.release_year ?? '—'}</span>

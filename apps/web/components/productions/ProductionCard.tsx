@@ -69,6 +69,9 @@ export function ProductionCard({
         {poster ? (
           <Image
             src={poster}
+            // QA 2026-05-21: TMDb already serves w185 at the URL above;
+            // routing through /_next/image just burns the Vercel quota.
+            unoptimized
             alt={`${title}${releaseYear ? ` (${releaseYear})` : ''} poster`}
             fill
             sizes={variant === 'compact' ? '56px' : '72px'}

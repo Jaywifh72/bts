@@ -192,6 +192,7 @@ export default async function CompareGearPage(props: Props) {
                   {p.poster_path && (
                     <Image
                       src={posterUrl(p.poster_path, 'w154') ?? ''}
+                      unoptimized
                       alt=""
                       fill
                       sizes="44px"

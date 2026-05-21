@@ -127,7 +127,7 @@ export default async function CompareFilmsPage(props: Props) {
               >
                 <div className="relative aspect-[2/3]">
                   {poster && (
-                    <Image src={poster} alt={`${r.title} poster`} fill sizes="240px" className="object-cover" />
+                    <Image src={poster} unoptimized alt={`${r.title} poster`} fill sizes="240px" className="object-cover" />
                   )}
                 </div>
               </Link>

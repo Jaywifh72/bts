@@ -92,6 +92,7 @@ export default async function FormatPage(props: Props) {
                       {poster && (
                         <Image
                           src={poster}
+                          unoptimized
                           alt=""
                           fill
                           sizes="(min-width: 1024px) 18vw, (min-width: 640px) 25vw, 50vw"

@@ -301,6 +301,7 @@ export default async function StuntCompanyPage(props: Props) {
                         {poster ? (
                           <Image
                             src={poster}
+                            unoptimized
                             alt={p.title}
                             width={56}
                             height={80}

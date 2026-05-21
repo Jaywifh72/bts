@@ -265,7 +265,7 @@ export default async function SeriesPage(props: Props) {
                       style={{ width: 36, aspectRatio: '2/3' }}
                     >
                       {poster && (
-                        <Image src={poster} alt="" fill sizes="36px" className="object-cover" />
+                        <Image src={poster} unoptimized alt="" fill sizes="36px" className="object-cover" />
                       )}
                     </div>
                     <div className="min-w-0 flex-1">

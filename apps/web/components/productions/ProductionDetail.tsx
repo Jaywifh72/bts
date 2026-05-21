@@ -263,7 +263,7 @@ export function ProductionDetail({
             className="relative hidden w-28 shrink-0 self-start overflow-hidden rounded border border-zinc-800 sm:block"
             style={{ aspectRatio: '2/3' }}
           >
-            <Image src={posterSrc} alt={`${production.title} poster`} fill sizes="112px" className="object-cover" />
+            <Image src={posterSrc} unoptimized alt={`${production.title} poster`} fill sizes="112px" className="object-cover" />
           </div>
         ) : null}
         <div className="flex-1">

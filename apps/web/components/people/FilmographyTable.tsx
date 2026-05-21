@@ -45,7 +45,7 @@ export function FilmographyTable({ rows }: { rows: FilmographyRow[] }) {
                       style={{ aspectRatio: '2/3' }}
                     >
                       {poster && (
-                        <Image src={poster} alt="" fill sizes="24px" className="object-cover" />
+                        <Image src={poster} unoptimized alt="" fill sizes="24px" className="object-cover" />
                       )}
                     </div>
                   </Link>

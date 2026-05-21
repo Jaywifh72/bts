@@ -31,7 +31,7 @@ export function MediaGallery({
               key={path}
               className="relative aspect-[16/9] w-72 shrink-0 overflow-hidden rounded border border-zinc-800"
             >
-              <Image src={src} alt="" fill sizes="288px" className="object-cover" loading={i < 2 ? 'eager' : 'lazy'} />
+              <Image src={src} unoptimized alt="" fill sizes="288px" className="object-cover" loading={i < 2 ? 'eager' : 'lazy'} />
             </div>
           );
         })}
