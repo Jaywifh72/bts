@@ -1,0 +1,94 @@
+name: AEO cycle — failure alert
+
+# Watches the AEO cycle workflow. When a run completes with conclusion != success,
+# this workflow opens (or updates) a GitHub issue so failures don't go unnoticed.
+# Closes the issue automatically when a subsequent run succeeds.
+
+on:
+  workflow_run:
+    workflows: ['AEO cycle (daily)']
+    types: [completed]
+
+permissions:
+  issues: write
+  contents: read
+
+jobs:
+  alert:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const run = context.payload.workflow_run;
+            const conclusion = run.conclusion; // success | failure | cancelled | skipped
+            const runUrl = run.html_url;
+            const ranAt = run.created_at;
+            const isFailure = conclusion === 'failure' || conclusion === 'cancelled';
+            const title = '⚠️ AEO cycle is failing';
+
+            // Find any open issue with the title we use, to update or close it.
+            const { data: openIssues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'aeo-cycle-alert',
+              per_page: 5,
+            });
+            const existing = openIssues.find((i) => i.title === title);
+
+            if (isFailure) {
+              const body = [
+                `**Run:** ${runUrl}`,
+                `**Conclusion:** \`${conclusion}\``,
+                `**Started:** ${ranAt}`,
+                ``,
+                `The most recent automated AEO cycle did not succeed.`,
+                ``,
+                `### Common causes`,
+                `- GitHub Actions billing limit hit — check https://github.com/settings/billing or repo visibility`,
+                `- All four engine APIs returning errors (rare; check digest artifact for per-engine breakdown)`,
+                `- DATABASE_URL env var missing or pointing at the wrong Neon project`,
+                ``,
+                `### Where to look`,
+                `1. Open the run: ${runUrl}`,
+                `2. Download the \`aeo-digest\` artifact for the per-engine outcome table`,
+                `3. Check the **AEO Health** page in /admin for the current state`,
+              ].join('\n');
+
+              if (existing) {
+                await github.rest.issues.createComment({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: existing.number,
+                  body,
+                });
+                console.log(`Commented on existing issue #${existing.number}`);
+              } else {
+                await github.rest.issues.create({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  title,
+                  body,
+                  labels: ['aeo-cycle-alert', 'ops'],
+                });
+                console.log('Opened new failure issue.');
+              }
+            } else if (conclusion === 'success' && existing) {
+              // Auto-close the alert issue when a subsequent run succeeds.
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                body: `✅ Subsequent run succeeded: ${runUrl}\n\nClosing.`,
+              });
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: existing.number,
+                state: 'closed',
+              });
+              console.log(`Auto-closed alert issue #${existing.number}.`);
+            } else {
+              console.log(`Run conclusion '${conclusion}' — no alert action needed.`);
+            }

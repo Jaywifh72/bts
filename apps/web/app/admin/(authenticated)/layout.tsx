@@ -157,6 +157,13 @@ export default async function AdminAuthenticatedLayout({
               AEO
             </Link>
             <Link
+              href="/admin/aeo/health"
+              className="shrink-0 whitespace-nowrap text-sm text-zinc-300 hover:text-zinc-50"
+              title="Observatory health checks + GEO Score"
+            >
+              Health
+            </Link>
+            <Link
               href="/admin/seo"
               className="shrink-0 whitespace-nowrap text-sm text-zinc-300 hover:text-zinc-50"
             >

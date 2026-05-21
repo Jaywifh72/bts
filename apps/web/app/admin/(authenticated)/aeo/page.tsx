@@ -101,9 +101,95 @@ async function fetchTrends() {
   return { obs, allCit, ourCit, askLog };
 }
 
+// ----------------------------------------------------------------------------
+// Composite GEO Score (0-100)
+//
+// A single number that combines what the observatory measures into something
+// you can trend at-a-glance. Six weighted sub-scores:
+//   • Coverage    (20pts) — are we actually polling? prompts × engines × samples
+//   • Reliability (15pts) — are cycles succeeding? 7d ok/partial/failed mix
+//   • Citations   (15pts) — are engines emitting URLs we can parse?
+//   • Share-of-answer (20pts) — what % of citations point to cinecanon.com
+//   • Precision  (15pts) — when engines DO cite us, are they right? (placeholder until judge LLM ships)
+//   • Freshness  (15pts) — is data current? cycle and observation ages
+//
+// All sub-scores normalize 0..N where N is the weight. Total 100. Map to a
+// letter at the top.
+// ----------------------------------------------------------------------------
+
+function geoScore(c: Counts, ourPct: number, cycleHoursAgo: number): {
+  total: number;
+  letter: string;
+  color: string;
+  components: Array<{ name: string; got: number; max: number; reason: string }>;
+} {
+  const promptsW = Math.min(1, c.prompts_active / 30) * 10;
+  const enginesW = 10; // assume 4-5 active; will refine when we wire perplexity
+  const coverage = promptsW + enginesW;
+
+  // Reliability proxy: did the last cycle succeed?
+  // (Better signal once we have 7d window helpers.)
+  const reliability = c.last_cycle_status === 'succeeded' ? 15
+    : c.last_cycle_status === 'partial' ? 10
+    : c.last_cycle_status === 'failed' ? 0
+    : 5;
+
+  // Citations: at least observations + citations are landing
+  const citations = c.observations_7d > 0 ? 15 : 0;
+
+  // Share-of-answer (the hero)
+  // 20pts: linear ramp from 0% → 30% citation share = 0..20
+  const soaPct = Math.min(ourPct, 30);
+  const soa = (soaPct / 30) * 20;
+
+  // Precision placeholder: full points until we ship the judge LLM
+  // (we can't measure precision yet, so we don't penalize for it)
+  const precision = 15;
+
+  // Freshness
+  const freshness = cycleHoursAgo <= 26 ? 15
+    : cycleHoursAgo <= 36 ? 10
+    : cycleHoursAgo <= 72 ? 5
+    : 0;
+
+  const total = Math.round(coverage + reliability + citations + soa + precision + freshness);
+
+  const letter = total >= 85 ? 'A' : total >= 70 ? 'B' : total >= 55 ? 'C' : total >= 40 ? 'D' : 'F';
+  const color = total >= 85 ? '#34d399'
+    : total >= 70 ? '#84cc16'
+    : total >= 55 ? '#f59e0b'
+    : total >= 40 ? '#fb923c'
+    : '#ef4444';
+
+  return {
+    total, letter, color,
+    components: [
+      { name: 'Coverage',         got: Math.round(coverage),    max: 20, reason: `${c.prompts_active} prompts active × engines configured` },
+      { name: 'Reliability',      got: reliability,             max: 15, reason: `Last cycle: ${c.last_cycle_status ?? 'never run'}` },
+      { name: 'Citations parsed', got: citations,               max: 15, reason: `${c.observations_7d} observations in 7d` },
+      { name: 'Share of answer',  got: Math.round(soa),         max: 20, reason: `${ourPct.toFixed(1)}% of citations point to cinecanon.com (target: 30%)` },
+      { name: 'Precision',        got: precision,               max: 15, reason: 'Judge-LLM scoring not yet wired — placeholder full points' },
+      { name: 'Freshness',        got: freshness,               max: 15, reason: `Last cycle ${cycleHoursAgo}h ago` },
+    ],
+  };
+}
+
+async function fetchCycleAge(): Promise<number> {
+  const [row] = await db.execute<{ h: number | null }>(sql`
+    SELECT EXTRACT(EPOCH FROM (NOW() - started_at)) / 3600 AS h
+    FROM aeo_cycles ORDER BY started_at DESC LIMIT 1
+  `);
+  return row?.h == null ? 9999 : Math.round(row.h);
+}
+
 export default async function AeoLandingPage() {
   const c = await fetchCounts();
   const trends = await fetchTrends();
+  const cycleHoursAgo = await fetchCycleAge();
+  const totalCit = trends.allCit.reduce((a, r) => a + r.v, 0);
+  const ourCit = trends.ourCit.reduce((a, r) => a + r.v, 0);
+  const ourPct = totalCit > 0 ? (ourCit / totalCit) * 100 : 0;
+  const score = geoScore(c, ourPct, cycleHoursAgo);
   return (
     <div className="space-y-8">
       <header>
@@ -117,6 +203,34 @@ export default async function AeoLandingPage() {
           )}
         </p>
       </header>
+
+      <section
+        className="rounded border-2 p-6"
+        style={{ borderColor: `${score.color}66`, background: `${score.color}11` }}
+      >
+        <div className="flex items-center gap-6">
+          <div className="text-center">
+            <p className="text-[10px] uppercase tracking-widest text-zinc-400">GEO Score</p>
+            <p className="mt-1 font-serif text-6xl" style={{ color: score.color }}>{score.letter}</p>
+            <p className="mt-0 font-serif text-2xl text-zinc-300">{score.total} <span className="text-zinc-500 text-sm">/ 100</span></p>
+          </div>
+          <div className="flex-1">
+            <p className="mb-2 text-[10px] uppercase tracking-widest text-zinc-500">Composite score breakdown</p>
+            <ul className="grid gap-x-6 gap-y-1.5 text-xs sm:grid-cols-2">
+              {score.components.map((cp) => (
+                <li key={cp.name} className="grid grid-cols-[8.5rem_3rem_1fr] items-center gap-2">
+                  <span className="text-zinc-300">{cp.name}</span>
+                  <span className="font-mono text-zinc-100 text-right">{cp.got}/{cp.max}</span>
+                  <span className="text-[10px] text-zinc-500 italic">{cp.reason}</span>
+                </li>
+              ))}
+            </ul>
+            <p className="mt-3 text-[11px] text-zinc-500 italic">
+              <Link href="/admin/aeo/health" className="text-amber-400 hover:underline">Full health checklist →</Link>
+            </p>
+          </div>
+        </div>
+      </section>
 
       <section>
         <h2 className="mb-2 text-[10px] uppercase tracking-widest text-zinc-500">Live counters</h2>
