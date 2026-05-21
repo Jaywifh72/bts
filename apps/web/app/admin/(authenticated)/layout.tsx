@@ -157,6 +157,18 @@ export default async function AdminAuthenticatedLayout({
               AEO
             </Link>
             <Link
+              href="/admin/seo"
+              className="shrink-0 whitespace-nowrap text-sm text-zinc-300 hover:text-zinc-50"
+            >
+              SEO
+            </Link>
+            <Link
+              href="/admin/analytics"
+              className="shrink-0 whitespace-nowrap text-sm text-zinc-300 hover:text-zinc-50"
+            >
+              Analytics
+            </Link>
+            <Link
               href="/admin/sources"
               className="shrink-0 whitespace-nowrap text-sm text-zinc-300 hover:text-zinc-50"
             >

@@ -8,6 +8,8 @@ import { CommandPalette } from '@/components/nav/CommandPalette';
 import { BookmarkSyncOnSignIn } from '@/components/BookmarkSyncOnSignIn';
 import { siteUrl } from '@/lib/site';
 import { safeAuth } from '@/lib/safe-auth';
+import { Analytics } from '@vercel/analytics/next';
+import { SpeedInsights } from '@vercel/speed-insights/next';
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl()),
@@ -59,6 +61,8 @@ export default async function RootLayout({ children }: { children: React.ReactNo
         <KeyboardShortcuts />
         <CommandPalette />
         <BookmarkSyncOnSignIn isLoggedIn={!!session} />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );
