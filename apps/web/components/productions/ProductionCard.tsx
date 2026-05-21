@@ -69,7 +69,7 @@ export function ProductionCard({
         {poster ? (
           <Image
             src={poster}
-            alt=""
+            alt={`${title}${releaseYear ? ` (${releaseYear})` : ''} poster`}
             fill
             sizes={variant === 'compact' ? '56px' : '72px'}
             className="object-cover transition-transform group-hover:scale-105"

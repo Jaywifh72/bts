@@ -38,6 +38,7 @@ import {
   shouldEmitClaimReview,
 } from '@/lib/jsonLd';
 import { posterUrl } from '@/lib/tmdb-image';
+import { truncateForMeta } from '@/lib/truncate-meta';
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -74,19 +75,23 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   // for `<link rel="alternate" type="application/json+oembed">` and
   // hit /oembed?url=<page> to fetch the card payload.
   const pageUrl = `/films/${production.slug}`;
+  // QA 2026-05-20: TMDb overviews routinely run 250–400 chars and Google
+  // truncates around 160. Cap at 155 on a sentence/word boundary so we
+  // stop shipping bloated descriptions to AI summarizers.
+  const description = truncateForMeta(production.synopsis, 155);
   return {
     title: production.title,
-    description: production.synopsis ?? undefined,
+    description,
     openGraph: {
       title: production.title,
-      description: production.synopsis ?? undefined,
+      description,
       type: 'video.movie',
       ...(production.release_year ? { releaseDate: String(production.release_year) } : {}),
     },
     twitter: {
       card: 'summary_large_image',
       title: production.title,
-      description: production.synopsis ?? undefined,
+      description,
     },
     alternates: {
       canonical: pageUrl,

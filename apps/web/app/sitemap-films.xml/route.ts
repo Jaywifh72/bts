@@ -13,9 +13,18 @@ export async function GET() {
     listProductionLastmods(db),
   ]);
   const lastmodBySlug = new Map(lastmods.map((l) => [l.slug, new Date(l.updated_at).toISOString()]));
+  // QA 2026-05-20: listProductions can return duplicate slugs when a row
+  // exists in multiple data tiers or got soft-merged — dedupe before emit
+  // so crawlers don't waste budget on the same canonical URL twice.
+  const seen = new Set<string>();
+  const unique = productions.filter((p) => {
+    if (seen.has(p.slug)) return false;
+    seen.add(p.slug);
+    return true;
+  });
   return xmlResponse(
     buildSitemap(
-      productions.map((p) => ({
+      unique.map((p) => ({
         loc: `${base}/films/${p.slug}`,
         lastmod: lastmodBySlug.get(p.slug) ?? now,
         changefreq: 'monthly',

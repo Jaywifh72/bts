@@ -15,19 +15,19 @@ export const metadata: Metadata = {
     template: '%s | CineCanon',
     default: 'CineCanon — Cinematic Technical Reference',
   },
-  description: 'Behind-the-scenes technical metadata for working film professionals.',
+  description: 'CineCanon is the cinematic technical reference for working camera-department professionals — cited, confidence-graded data on what every film was shot on, by whom, with what gear, lighting, color, sound, music, stunts, and VFX.',
   applicationName: 'CineCanon',
   openGraph: {
     type: 'website',
     siteName: 'CineCanon',
     locale: 'en_US',
     title: 'CineCanon — Cinematic Technical Reference',
-    description: 'Behind-the-scenes technical metadata for working film professionals.',
+    description: 'CineCanon is the cinematic technical reference for working camera-department professionals — cited, confidence-graded data on what every film was shot on, by whom, with what gear, lighting, color, sound, music, stunts, and VFX.',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'CineCanon — Cinematic Technical Reference',
-    description: 'Behind-the-scenes technical metadata for working film professionals.',
+    description: 'CineCanon is the cinematic technical reference for working camera-department professionals — cited, confidence-graded data on what every film was shot on, by whom, with what gear, lighting, color, sound, music, stunts, and VFX.',
   },
   // T9-6: feed autodiscovery — readers like NetNewsWire or Feedly pick
   // this up automatically when the user enters the homepage URL.

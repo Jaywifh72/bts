@@ -16,9 +16,24 @@ import Image from 'next/image';
 import { ProductionCard } from '@/components/productions/ProductionCard';
 import { ShotOfTheDayCard } from '@/components/productions/ShotOfTheDayCard';
 import { formatRelativeTime } from '@/lib/format-time';
+import { safeAuth } from '@/lib/safe-auth';
+
+const HOMEPAGE_DESCRIPTION =
+  'CineCanon is the cinematic technical reference for working camera-department professionals — cited, confidence-graded data on what every film was shot on, by whom, with what gear, lighting, color, sound, music, stunts, and VFX.';
 
 export const metadata: Metadata = {
   title: 'CineCanon — Cinematic Technical Reference',
+  description: HOMEPAGE_DESCRIPTION,
+  alternates: { canonical: '/' },
+  openGraph: {
+    url: '/',
+    title: 'CineCanon — Cinematic Technical Reference',
+    description: HOMEPAGE_DESCRIPTION,
+  },
+  twitter: {
+    title: 'CineCanon — Cinematic Technical Reference',
+    description: HOMEPAGE_DESCRIPTION,
+  },
 };
 
 // QA — revalidate hourly. The depth-stats subqueries change at most a
@@ -41,6 +56,10 @@ export default async function HomePage() {
   // E-49 — pin shot-of-the-day to today's UTC date so the value rotates
   // at midnight UTC for everyone.
   const todayKey = new Date().toISOString().slice(0, 10);
+  // QA P2-4 2026-05-20: the "Coverage dashboard → /admin" link burned a
+  // guaranteed 307 redirect for every anon visitor and crawler. Render
+  // it only for signed-in users.
+  const session = await safeAuth();
   const [
     featured, totalCurated, totalAll, recentlyUpdatedRaw,
     shotOfTheDay, depthStats,
@@ -165,9 +184,11 @@ export default async function HomePage() {
               {totalAll.toLocaleString()} productions · {totalCurated} curated dossiers
             </span>
           </h2>
-          <Link href="/admin" className="text-xs text-zinc-500 hover:text-amber-400">
-            Coverage dashboard <span aria-hidden="true">→</span>
-          </Link>
+          {session && (
+            <Link href="/admin" className="text-xs text-zinc-500 hover:text-amber-400">
+              Coverage dashboard <span aria-hidden="true">→</span>
+            </Link>
+          )}
         </div>
         <div className="grid gap-3 lg:grid-cols-3">
           {/* Column 1 — recently resolved corrections */}
