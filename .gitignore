@@ -56,3 +56,10 @@ __pycache__/
 *.ps1
 
 .vercel
+
+# Generated deck/presentation artifacts
+output/
+slide-*.jpg
+
+# Office lock files
+~$*
