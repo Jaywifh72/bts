@@ -1,0 +1,52 @@
+name: Quarterly compliance review
+
+# Opens a tracking issue each quarter for the CineCanon Legal & Compliance
+# audit (Agentic OS — Domain G). A GitHub Action cannot run a Claude Code
+# skill on its own, so this workflow is the *reminder*: it files the
+# ticket; a human (or Claude Code) then runs the `cinecanon-legal-review`
+# skill in audit mode and closes the issue.
+#
+# Schedule: 09:00 UTC on the 1st of Jan, Apr, Jul, and Oct.
+
+on:
+  schedule:
+    - cron: '0 9 1 1,4,7,10 *'
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  open-issue:
+    name: File the quarterly review ticket
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v7
+        with:
+          script: |
+            const now = new Date();
+            const quarter = Math.floor(now.getUTCMonth() / 3) + 1;
+            const year = now.getUTCFullYear();
+            const title = `Quarterly compliance review — Q${quarter} ${year}`;
+            const body = [
+              'Quarterly Legal & Compliance audit for CineCanon (Agentic OS — Domain G).',
+              '',
+              'Run the **`cinecanon-legal-review`** skill in audit mode, then work this checklist:',
+              '',
+              '- [ ] Review every entry in `vault/wiki/legal/licenses.md`; refresh each obligation.',
+              '- [ ] Review every open row in `vault/wiki/legal/risk-register.md`.',
+              '- [ ] Verify the TMDb attribution footer is present on every surface that shows TMDb data.',
+              '- [ ] Verify the CC-BY `_meta` license + attribution block on `/api/v1` responses.',
+              '- [ ] Confirm `robots.txt` / AI-bot / scraping policy is current.',
+              '- [ ] Spot-check crew biographical pages for defamation exposure.',
+              '- [ ] Record findings as new `risk-register.md` rows; note deltas since last quarter.',
+              '',
+              'Close this issue once the audit is complete.',
+            ].join('\n');
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['compliance', 'agentic-os'],
+            });

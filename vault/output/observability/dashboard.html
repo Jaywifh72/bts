@@ -1,0 +1,285 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>CineCanon Agentic OS — Operations</title>
+<style>
+  :root {
+    --cc-ink: #17110c;
+    --cc-ink-2: #211913;
+    --cc-card: #2a2018;
+    --cc-line: #3c2f23;
+    --cc-paper: #f1e7d6;
+    --cc-paper-dim: #b6a890;
+    --cc-amber: #e0a544;
+    --cc-amber-soft: #6b4f2a;
+    --cc-green: #6fae6f;
+    --cc-red: #d9744f;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    background: var(--cc-ink);
+    color: var(--cc-paper);
+    font-family: 'Inter', system-ui, -apple-system, Segoe UI, Roboto, sans-serif;
+    line-height: 1.5;
+    padding: 32px 28px 64px;
+    max-width: 1180px;
+    margin: 0 auto;
+  }
+  h1, h2, h3 {
+    font-family: 'DM Serif Display', Georgia, 'Times New Roman', serif;
+    font-weight: 400;
+    letter-spacing: 0.2px;
+  }
+  header {
+    display: flex; align-items: baseline; gap: 14px;
+    border-bottom: 1px solid var(--cc-line);
+    padding-bottom: 18px; margin-bottom: 8px;
+  }
+  header .mark {
+    font-family: 'DM Serif Display', Georgia, serif;
+    font-size: 30px; color: var(--cc-amber);
+  }
+  header .sub { font-size: 14px; color: var(--cc-paper-dim); letter-spacing: 1.5px; text-transform: uppercase; }
+  .proto {
+    margin-left: auto; font-size: 11px; letter-spacing: 1px;
+    color: var(--cc-ink); background: var(--cc-amber);
+    padding: 3px 9px; border-radius: 3px; font-weight: 600;
+  }
+  .intro { color: var(--cc-paper-dim); font-size: 13.5px; margin: 14px 0 26px; max-width: 760px; }
+  .section-label {
+    font-size: 12px; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--cc-amber); margin: 34px 0 14px; font-weight: 600;
+  }
+
+  /* metrics */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; }
+  .metric {
+    background: var(--cc-card); border: 1px solid var(--cc-line);
+    border-radius: 7px; padding: 14px 15px;
+  }
+  .metric .val { font-family: 'DM Serif Display', Georgia, serif; font-size: 30px; color: var(--cc-paper); }
+  .metric .val.warn { color: var(--cc-red); }
+  .metric .val.ok { color: var(--cc-green); }
+  .metric .name { font-size: 13px; color: var(--cc-paper); margin-top: 2px; }
+  .metric .src { font-size: 11px; color: var(--cc-paper-dim); margin-top: 6px; }
+
+  /* domains + skill buttons */
+  .domain { margin-bottom: 18px; }
+  .domain h3 { font-size: 18px; color: var(--cc-paper); margin-bottom: 3px; }
+  .domain .d-meta { font-size: 12px; color: var(--cc-paper-dim); margin-bottom: 10px; }
+  .skills { display: flex; flex-wrap: wrap; gap: 9px; }
+  button.skill {
+    background: var(--cc-ink-2); color: var(--cc-paper);
+    border: 1px solid var(--cc-line); border-radius: 6px;
+    padding: 9px 13px; font-size: 13px; cursor: pointer;
+    font-family: inherit; transition: border-color .15s, background .15s;
+    display: flex; align-items: center; gap: 8px;
+  }
+  button.skill:hover { border-color: var(--cc-amber); background: var(--cc-card); }
+  button.skill .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--cc-amber); }
+  button.skill .new {
+    font-size: 9px; letter-spacing: .5px; background: var(--cc-amber);
+    color: var(--cc-ink); padding: 1px 5px; border-radius: 3px; font-weight: 700;
+  }
+  button.skill code { font-family: ui-monospace, SFMono-Regular, Menlo, monospace; font-size: 12px; }
+
+  /* automations */
+  .autos { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+  .auto {
+    background: var(--cc-card); border: 1px solid var(--cc-line);
+    border-radius: 6px; padding: 10px 13px;
+    display: flex; align-items: center; gap: 11px;
+  }
+  .auto .sdot { width: 8px; height: 8px; border-radius: 50%; flex: none; }
+  .auto .sdot.ok { background: var(--cc-green); }
+  .auto .sdot.idle { background: var(--cc-paper-dim); }
+  .auto .a-name { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  .auto .a-sched { margin-left: auto; font-size: 11.5px; color: var(--cc-paper-dim); }
+  .auto .new { font-size: 9px; background: var(--cc-amber); color: var(--cc-ink); padding: 1px 5px; border-radius: 3px; font-weight: 700; }
+
+  footer {
+    margin-top: 40px; border-top: 1px solid var(--cc-line);
+    padding-top: 16px; font-size: 12.5px; color: var(--cc-paper-dim);
+  }
+  footer code { font-family: ui-monospace, Menlo, monospace; color: var(--cc-paper); }
+
+  /* toast */
+  #toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%) translateY(20px);
+    background: var(--cc-amber); color: var(--cc-ink);
+    padding: 11px 18px; border-radius: 6px; font-size: 13px; font-weight: 600;
+    opacity: 0; transition: opacity .2s, transform .2s; pointer-events: none;
+    max-width: 90vw;
+  }
+  #toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  @media (max-width: 720px) {
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+    .autos { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <span class="mark">CineCanon</span>
+  <span class="sub">Agentic OS · Operations</span>
+  <span class="proto">PROTOTYPE</span>
+</header>
+
+<p class="intro">
+  Layer 3 of the Agentic OS — the optional observability layer. Every skill is a
+  button: click it to copy the headless <code>claude&nbsp;-p</code> invocation,
+  then paste it into a terminal opened in <code>C:\dev\bts</code>. Metric values
+  below are sample placeholders — see the footer for wiring them to live data.
+</p>
+
+<div class="section-label">Health metrics</div>
+<div class="metrics">
+  <div class="metric"><div class="val">0.64</div><div class="name">Citation Precision (hero)</div><div class="src">sample · aeo_daily_metrics</div></div>
+  <div class="metric"><div class="val">42%</div><div class="name">ClaimReview coverage</div><div class="src">sample · curated dossiers</div></div>
+  <div class="metric"><div class="val warn">1,702</div><div class="name">Broken images</div><div class="src">sample · qa-crawl-weekly</div></div>
+  <div class="metric"><div class="val warn">11</div><div class="name">Broken / error pages</div><div class="src">sample · qa-crawl-weekly</div></div>
+  <div class="metric"><div class="val">—</div><div class="name">Open T7-7 claims</div><div class="src">prototype · claims table</div></div>
+  <div class="metric"><div class="val">—</div><div class="name">Link-rot incidents (7d)</div><div class="src">prototype · link-rot-scan</div></div>
+  <div class="metric"><div class="val ok">100%</div><div class="name">CI pass rate (30d)</div><div class="src">sample · GitHub Actions</div></div>
+  <div class="metric"><div class="val">—</div><div class="name">Skill runs (7d)</div><div class="src">prototype · vault/learnings</div></div>
+</div>
+
+<div class="section-label">Skill board — click to copy the invocation</div>
+<div id="board"></div>
+
+<div class="section-label">Automations — GitHub Actions</div>
+<div class="autos" id="autos"></div>
+
+<footer>
+  <strong>Wiring this up.</strong> This is a self-contained prototype — no build,
+  no auth, no app code. Buttons copy a <code>claude -p</code> command to your
+  clipboard. To make the metrics live, fold the dashboard into the authenticated
+  admin console as an <code>/admin/ops</code> route group (Option B in the spec:
+  <code>vault/output/specs/2026-05-21-observability-dashboard-design.md</code>) —
+  that is a normal feature, so run it through <code>cinecanon-feature-spec</code>
+  → <code>cinecanon-feature-plan</code> → <code>cinecanon-ship-checklist</code>.
+</footer>
+
+<div id="toast"></div>
+
+<script>
+  const DOMAINS = [
+    { id: 'A', name: 'Content & Dossier Engine', note: 'Data ingest, new entity types, seed data',
+      skills: [
+        { s: 'cinecanon-entity-scaffolder', cmd: 'use the cinecanon-entity-scaffolder skill to stand up a new entity type' },
+        { s: 'cinecanon-dossier-builder',   cmd: 'use the cinecanon-dossier-builder skill to build or expand a dossier' },
+        { s: 'cinecanon-scraper-debugger',  cmd: 'use the cinecanon-scraper-debugger skill to diagnose a failing scraper' },
+      ] },
+    { id: 'B', name: 'Editorial & Citation Integrity', note: 'T7 grading, sourcing, link rot',
+      skills: [
+        { s: 'cinecanon-claim-grader',   cmd: 'use the cinecanon-claim-grader skill to grade new claims against the T7 rubric' },
+        { s: 'cinecanon-citation-audit', cmd: 'use the cinecanon-citation-audit skill to sweep a dossier source chain' },
+      ] },
+    { id: 'C', name: 'AI Search Visibility', note: 'AEO / GEO / SEO — the Sentinel observatory',
+      skills: [
+        { s: 'cinecanon-sentinel', cmd: 'use the cinecanon-sentinel skill to run today’s AEO cycle' },
+      ] },
+    { id: 'D', name: 'Site QA & Health', note: 'Crawls, regression sweeps, defect triage',
+      skills: [
+        { s: 'cinecanon-qa-sweep', cmd: 'use the cinecanon-qa-sweep skill to crawl the site and triage defects' },
+      ] },
+    { id: 'E', name: 'Web Feature Delivery', note: 'Spec, plan, build, ship',
+      skills: [
+        { s: 'cinecanon-feature-spec',   cmd: 'use the cinecanon-feature-spec skill to write a feature design spec' },
+        { s: 'cinecanon-feature-plan',   cmd: 'use the cinecanon-feature-plan skill to turn a spec into an implementation plan' },
+        { s: 'cinecanon-ship-checklist', cmd: 'use the cinecanon-ship-checklist skill to run the pre-merge quality gate' },
+      ] },
+    { id: 'F', name: 'Design, UX & Accessibility', note: 'UX audits, density review, WCAG',
+      skills: [
+        { s: 'cinecanon-ux-audit',       cmd: 'use the cinecanon-ux-audit skill to audit a page or flow' },
+        { s: 'cinecanon-a11y-audit',     cmd: 'use the cinecanon-a11y-audit skill to run a WCAG 2.2 AA audit' },
+        { s: 'cinecanon-density-review', cmd: 'use the cinecanon-density-review skill to review a data-display change' },
+      ] },
+    { id: 'G', name: 'Legal, Compliance & Licensing', note: 'Licensing, attribution, risk register',
+      skills: [
+        { s: 'cinecanon-legal-review', cmd: 'use the cinecanon-legal-review skill to review a change for legal exposure' },
+      ] },
+    { id: 'H', name: 'Dev Infrastructure & Release', note: 'Migrations, runbooks, CI',
+      skills: [
+        { s: 'cinecanon-migration-author', cmd: 'use the cinecanon-migration-author skill to author a new migration' },
+      ] },
+  ];
+  const NEW_SKILLS = new Set([
+    'cinecanon-entity-scaffolder','cinecanon-dossier-builder','cinecanon-scraper-debugger',
+    'cinecanon-claim-grader','cinecanon-citation-audit','cinecanon-qa-sweep',
+    'cinecanon-feature-spec','cinecanon-feature-plan','cinecanon-ship-checklist',
+    'cinecanon-ux-audit','cinecanon-a11y-audit','cinecanon-density-review',
+    'cinecanon-legal-review','cinecanon-migration-author',
+  ]);
+
+  const AUTOS = [
+    { n: 'ci.yml', s: 'on push', st: 'ok' },
+    { n: 'aeo-cycle.yml', s: 'daily 10:00 UTC', st: 'ok' },
+    { n: 'scraper-weekly.yml', s: 'Sun 04:00 UTC', st: 'ok' },
+    { n: 'admin-job.yml', s: 'triggered', st: 'idle' },
+    { n: 'scraper-job.yml', s: 'triggered', st: 'idle' },
+    { n: 'db-script.yml', s: 'triggered', st: 'idle' },
+    { n: 'migrate.yml', s: 'triggered', st: 'idle' },
+    { n: 'seed-aeo-prompts.yml', s: 'triggered', st: 'idle' },
+    { n: 'seed-music.yml', s: 'triggered', st: 'idle' },
+    { n: 'qa-crawl-weekly.yml', s: 'Mon 05:00 UTC', st: 'idle', isNew: true },
+    { n: 'link-rot-scan.yml', s: 'Sat 03:00 UTC', st: 'idle', isNew: true },
+    { n: 'quarterly-compliance-review.yml', s: 'quarterly', st: 'idle', isNew: true },
+  ];
+
+  const board = document.getElementById('board');
+  DOMAINS.forEach(d => {
+    const wrap = document.createElement('div');
+    wrap.className = 'domain';
+    const skillBtns = d.skills.map(sk => {
+      const isNew = NEW_SKILLS.has(sk.s);
+      return '<button class="skill" data-cmd="' + sk.cmd.replace(/"/g, '&quot;') + '">' +
+        '<span class="dot"></span><code>' + sk.s + '</code>' +
+        (isNew ? '<span class="new">NEW</span>' : '') + '</button>';
+    }).join('');
+    wrap.innerHTML =
+      '<h3>' + d.id + ' &middot; ' + d.name + '</h3>' +
+      '<div class="d-meta">' + d.note + '</div>' +
+      '<div class="skills">' + skillBtns + '</div>';
+    board.appendChild(wrap);
+  });
+
+  const autos = document.getElementById('autos');
+  AUTOS.forEach(a => {
+    const el = document.createElement('div');
+    el.className = 'auto';
+    el.innerHTML =
+      '<span class="sdot ' + a.st + '"></span>' +
+      '<span class="a-name">' + a.n + '</span>' +
+      (a.isNew ? '<span class="new">NEW</span>' : '') +
+      '<span class="a-sched">' + a.s + '</span>';
+    autos.appendChild(el);
+  });
+
+  const toast = document.getElementById('toast');
+  let toastTimer = null;
+  function showToast(msg) {
+    toast.textContent = msg;
+    toast.classList.add('show');
+    clearTimeout(toastTimer);
+    toastTimer = setTimeout(() => toast.classList.remove('show'), 3200);
+  }
+
+  document.querySelectorAll('button.skill').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const cmd = 'claude -p "' + btn.dataset.cmd + '"';
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(cmd)
+          .then(() => showToast('Copied — paste in a terminal at C:\\dev\\bts'))
+          .catch(() => showToast(cmd));
+      } else {
+        showToast(cmd);
+      }
+    });
+  });
+</script>
+</body>
+</html>

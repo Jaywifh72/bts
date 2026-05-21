@@ -2,6 +2,51 @@
 
 A working reference for cinematic technical craft. Behind-the-scenes technical metadata for working camera-department professionals.
 
+CineCanon's defensible difference versus IMDb, TMDb, Letterboxd, and Wikipedia is that **every claim is cited and confidence-graded**. Protect that promise in everything you do here.
+
+## The Agentic OS — read this first
+
+CineCanon's recurring work is organized as an **Agentic OS**: domains → tasks → skills → automations, over a markdown memory vault. Full design and rationale: `vault/wiki/agentic-os.md`.
+
+- **Domains** — eight working areas (Content, Editorial, AI Search Visibility, QA, Feature Delivery, Design/UX, Legal, Dev Infra). The routing table — which domain owns what, and which skill to reach for — is `vault/wiki/domains/README.md`.
+- **Skills** live in `.claude/skills/<name>/SKILL.md` — one repeatable procedure each. Index below.
+- **Agents** live in `.claude/agents/` — six specialized reviewers (a11y, citation-steward, density-reviewer, qa, ux-lead, legal-counsel) that skills delegate to.
+- **Memory** lives in `vault/` — see the memory map below and `vault/README.md`.
+- **Automations** live in `.github/workflows/` — scheduled/triggered runs of work that is recurring and unattended-safe.
+
+**Read order for any task:** this file → `vault/wiki/domains/README.md` → the relevant `SKILL.md` → that skill's `references/` (if any) and `vault/learnings/<skill>.md`.
+
+## Memory map
+
+The vault (`vault/`) is the project's persistent markdown memory. Four tiers:
+
+- `vault/raw/` — **staging.** Short-lived research dumps. Never load-bearing.
+- `vault/wiki/` — **codified.** Durable, deduplicated notes: `domains/`, `patterns/`, `stack/`, `competitors/`, `legal/`. Edited in place when facts change.
+- `vault/output/` — **deliverables.** Finished, dated, immutable artifacts.
+- `vault/learnings/` — **append-only.** One file per skill; each run appends what it learned, and reads its file before running.
+
+Today's specs/plans/audits/QA reports also live under `docs/` (`docs/superpowers/{specs,plans}/`, `docs/audits/`, `docs/qa-reports/`, `docs/runbooks/`); both are canon — see `vault/README.md` for the consolidation note.
+
+## Skills index
+
+| Skill | Domain | Use it when |
+|---|---|---|
+| `cinecanon-sentinel` | AI Search Visibility | AEO/GEO/SEO — Citation Precision, schema/ClaimReview, the `/ask` flywheel, competitor citations |
+| `cinecanon-entity-scaffolder` | Content | Standing up a new dossier entity type (migration → schema → queries → routes → seed) |
+| `cinecanon-dossier-builder` | Content | Building or expanding one film/crew/facility dossier end-to-end |
+| `cinecanon-scraper-debugger` | Content | A TMDb / Wikidata / MusicBrainz ingest pipeline is failing or producing bad data |
+| `cinecanon-claim-grader` | Editorial | Grading new editorial claims against the T7-1…T7-7 rubric |
+| `cinecanon-citation-audit` | Editorial | Sweeping one dossier's full source / citation chain |
+| `cinecanon-qa-sweep` | Site QA | Crawling the live site for broken links/images, then triaging into a fix list |
+| `cinecanon-feature-spec` | Feature Delivery | Writing a feature design spec (the *what and why*) |
+| `cinecanon-feature-plan` | Feature Delivery | Turning an approved spec into a dated, task-by-task implementation plan |
+| `cinecanon-ship-checklist` | Feature Delivery | The pre-merge quality gate — run before every merge |
+| `cinecanon-ux-audit` | Design/UX | End-to-end UX audit of a page or flow |
+| `cinecanon-a11y-audit` | Design/UX | WCAG 2.2 AA accessibility audit |
+| `cinecanon-density-review` | Design/UX | Data-density / provenance review of a data-display PR |
+| `cinecanon-legal-review` | Legal | Any change touching third-party data/media/brand/user-data; quarterly license audit |
+| `cinecanon-migration-author` | Dev Infra | Authoring a new Postgres migration under the numeric-order + idempotency rules |
+
 ## Stack at a glance
 
 - **pnpm monorepo** (`packageManager: pnpm@10.33.2`)

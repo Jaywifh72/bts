@@ -11,13 +11,13 @@ A pnpm monorepo with three workspaces:
 
 | Workspace | Purpose |
 |---|---|
-| `apps/web` | Next.js 14 App Router site — public dossiers + admin console |
+| `apps/web` | Next.js 16 App Router site — public dossiers + admin console |
 | `packages/db` | Drizzle + Postgres schema, migrations, queries, seed, tests |
 | `packages/scraper` | TMDb / Wikidata / RSS / social ingest pipelines |
 
 ## Stack
 
-- **Runtime**: Next.js 14 (App Router, RSC, ISR via `revalidate`)
+- **Runtime**: Next.js 16 + React 19 (App Router, RSC, ISR via `revalidate`)
 - **DB**: Postgres 16 + pgvector + pg_trgm (Docker locally; Neon for prod — see `docs/runbooks/managed-postgres.md`)
 - **ORM**: drizzle-orm + postgres-js
 - **Embeddings**: SigLIP-2 (visual, 768-dim) + text-embedding-3-small (1536-dim), HNSW indexed
@@ -73,7 +73,7 @@ apps/web/
   lib/                  # jsonLd, rate-limit, site, tmdb-image, etc.
 
 packages/db/
-  migrations/           # SQL migrations (0001 → 0055)
+  migrations/           # SQL migrations (0001 → 0094, strict numeric order)
   src/
     schema/             # Drizzle schema modules
     queries/            # Read paths
@@ -103,6 +103,8 @@ Each has a self-contained runbook:
 
 ## Documentation
 
+- `CLAUDE.md` — project conventions + the Agentic OS map and skills index
+- `vault/` — the project memory vault; start at `vault/README.md`
 - `docs/superpowers/plans/` — strategy and roadmap docs
 - `docs/runbooks/` — deployment runbooks
 

@@ -1,0 +1,43 @@
+name: QA crawl (weekly)
+
+# Weekly full link + image crawl of cinecanon.com. Deterministic — runs
+# scripts/qa-full-crawl.sh, which pulls every URL from the sitemap index +
+# child sitemaps, HEAD-probes them in parallel, extracts and probes every
+# <img> on curated pages, and buckets the results. The report is uploaded
+# as an artifact.
+#
+# This workflow only PRODUCES the raw report. Triaging it into a ranked
+# fix list is an on-demand step — use the `cinecanon-qa-sweep` skill.
+#
+# Schedule: Monday 05:00 UTC — clear of the weekly scraper (Sun 04:00) and
+# the daily AEO cycle (10:00).
+
+on:
+  schedule:
+    - cron: '0 5 * * 1'
+  workflow_dispatch:
+
+# Don't pile up runs if a previous crawl is still going.
+concurrency:
+  group: qa-crawl-weekly
+  cancel-in-progress: false
+
+jobs:
+  crawl:
+    name: Full link + image crawl
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run full crawl
+        run: bash scripts/qa-full-crawl.sh
+
+      - name: Upload QA report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: qa-crawl-report
+          path: docs/qa-reports/cinecanon-qa-full-crawl-*.md
+          if-no-files-found: warn
+          retention-days: 90

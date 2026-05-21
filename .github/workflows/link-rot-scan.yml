@@ -1,0 +1,55 @@
+name: Link-rot scan (weekly)
+
+# Weekly link-rot monitor. Runs the scraper's `sources:health` command
+# (packages/scraper/src/wayback/health.ts — the "E-47 weekly link-rot
+# monitor"), which HEAD-probes every row in the `sources` table, ordered
+# by last_checked_at NULLS FIRST, and records HTTP status + timestamp.
+# Then archives newly-rotted links via `wayback:archive` so the citation
+# chain survives even when an upstream source disappears.
+#
+# Per-dossier deep citation audits are a separate, on-demand job — use
+# the `cinecanon-citation-audit` skill.
+#
+# Schedule: Saturday 03:00 UTC — clear of the weekly scraper and the
+# daily AEO cycle.
+#
+# Required secret:
+#   DATABASE_URL  — Neon pooler URL (the same secret migrate.yml uses).
+
+on:
+  schedule:
+    - cron: '0 3 * * 6'
+  workflow_dispatch:
+
+concurrency:
+  group: link-rot-scan
+  cancel-in-progress: false
+
+jobs:
+  scan:
+    name: Probe source health + archive rot
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Probe source health
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm --filter @bts/scraper cli sources:health
+
+      - name: Archive newly-rotted links to Wayback
+        if: success()
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm --filter @bts/scraper cli wayback:archive

@@ -20,13 +20,17 @@ next-env.d.ts
 
 # Claude Code session-local config
 .claude/
-# Exceptions: project-level artifacts shared across the team
+# Exceptions: project-level artifacts shared across the team.
+# Skills + agents are the Agentic OS — tracked. See CLAUDE.md and vault/README.md.
 !.claude/
 !.claude/skills/
-!.claude/skills/cinecanon-sentinel/
-!.claude/skills/cinecanon-sentinel/**
+!.claude/skills/**
 !.claude/agents/
 !.claude/agents/*.md
+# ...but session-local config stays out of the repo. These re-ignore lines
+# must come AFTER the negations above — otherwise `!.claude/` re-exposes them.
+.claude/settings.local.json
+.claude/launch.json
 
 # OS
 .DS_Store
@@ -59,9 +63,14 @@ __pycache__/
 
 .vercel
 
-# Generated deck/presentation artifacts
+# Generated deck/presentation artifacts — repo-root output/, packages/db/output/, etc.
 output/
+# ...but vault/output/ is tracked project memory (the Agentic OS deliverables
+# tier), not generated output. Re-include the directory, then its contents.
+!vault/output/
+!vault/output/**
 slide-*.jpg
+/CineCanon_Monetization_Pitch.pptx
 
 # Office lock files
 ~$*
