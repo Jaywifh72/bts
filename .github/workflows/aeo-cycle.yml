@@ -25,19 +25,30 @@ on:
   workflow_dispatch:
     inputs:
       samples_per_prompt:
-        description: 'Samples per (prompt × engine) — default 3'
+        description: 'Samples per (prompt × engine) — default 2'
         required: false
-        default: '3'
+        default: '2'
       dry_run:
         description: 'Dry-run (count only, no API calls or writes)'
         required: false
         type: boolean
         default: false
 
+# Prevent overlapping runs. If a manual dispatch fires while a scheduled run
+# is mid-flight, queue it rather than running both — they'd race each other
+# against the same engine quotas.
+concurrency:
+  group: aeo-cycle
+  cancel-in-progress: false
+
 jobs:
   cycle:
     runs-on: ubuntu-latest
-    timeout-minutes: 45
+    # Bumped from 45 → 90 after 4 consecutive scheduled cancellations
+    # (issue #24). With 4 engines + 6s Gemini throttle + 429 retries,
+    # samples=2 cycles routinely complete in 25-50 min. 90 min provides
+    # headroom without leaving stuck runs sitting forever.
+    timeout-minutes: 90
     steps:
       - uses: actions/checkout@v6
       - uses: pnpm/action-setup@v6
@@ -59,7 +70,7 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
           FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
-          AEO_SAMPLES_PER_PROMPT: ${{ inputs.samples_per_prompt || '3' }}
+          AEO_SAMPLES_PER_PROMPT: ${{ inputs.samples_per_prompt || '2' }}
           DRY_RUN: ${{ inputs.dry_run && '1' || '' }}
         run: pnpm exec tsx scripts/aeo-cycle.ts
 
