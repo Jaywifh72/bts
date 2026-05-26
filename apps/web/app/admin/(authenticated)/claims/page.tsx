@@ -10,6 +10,7 @@ import {
 import { ClaimReviewRow } from '@/components/admin/ClaimReviewRow';
 import { Pagination } from '@/components/ui/Pagination';
 import { getClaimReviewReadiness } from '@/lib/claimreview-readiness';
+import { bulkPromoteEligibleClaimsAction } from './actions';
 
 export const metadata: Metadata = {
   title: 'Claims Review',
@@ -129,10 +130,20 @@ export default async function AdminClaimsPage(props: Props) {
           )}
         </p>
         {readiness.oneStepAway > 0 && (
-          <p className="mt-2 text-xs text-zinc-400">
-            Have a citation + primary-like confidence but status is still <code>candidate</code> or{' '}
-            <code>needs_source</code>. Promote to <code>sourced</code> to unlock ClaimReview emission.
-          </p>
+          <>
+            <p className="mt-2 text-xs text-zinc-400">
+              Have a citation + primary-like confidence but status is still <code>candidate</code> or{' '}
+              <code>needs_source</code>. Promote to <code>sourced</code> to unlock ClaimReview emission.
+            </p>
+            <form action={bulkPromoteEligibleClaimsAction} className="mt-3">
+              <button
+                type="submit"
+                className="rounded border border-amber-700/60 bg-amber-600/20 px-3 py-1 text-xs font-serif text-amber-300 hover:border-amber-500 hover:bg-amber-600/30"
+              >
+                Promote all {readiness.oneStepAway.toLocaleString()} eligible claims to sourced →
+              </button>
+            </form>
+          </>
         )}
         {readiness.topProductionsAwaitingPromotion.length > 0 && (
           <div className="mt-3">
