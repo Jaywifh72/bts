@@ -40,6 +40,11 @@ export default async function AdminSeoPage() {
   const report = result.report;
   const t = report.totals;
   const days = report.byDay;
+  // The actual query window in days, not the count of returned rows.
+  const windowDays = Math.round(
+    (Date.parse(report.endDate) - Date.parse(report.startDate)) / (24 * 3600 * 1000),
+  );
+  const hasAnyData = t.clicks > 0 || t.impressions > 0 || days.length > 0;
   const clicksSeries = days.map((d) => d.clicks);
   const imprSeries = days.map((d) => d.impressions);
   const ctrSeries = days.map((d) => d.ctr * 100);
@@ -58,11 +63,52 @@ export default async function AdminSeoPage() {
         <p className="mt-1 text-sm text-zinc-400">
           Organic Google performance for <code className="text-amber-400">{report.site}</code>
           {' '}<span className="text-[10px] text-zinc-600">({report.siteOrigin})</span> over the
-          last <span className="text-zinc-200">{days.length} days</span>
+          last <span className="text-zinc-200">{windowDays} days</span>
           {' '}({report.startDate} → {report.endDate}).
           GSC has a 2–3 day data lag.
         </p>
       </header>
+
+      {!hasAnyData && (
+        <section className="rounded border border-amber-900/40 bg-amber-950/10 p-4 text-sm text-amber-200">
+          <p className="font-serif text-base text-amber-300">No GSC data yet for this property.</p>
+          <p className="mt-2 text-zinc-300">
+            The API call succeeded and the OAuth identity has access to{' '}
+            <code className="text-amber-400">{report.site}</code> — the property is just empty.
+            Most likely causes:
+          </p>
+          <ul className="ml-5 mt-2 list-disc space-y-1 text-zinc-300">
+            <li>
+              <strong>Newly-verified property</strong> — GSC takes 24–72h to backfill data after
+              verification.
+            </li>
+            <li>
+              <strong>Site hasn&apos;t been indexed yet</strong> — submit the sitemap at{' '}
+              <a href={`https://search.google.com/search-console/sitemaps?resource_id=${encodeURIComponent(report.site)}`}
+                target="_blank" rel="noopener noreferrer"
+                className="text-amber-400 hover:underline">
+                Search Console → Sitemaps
+              </a>
+              {' '}using <code className="text-amber-400">https://www.cinecanon.com/sitemap.xml</code>
+            </li>
+            <li>
+              <strong>Site genuinely has 0 organic search visibility</strong> — this is fixable;
+              ClaimReview emission, the AEO observatory, and llms.txt are all designed to climb
+              this from zero.
+            </li>
+          </ul>
+          <p className="mt-3 text-zinc-400 italic">
+            Verify directly at{' '}
+            <a href={`https://search.google.com/search-console/performance/search-analytics?resource_id=${encodeURIComponent(report.site)}`}
+              target="_blank" rel="noopener noreferrer"
+              className="text-amber-400 hover:underline">
+              Search Console → Performance
+            </a>
+            . If that UI shows data but this page doesn&apos;t, the OAuth scope or API call is off
+            and we need to re-investigate.
+          </p>
+        </section>
+      )}
 
       {/* Totals + sparklines */}
       <section>
