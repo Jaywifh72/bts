@@ -76,8 +76,8 @@ export default async function HomePage() {
     getShotOfTheDay(db, todayKey),
     getEditorialDepthStats(db),
     // Homepage Move 3 — archive-this-week rail.
-    listRecentlyResolvedCorrections(db, 5),
-    listRecentCitations(db, 5),
+    listRecentlyResolvedCorrections(db, 5).catch((e) => { console.error('[homepage] listRecentlyResolvedCorrections failed', e); return []; }),
+    listRecentCitations(db, 5).catch((e) => { console.error('[homepage] listRecentCitations failed', e); return []; }),
     getShotsOfTheDay(db, todayKey, 8),
     // Awards roll-up for the depth-grid tile. Live from production_awards so
     // the homepage count moves the moment a new award row lands.
