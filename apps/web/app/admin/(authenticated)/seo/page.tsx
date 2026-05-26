@@ -1,6 +1,12 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { fetchGscReport, isGscConfigured, gscAuthMode } from '@/lib/gsc';
+import {
+  fetchGscReport,
+  isGscConfigured,
+  gscAuthMode,
+  gscErrorMessage,
+  listGscSites,
+} from '@/lib/gsc';
 import { Sparkline } from '@/components/admin/Sparkline';
 
 export const metadata: Metadata = {
@@ -14,20 +20,33 @@ export default async function AdminSeoPage() {
   if (!isGscConfigured()) {
     return <ConfigurePrompt />;
   }
-  const report = await fetchGscReport({ days: 28 }).catch((err) => {
+
+  // Use a wrapper that captures the underlying error so we can render it
+  // instead of swallowing into a generic message.
+  let report: Awaited<ReturnType<typeof fetchGscReport>> = null;
+  let fetchError: string | null = null;
+  try {
+    report = await fetchGscReport({ days: 28 });
+  } catch (err) {
+    fetchError = gscErrorMessage(err);
     console.warn('[admin/seo] GSC fetch failed', err);
-    return null;
-  });
+  }
+
   if (!report) {
-    return (
-      <div className="space-y-4">
-        <h1 className="font-serif text-3xl text-zinc-50">SEO</h1>
-        <div className="rounded border border-red-900/40 bg-red-950/10 p-4 text-sm text-red-300">
-          Google Search Console returned an error. Most common cause: the service-account email isn&apos;t
-          a verified user on the GSC property. See <code>apps/web/lib/gsc.ts</code> for setup.
-        </div>
-      </div>
-    );
+    // On error, run sites.list to show what the OAuth identity actually
+    // sees — almost always the issue is GSC_SITE_URL doesn't match any
+    // property the principal owns.
+    const sitesProbe = await listGscSites().catch((err) => ({
+      ok: false as const,
+      error: gscErrorMessage(err),
+    }));
+    const expectedSiteUrl = process.env.GSC_SITE_URL ?? 'sc-domain:cinecanon.com';
+    return <ErrorState
+      mode={gscAuthMode()}
+      configuredSite={expectedSiteUrl}
+      fetchError={fetchError}
+      sitesProbe={sitesProbe}
+    />;
   }
 
   const t = report.totals;
@@ -197,6 +216,126 @@ function RowTable({
         </div>
       )}
     </section>
+  );
+}
+
+function ErrorState({
+  mode, configuredSite, fetchError, sitesProbe,
+}: {
+  mode: string;
+  configuredSite: string;
+  fetchError: string | null;
+  sitesProbe: { ok: true; sites: Array<{ siteUrl: string; permissionLevel: string }> }
+            | { ok: false; error: string };
+}) {
+  const sites = sitesProbe.ok ? sitesProbe.sites : [];
+  const hasSites = sites.length > 0;
+  const matched = sites.find((s) => s.siteUrl === configuredSite);
+
+  return (
+    <div className="space-y-6">
+      <header className="flex items-baseline justify-between gap-4">
+        <h1 className="font-serif text-3xl text-zinc-50">SEO — Google Search Console</h1>
+        <span className="rounded border border-zinc-700 px-2 py-0.5 text-[10px] uppercase tracking-widest text-zinc-400">
+          auth: {mode}
+        </span>
+      </header>
+
+      <section className="rounded border border-red-900/40 bg-red-950/10 p-4 text-sm">
+        <p className="font-serif text-base text-red-300">Google Search Console returned an error.</p>
+        {fetchError && (
+          <pre className="mt-2 max-w-full overflow-x-auto whitespace-pre-wrap break-all rounded bg-zinc-950 p-3 font-mono text-[11px] leading-relaxed text-red-200">
+            {fetchError}
+          </pre>
+        )}
+      </section>
+
+      <section className="rounded border border-zinc-800 bg-zinc-900/40 p-4">
+        <h2 className="mb-3 font-serif text-lg text-zinc-100">Diagnosis</h2>
+        <div className="space-y-2 text-sm">
+          <div className="grid grid-cols-[10rem_1fr] gap-2">
+            <span className="text-zinc-500">Configured site URL:</span>
+            <code className="text-amber-400">{configuredSite}</code>
+          </div>
+          <div className="grid grid-cols-[10rem_1fr] gap-2">
+            <span className="text-zinc-500">Auth mode:</span>
+            <code className="text-amber-400">{mode}</code>
+          </div>
+          <div className="grid grid-cols-[10rem_1fr] gap-2">
+            <span className="text-zinc-500">Matches a property:</span>
+            <span className={matched ? 'text-emerald-400' : 'text-red-300'}>
+              {matched ? `✓ yes (${matched.permissionLevel})` : '✗ no — fix below'}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="mb-2 text-[10px] uppercase tracking-widest text-zinc-500">
+          What this identity CAN see (via sites.list)
+        </h2>
+        {!sitesProbe.ok ? (
+          <div className="rounded border border-red-900/40 bg-red-950/10 p-3 text-sm text-red-200">
+            <p>sites.list also failed:</p>
+            <pre className="mt-2 whitespace-pre-wrap break-all font-mono text-[11px] text-red-100">
+              {sitesProbe.error}
+            </pre>
+            <p className="mt-2 text-zinc-400 italic">
+              Most likely the OAuth client is missing the Search Console API enablement,
+              the refresh token was revoked, or the scope is wrong (must include{' '}
+              <code className="text-amber-400">webmasters.readonly</code>).
+            </p>
+          </div>
+        ) : !hasSites ? (
+          <div className="rounded border border-amber-900/40 bg-amber-950/10 p-3 text-sm text-amber-200">
+            <p>The identity authenticated successfully but does not have access to any GSC property.</p>
+            <p className="mt-2 text-zinc-400 italic">
+              The OAuth principal needs to be added as a user on the GSC property,
+              OR a different identity that owns the property should be used.
+            </p>
+          </div>
+        ) : (
+          <div className="overflow-hidden rounded border border-zinc-800 bg-zinc-900/40">
+            <table className="w-full text-xs">
+              <thead className="border-b border-zinc-800 text-[10px] uppercase tracking-widest text-zinc-500">
+                <tr>
+                  <th className="px-3 py-2 text-left font-normal">Property (siteUrl)</th>
+                  <th className="px-3 py-2 text-left font-normal w-32">Permission</th>
+                  <th className="px-3 py-2 text-left font-normal w-32">Matches config?</th>
+                </tr>
+              </thead>
+              <tbody className="text-zinc-300">
+                {sites.map((s) => (
+                  <tr key={s.siteUrl} className="border-b border-zinc-900 last:border-0">
+                    <td className="px-3 py-2 font-mono">{s.siteUrl}</td>
+                    <td className="px-3 py-2 font-mono text-zinc-400">{s.permissionLevel}</td>
+                    <td className="px-3 py-2">
+                      {s.siteUrl === configuredSite ? (
+                        <span className="text-emerald-400">✓ current</span>
+                      ) : (
+                        <span className="text-zinc-500">— set GSC_SITE_URL to this</span>
+                      )}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </section>
+
+      {hasSites && !matched && (
+        <section className="rounded border border-amber-900/40 bg-amber-950/10 p-4 text-sm text-zinc-200">
+          <p className="font-serif text-base text-amber-300">Fix</p>
+          <p className="mt-2 text-zinc-300">
+            Update <code className="text-amber-400">GSC_SITE_URL</code> in Vercel to one of the property
+            identifiers in the table above. Most likely:
+          </p>
+          <pre className="mt-2 rounded bg-zinc-950 px-3 py-2 font-mono text-[11px] text-amber-300">GSC_SITE_URL={sites[0]!.siteUrl}</pre>
+          <p className="mt-2 text-zinc-400 italic">Then redeploy (push any commit, or click Redeploy in Vercel).</p>
+        </section>
+      )}
+    </div>
   );
 }
 

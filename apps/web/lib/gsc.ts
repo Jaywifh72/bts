@@ -77,6 +77,43 @@ export function isGscConfigured(): boolean {
   return gscAuthMode() !== 'none';
 }
 
+/**
+ * Lists every Search Console property the configured identity has access to.
+ * Returned as a diagnostic for the /admin/seo error state — if GSC_SITE_URL
+ * doesn't match any returned siteUrl, that's the root cause.
+ */
+export async function listGscSites(): Promise<{ ok: true; sites: Array<{ siteUrl: string; permissionLevel: string }> } | { ok: false; error: string }> {
+  if (!isGscConfigured()) return { ok: false, error: 'GSC not configured' };
+  try {
+    const sc = getClient();
+    const res = await sc.sites.list();
+    const sites = (res.data.siteEntry ?? []).map((s) => ({
+      siteUrl: s.siteUrl ?? '',
+      permissionLevel: s.permissionLevel ?? '',
+    }));
+    return { ok: true, sites };
+  } catch (err) {
+    return { ok: false, error: gscErrorMessage(err) };
+  }
+}
+
+/** Pulls the most useful one-liner out of a googleapis error. */
+export function gscErrorMessage(err: unknown): string {
+  if (!err) return 'unknown error';
+  if (typeof err === 'string') return err;
+  // googleapis errors have .response.data.error.message
+  const anyErr = err as Record<string, unknown>;
+  const resp = anyErr.response as Record<string, unknown> | undefined;
+  const data = resp?.data as Record<string, unknown> | undefined;
+  const errObj = data?.error as Record<string, unknown> | undefined;
+  if (errObj && typeof errObj.message === 'string') {
+    const code = errObj.code ?? resp?.status;
+    return code ? `${code}: ${errObj.message}` : String(errObj.message);
+  }
+  if (anyErr.message && typeof anyErr.message === 'string') return anyErr.message;
+  return JSON.stringify(err).slice(0, 300);
+}
+
 function getClient(): searchconsole_v1.Searchconsole {
   const mode = gscAuthMode();
   if (mode === 'oauth') {
