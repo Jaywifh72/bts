@@ -1,0 +1,27 @@
+name: Purge AEO sample claims (Neon prod)
+
+# Reverse of seed-aeo-claims.yml. Deletes only rows tagged with the
+# aeo-seed-* slug prefix. Manual-only.
+
+on:
+  workflow_dispatch: {}
+
+jobs:
+  purge:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: pnpm/action-setup@v6
+        with:
+          version: 10.33.2
+      - uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'pnpm'
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+      - name: Purge AEO sample claims
+        env:
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: pnpm --filter @bts/db exec tsx scripts/purge-aeo-sample-claims.ts
