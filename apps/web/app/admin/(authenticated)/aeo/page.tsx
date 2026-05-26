@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { db, sql } from '@bts/db';
 import { Sparkline } from '@/components/admin/Sparkline';
+import { triggerAeoCycle } from './actions';
 
 export const metadata: Metadata = {
   title: 'AEO Observatory',
@@ -182,7 +183,8 @@ async function fetchCycleAge(): Promise<number> {
   return row?.h == null ? 9999 : Math.round(row.h);
 }
 
-export default async function AeoLandingPage() {
+export default async function AeoLandingPage({ searchParams }: { searchParams?: Promise<{ cycle?: string; reason?: string; samples?: string; dry?: string }> }) {
+  const sp = (await searchParams) ?? {};
   const c = await fetchCounts();
   const trends = await fetchTrends();
   const cycleHoursAgo = await fetchCycleAge();
@@ -230,6 +232,58 @@ export default async function AeoLandingPage() {
             </p>
           </div>
         </div>
+      </section>
+
+      {sp.cycle === 'dispatched' && (
+        <div className="rounded border border-emerald-900/40 bg-emerald-950/10 p-3 text-sm text-emerald-300">
+          ✓ AEO cycle dispatched ({sp.dry ? 'dry-run, ' : ''}samples={sp.samples ?? '2'}).
+          Track at{' '}
+          <a
+            href="https://github.com/Jaywifh72/bts/actions/workflows/aeo-cycle.yml"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-emerald-200 underline hover:text-emerald-100"
+          >
+            github.com/Jaywifh72/bts/actions
+          </a>
+          .
+        </div>
+      )}
+      {sp.cycle === 'error' && (
+        <div className="rounded border border-red-900/40 bg-red-950/10 p-3 text-sm text-red-300">
+          ✗ Dispatch failed: <code className="font-mono">{sp.reason ?? 'unknown'}</code>
+        </div>
+      )}
+
+      <section>
+        <h2 className="mb-2 text-[10px] uppercase tracking-widest text-zinc-500">Actions</h2>
+        <form action={triggerAeoCycle} className="flex flex-wrap items-baseline gap-3 rounded border border-zinc-800 bg-zinc-900/40 p-4 text-sm">
+          <label className="flex items-center gap-2 text-zinc-300">
+            <span className="text-[10px] uppercase tracking-widest text-zinc-500">Samples</span>
+            <select
+              name="samples_per_prompt"
+              defaultValue="2"
+              className="rounded border border-zinc-700 bg-zinc-950 px-2 py-1 text-sm text-zinc-200 focus:border-amber-500 focus:outline-none"
+            >
+              <option value="1">1 (~10 min)</option>
+              <option value="2">2 (~30 min)</option>
+              <option value="3">3 (~50 min)</option>
+            </select>
+          </label>
+          <label className="flex items-center gap-2 text-zinc-300">
+            <input type="checkbox" name="dry_run" className="accent-amber-500" />
+            <span className="text-zinc-300">Dry run (count only, no API spend)</span>
+          </label>
+          <button
+            type="submit"
+            className="rounded border border-amber-700/60 bg-amber-600/20 px-4 py-2 font-serif text-amber-300 hover:border-amber-500 hover:bg-amber-600/30"
+          >
+            Run AEO cycle now
+          </button>
+          <span className="text-xs text-zinc-500 italic">
+            Fires <code>.github/workflows/aeo-cycle.yml</code>. Track in GitHub Actions.
+          </span>
+        </form>
       </section>
 
       <section>
