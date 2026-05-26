@@ -29,13 +29,14 @@ export async function setClaimStatusAction(
  */
 export async function bulkPromoteEligibleClaimsAction(): Promise<void> {
   const PRIMARY_LIKE = ['primary', 'secondary', 'manufacturer', 'rental_house'];
+  const primaryLikeList = sql.join(PRIMARY_LIKE.map((v) => sql`${v}`), sql`, `);
   const rows = await db.execute<{ id: number; production_slug: string | null }>(sql`
     WITH eligible AS (
       SELECT c.id, p.slug AS production_slug
       FROM claims c
       LEFT JOIN productions p ON p.id = c.production_id
       WHERE c.status IN ('candidate', 'needs_source')
-        AND c.confidence = ANY(${PRIMARY_LIKE})
+        AND c.confidence IN (${primaryLikeList})
         AND EXISTS (SELECT 1 FROM claim_sources WHERE claim_id = c.id)
     )
     UPDATE claims SET status = 'sourced', updated_at = now()
