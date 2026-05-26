@@ -1,6 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { fetchGscReport, isGscConfigured } from '@/lib/gsc';
+import { fetchGscReport, isGscConfigured, gscAuthMode } from '@/lib/gsc';
 import { Sparkline } from '@/components/admin/Sparkline';
 
 export const metadata: Metadata = {
@@ -41,7 +41,12 @@ export default async function AdminSeoPage() {
   return (
     <div className="space-y-8">
       <header>
-        <h1 className="font-serif text-3xl text-zinc-50">SEO — Google Search Console</h1>
+        <div className="flex items-baseline justify-between gap-4">
+          <h1 className="font-serif text-3xl text-zinc-50">SEO — Google Search Console</h1>
+          <span className="rounded border border-zinc-700 px-2 py-0.5 text-[10px] uppercase tracking-widest text-zinc-400">
+            auth: {gscAuthMode()}
+          </span>
+        </div>
         <p className="mt-1 text-sm text-zinc-400">
           Organic Google performance for <code className="text-amber-400">{report.site}</code> over the
           last <span className="text-zinc-200">{days.length} days</span>
@@ -206,34 +211,27 @@ function ConfigurePrompt() {
       </header>
 
       <section className="rounded border border-amber-900/40 bg-amber-950/10 p-5 text-sm text-zinc-300">
-        <h2 className="mb-3 font-serif text-lg text-amber-400">Setup checklist</h2>
-        <ol className="ml-5 list-decimal space-y-2 text-zinc-300">
-          <li>
-            Verify <code className="text-amber-400">cinecanon.com</code> in Search Console:{' '}
-            <Link href="https://search.google.com/search-console/welcome" className="text-amber-400 hover:underline">
-              search.google.com/search-console
-            </Link>
-            {' '}(the DNS TXT-record method is easiest given you control Cloudflare DNS).
-          </li>
-          <li>
-            Create a Google Cloud service account, enable the <em>Search Console API</em>, download its JSON key.
-          </li>
-          <li>
-            In GSC <em>Settings → Users and permissions</em>, add the service-account email as a <em>Full</em> user.
-          </li>
-          <li>
-            Add three env vars to Vercel (Production + Preview):
-            <ul className="ml-5 mt-1 list-disc space-y-1 font-mono text-[11px] text-amber-300">
-              <li>GSC_SERVICE_ACCOUNT_EMAIL</li>
-              <li>GSC_SERVICE_ACCOUNT_KEY <span className="text-zinc-500">(the full private_key string)</span></li>
-              <li>GSC_SITE_URL <span className="text-zinc-500">(e.g. https://www.cinecanon.com/ — trailing slash matters)</span></li>
+        <h2 className="mb-3 font-serif text-lg text-amber-400">Setup — full runbook at <code className="not-italic text-amber-300">docs/runbooks/gsc-setup.md</code></h2>
+        <p className="mb-3 text-zinc-400 italic">Two auth paths supported — OAuth (recommended) or service-account fallback. Set either group of env vars in Vercel and redeploy.</p>
+        <div className="grid gap-4 sm:grid-cols-2">
+          <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3">
+            <p className="text-[10px] uppercase tracking-widest text-amber-400">OAuth (recommended)</p>
+            <ul className="mt-2 ml-4 list-disc space-y-1 font-mono text-[11px] text-amber-300">
+              <li>GSC_OAUTH_CLIENT_ID</li>
+              <li>GSC_OAUTH_CLIENT_SECRET</li>
+              <li>GSC_REFRESH_TOKEN</li>
+              <li>GSC_SITE_URL <span className="text-zinc-500">(e.g. sc-domain:cinecanon.com)</span></li>
             </ul>
-          </li>
-          <li>
-            Redeploy. This page will start showing organic clicks, impressions, top queries, top landing pages,
-            CTR, and average ranking — refreshed each request.
-          </li>
-        </ol>
+          </div>
+          <div className="rounded border border-zinc-800 bg-zinc-900/40 p-3">
+            <p className="text-[10px] uppercase tracking-widest text-zinc-400">Service-account (fallback)</p>
+            <ul className="mt-2 ml-4 list-disc space-y-1 font-mono text-[11px] text-zinc-400">
+              <li>GSC_SERVICE_ACCOUNT_EMAIL</li>
+              <li>GSC_SERVICE_ACCOUNT_KEY</li>
+              <li>GSC_SITE_URL</li>
+            </ul>
+          </div>
+        </div>
       </section>
 
       <section className="rounded border border-zinc-800 bg-zinc-900/40 p-4 text-xs text-zinc-400 italic">

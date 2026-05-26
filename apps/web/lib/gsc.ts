@@ -5,24 +5,40 @@
 // callers should render an empty/instructions state in that case rather than
 // throwing.
 //
-// Setup (one-time, owner action):
-//   1. Verify cinecanon.com in Google Search Console:
-//      https://search.google.com/search-console/welcome
-//   2. Create a Google Cloud service account with "Search Console API" enabled.
-//   3. Add the service account email as a "Full" user in GSC (Settings →
-//      Users and permissions → Add user).
-//   4. Download the service-account JSON key.
-//   5. Add as GH/Vercel env vars:
-//        GSC_SERVICE_ACCOUNT_EMAIL   (the @...iam.gserviceaccount.com address)
-//        GSC_SERVICE_ACCOUNT_KEY     (the entire `private_key` value — keep \n escapes)
-//        GSC_SITE_URL               (e.g. https://www.cinecanon.com/  — trailing slash matters)
+// Two auth paths supported. The OAuth refresh-token flow is preferred because
+// it's what the operator configured (May 2026). Service-account JWT auth is
+// kept as a fallback so we can swap back without code changes.
 //
-// Read-only API. No mutation surface. CC-BY 4.0 attribution boundary doesn't
-// apply — this is internal admin data only.
+// ---- OAuth path (preferred) ----------------------------------------------
+//
+// Required env vars in Vercel:
+//   GSC_OAUTH_CLIENT_ID       — from Google Cloud Console OAuth credentials
+//   GSC_OAUTH_CLIENT_SECRET   — paired secret
+//   GSC_REFRESH_TOKEN         — exchanged once via OAuth 2.0 Playground while
+//                               signed in as the property owner. Long-lived
+//                               (does not expire unless revoked or 6mo idle).
+//   GSC_SITE_URL              — the property identifier. For Domain
+//                               properties use `sc-domain:cinecanon.com`
+//                               (not the URL — Domain properties are
+//                               identified by the `sc-domain:` prefix).
+//
+// ---- Service-account path (fallback) -------------------------------------
+//
+// Required env vars in Vercel:
+//   GSC_SERVICE_ACCOUNT_EMAIL — @...iam.gserviceaccount.com address
+//   GSC_SERVICE_ACCOUNT_KEY   — the entire `private_key` value (keep \n escapes)
+//   GSC_SITE_URL              — same as above
+//
+// The service account must be added as a verified user on the GSC property.
+//
+// ---- API surface ---------------------------------------------------------
+//
+// Read-only. No mutation. Callable per admin request; results are not cached
+// at this layer (rely on Vercel's HTTP cache headers if needed).
 
 import { google, type searchconsole_v1 } from 'googleapis';
 
-const GSC_SITE = process.env.GSC_SITE_URL ?? 'https://www.cinecanon.com/';
+const GSC_SITE = process.env.GSC_SITE_URL ?? 'sc-domain:cinecanon.com';
 
 export type GscRow = {
   keys: string[];
@@ -43,22 +59,46 @@ export type GscReport = {
   byDay: GscRow[];
 };
 
+type AuthMode = 'oauth' | 'service-account' | 'none';
+
+export function gscAuthMode(): AuthMode {
+  if (process.env.GSC_REFRESH_TOKEN
+      && process.env.GSC_OAUTH_CLIENT_ID
+      && process.env.GSC_OAUTH_CLIENT_SECRET) {
+    return 'oauth';
+  }
+  if (process.env.GSC_SERVICE_ACCOUNT_EMAIL && process.env.GSC_SERVICE_ACCOUNT_KEY) {
+    return 'service-account';
+  }
+  return 'none';
+}
+
 export function isGscConfigured(): boolean {
-  return Boolean(
-    process.env.GSC_SERVICE_ACCOUNT_EMAIL &&
-    process.env.GSC_SERVICE_ACCOUNT_KEY,
-  );
+  return gscAuthMode() !== 'none';
 }
 
 function getClient(): searchconsole_v1.Searchconsole {
-  const email = process.env.GSC_SERVICE_ACCOUNT_EMAIL!;
-  const key = (process.env.GSC_SERVICE_ACCOUNT_KEY ?? '').replace(/\\n/g, '\n');
-  const auth = new google.auth.JWT({
-    email,
-    key,
-    scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
-  });
-  return google.searchconsole({ version: 'v1', auth });
+  const mode = gscAuthMode();
+  if (mode === 'oauth') {
+    const oauth2 = new google.auth.OAuth2({
+      clientId: process.env.GSC_OAUTH_CLIENT_ID!,
+      clientSecret: process.env.GSC_OAUTH_CLIENT_SECRET!,
+    });
+    oauth2.setCredentials({ refresh_token: process.env.GSC_REFRESH_TOKEN! });
+    // googleapis will exchange refresh → access on first request and cache it.
+    return google.searchconsole({ version: 'v1', auth: oauth2 });
+  }
+  if (mode === 'service-account') {
+    const email = process.env.GSC_SERVICE_ACCOUNT_EMAIL!;
+    const key = (process.env.GSC_SERVICE_ACCOUNT_KEY ?? '').replace(/\\n/g, '\n');
+    const auth = new google.auth.JWT({
+      email,
+      key,
+      scopes: ['https://www.googleapis.com/auth/webmasters.readonly'],
+    });
+    return google.searchconsole({ version: 'v1', auth });
+  }
+  throw new Error('GSC not configured');
 }
 
 export async function fetchGscReport(opts: { days?: number } = {}): Promise<GscReport | null> {
