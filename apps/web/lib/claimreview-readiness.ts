@@ -30,6 +30,15 @@ export type ClaimReviewReadiness = {
 };
 
 export async function getClaimReviewReadiness(): Promise<ClaimReviewReadiness> {
+  try {
+    return await readinessInner();
+  } catch (err) {
+    console.error('[claimreview-readiness] query failed', err);
+    return { emittableTotal: 0, byStatus: [], oneStepAway: 0, topProductionsAwaitingPromotion: [] };
+  }
+}
+
+async function readinessInner(): Promise<ClaimReviewReadiness> {
   const emittable = await db.execute<{ status: string; count: number }>(sql`
     SELECT status, COUNT(*)::int AS count
     FROM claims
