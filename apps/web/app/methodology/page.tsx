@@ -1,12 +1,13 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { siteUrl } from '@/lib/site';
+import { siteUrl, absoluteUrl } from '@/lib/site';
 import { getCoverageSummary } from '@/lib/admin/health-queries';
+import { JsonLd } from '@/lib/jsonLd';
 
 export const metadata: Metadata = {
-  title: 'Methodology',
+  title: 'Methodology — Citation Tiers & Editorial Review',
   description:
-    'How CineCanon sources, rates, and stewards its data. The four-tier citation rubric, the editorial review cadence, the dispute resolution flow, and the methodology revision history.',
+    'How CineCanon sources, rates, and stewards its data: four-tier citation rubric, editorial review cadence, and the dispute resolution flow.',
   alternates: {
     canonical: `${siteUrl()}/methodology`,
   },
@@ -41,6 +42,16 @@ export default async function MethodologyPage() {
 
   return (
     <article className="prose prose-invert prose-zinc max-w-3xl">
+      <JsonLd data={{
+        '@context': 'https://schema.org',
+        '@type': 'TechArticle',
+        '@id': absoluteUrl('/methodology'),
+        url: absoluteUrl('/methodology'),
+        headline: 'CineCanon Methodology',
+        description: 'How CineCanon sources, rates, and stewards its data: four-tier citation rubric, editorial review cadence, dispute resolution.',
+        author: { '@type': 'Organization', name: 'CineCanon', url: absoluteUrl('/') },
+        publisher: { '@type': 'Organization', name: 'CineCanon', url: absoluteUrl('/') },
+      }} />
       <header className="not-prose mb-10 border-b border-zinc-800 pb-6">
         <p className="text-[11px] uppercase tracking-[0.25em] text-amber-500/80">
           Editorial standard

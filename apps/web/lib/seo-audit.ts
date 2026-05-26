@@ -105,8 +105,10 @@ export const PRIORITY_PATHS: ReadonlyArray<string> = [
   '/films/the-substance-2024',
   '/films/1917-2019',
   '/crew',
+  '/vfx',
   '/about',
   '/methodology',
+  '/queries',
   '/queries/dune-part-two-lenses',
 ];
 
@@ -380,9 +382,14 @@ async function auditOnePage(url: string): Promise<OnPageResult> {
 
   if (!canonical) {
     issues.push({ severity: 'warn', code: 'canonical_missing', message: 'No <link rel="canonical"> — may cause duplicate-content issues' });
-  } else if (canonical !== url) {
-    // Different canonical isn't always wrong, but flag it for review
-    issues.push({ severity: 'warn', code: 'canonical_mismatch', message: `Canonical points to a different URL: ${canonical}` });
+  } else {
+    // Normalize trailing-slash before comparing — `/` is rendered by Next as
+    // `https://host` and the requested URL is `https://host/` (or vice versa).
+    // Both refer to the same page; only a genuine path divergence is a warn.
+    const stripSlash = (s: string) => s.endsWith('/') && s.length > 1 ? s.slice(0, -1) : s;
+    if (stripSlash(canonical) !== stripSlash(url)) {
+      issues.push({ severity: 'warn', code: 'canonical_mismatch', message: `Canonical points to a different URL: ${canonical}` });
+    }
   }
 
   if (h1Count === 0) {

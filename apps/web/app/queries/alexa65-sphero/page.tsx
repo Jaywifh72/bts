@@ -3,14 +3,29 @@ import Link from 'next/link';
 import { db, findFeaturesShotOnAlexa65WithSphero } from '@bts/db';
 import { KillerQueryTable } from '@/components/queries/KillerQueryTable';
 import { SectionHeader } from '@/components/ui/SectionHeader';
+import { JsonLd } from '@/lib/jsonLd';
+import { absoluteUrl } from '@/lib/site';
 
-export const metadata: Metadata = { title: 'ALEXA 65 + Panavision Sphero' };
+export const metadata: Metadata = {
+  title: 'Films shot on ARRI ALEXA 65 + Panavision Sphero lenses',
+  description: 'Every feature shot on the ARRI ALEXA 65 paired with Panavision Sphero anamorphic lenses — cited gear pairings across the archive.',
+  alternates: { canonical: '/queries/alexa65-sphero' },
+};
 
 export default async function Alexa65SpheroPage() {
   const rows = await findFeaturesShotOnAlexa65WithSphero(db);
 
   return (
     <>
+      <JsonLd data={{
+        '@context': 'https://schema.org',
+        '@type': 'TechArticle',
+        '@id': absoluteUrl('/queries/alexa65-sphero'),
+        url: absoluteUrl('/queries/alexa65-sphero'),
+        headline: 'Films shot on ARRI ALEXA 65 + Panavision Sphero lenses',
+        author: { '@type': 'Organization', name: 'CineCanon', url: absoluteUrl('/') },
+        publisher: { '@type': 'Organization', name: 'CineCanon', url: absoluteUrl('/') },
+      }} />
       <div className="mb-8">
         <p className="text-xs uppercase tracking-widest text-zinc-500">Killer Query</p>
         <h1 className="mt-1 font-serif text-3xl text-zinc-50">

@@ -8,9 +8,11 @@ import { Pagination } from '@/components/ui/Pagination';
 import { PageHero } from '@/components/ui/PageHero';
 import { ViewToggle, parseView } from '@/components/ui/ViewToggle';
 import { CompareCheckbox, CompareDrawer } from '@/components/ui/Compare';
+import { JsonLd } from '@/lib/jsonLd';
+import { absoluteUrl } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: 'Crew',
+  title: 'Crew — Directors, DPs, Editors & Designers',
   description: 'Directors, cinematographers, editors, production designers, sound and VFX leads — searchable crew database with film credits and department filters.',
   alternates: { canonical: '/crew' },
 };
@@ -58,6 +60,15 @@ export default async function CrewPage(props: Props) {
 
   return (
     <>
+      <JsonLd data={{
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        '@id': absoluteUrl('/crew'),
+        url: absoluteUrl('/crew'),
+        name: 'Crew — CineCanon',
+        description: 'Directors, cinematographers, editors, production designers, sound and VFX leads.',
+        mainEntity: { '@type': 'ItemList', numberOfItems: total },
+      }} />
       <PageHero
         eyebrow="Archive"
         title="Crew"

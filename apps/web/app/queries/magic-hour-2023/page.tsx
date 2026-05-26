@@ -2,14 +2,29 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { db, findMagicHourExteriorLightingByYear } from '@bts/db';
 import { KillerQueryTable } from '@/components/queries/KillerQueryTable';
+import { JsonLd } from '@/lib/jsonLd';
+import { absoluteUrl } from '@/lib/site';
 
-export const metadata: Metadata = { title: 'Magic-Hour Exterior Lighting 2023' };
+export const metadata: Metadata = {
+  title: 'Magic-hour exterior lighting on 2023 films',
+  description: 'Cinematographers and lighting setups for golden-hour and magic-hour exterior sequences across 2023 features.',
+  alternates: { canonical: '/queries/magic-hour-2023' },
+};
 
 export default async function MagicHour2023Page() {
   const rows = await findMagicHourExteriorLightingByYear(db, 2023);
 
   return (
     <>
+      <JsonLd data={{
+        '@context': 'https://schema.org',
+        '@type': 'TechArticle',
+        '@id': absoluteUrl('/queries/magic-hour-2023'),
+        url: absoluteUrl('/queries/magic-hour-2023'),
+        headline: 'Magic-hour exterior lighting on 2023 films',
+        author: { '@type': 'Organization', name: 'CineCanon', url: absoluteUrl('/') },
+        publisher: { '@type': 'Organization', name: 'CineCanon', url: absoluteUrl('/') },
+      }} />
       <div className="mb-8">
         <p className="text-xs uppercase tracking-widest text-zinc-500">Killer Query</p>
         <h1 className="mt-1 font-serif text-3xl text-zinc-50">

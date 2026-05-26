@@ -1,15 +1,27 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { JsonLd } from '@/lib/jsonLd';
+import { absoluteUrl } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: 'About',
+  title: 'About CineCanon — Sources, Curation & Citation Tiers',
   description:
     'How CineCanon sources its data, what is hand-curated, what comes from TMDb, and how to read the technical metadata.',
+  alternates: { canonical: '/about' },
 };
 
 export default function AboutPage() {
   return (
     <article className="prose-zinc max-w-2xl">
+      <JsonLd data={{
+        '@context': 'https://schema.org',
+        '@type': 'AboutPage',
+        '@id': absoluteUrl('/about'),
+        url: absoluteUrl('/about'),
+        name: 'About CineCanon',
+        description: 'How CineCanon sources its data, what is hand-curated, and how to read the technical metadata.',
+        publisher: { '@type': 'Organization', name: 'CineCanon', url: absoluteUrl('/') },
+      }} />
       <p className="text-xs uppercase tracking-widest text-zinc-500">About</p>
       <h1 className="mt-1 font-serif text-4xl text-zinc-50">CineCanon</h1>
       <p className="mt-4 text-zinc-300">

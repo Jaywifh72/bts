@@ -19,7 +19,7 @@ import { JsonLd } from '@/lib/jsonLd';
 import { absoluteUrl, siteUrl } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: 'Films',
+  title: 'Films — Cameras, Lenses & Crew Database',
   description: 'Browse cited, confidence-graded technical data for thousands of films — cameras, lenses, formats, aspect ratios, and crew, filterable by decade, genre, and studio.',
   alternates: { canonical: '/films' },
 };

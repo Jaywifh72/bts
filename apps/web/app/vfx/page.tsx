@@ -2,9 +2,11 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { db, listVfxHouses } from '@bts/db';
 import { PageHero, PageHeroStat } from '@/components/ui/PageHero';
+import { JsonLd } from '@/lib/jsonLd';
+import { absoluteUrl } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: 'VFX Houses',
+  title: 'VFX Houses — Studios, Boutique & In-House Facilities',
   description: 'Directory of visual-effects houses and their film credits — full-service, boutique, in-house, previs, and postvis facilities ranked by primary VFX work and shot counts.',
   alternates: { canonical: '/vfx' },
 };
@@ -70,6 +72,15 @@ export default async function VfxPage({ searchParams }: { searchParams: Promise<
 
   return (
     <>
+      <JsonLd data={{
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        '@id': absoluteUrl('/vfx'),
+        url: absoluteUrl('/vfx'),
+        name: 'VFX Houses — CineCanon',
+        description: 'Directory of visual-effects houses and their film credits.',
+        mainEntity: { '@type': 'ItemList', numberOfItems: rows.length },
+      }} />
       <PageHero
         eyebrow="Archive"
         title="VFX Houses"

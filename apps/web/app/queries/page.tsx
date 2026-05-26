@@ -1,11 +1,14 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
 import { KILLER_QUERIES } from '@/lib/queries-index';
+import { JsonLd } from '@/lib/jsonLd';
+import { absoluteUrl } from '@/lib/site';
 
 export const metadata: Metadata = {
-  title: 'Killer queries',
+  title: 'Killer queries — Cross-cut cinema research',
   description:
-    'Hand-picked queries that demonstrate what the CineCanon archive can answer once the data is in shape. Each one cross-cuts crews, gear, productions, or scenes in a way that would be tedious-to-impossible elsewhere.',
+    'Hand-picked queries that demonstrate what the CineCanon archive can answer: gear pairings, DP lens choices, scene lighting setups, and more.',
+  alternates: { canonical: '/queries' },
 };
 
 const QUERIES = KILLER_QUERIES;
@@ -13,6 +16,24 @@ const QUERIES = KILLER_QUERIES;
 export default function QueriesIndexPage() {
   return (
     <>
+      <JsonLd data={{
+        '@context': 'https://schema.org',
+        '@type': 'CollectionPage',
+        '@id': absoluteUrl('/queries'),
+        url: absoluteUrl('/queries'),
+        name: 'Killer queries — CineCanon',
+        description: 'Hand-picked cross-cutting cinema queries.',
+        mainEntity: {
+          '@type': 'ItemList',
+          numberOfItems: QUERIES.length,
+          itemListElement: QUERIES.slice(0, 20).map((q, i) => ({
+            '@type': 'ListItem',
+            position: i + 1,
+            url: absoluteUrl(`/queries/${q.slug}`),
+            name: q.title,
+          })),
+        },
+      }} />
       <header className="mb-10">
         <p className="text-xs uppercase tracking-widest text-zinc-500">Archive</p>
         <h1 className="mt-1 font-serif text-3xl text-zinc-50">Killer queries</h1>

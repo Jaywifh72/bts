@@ -2,14 +2,30 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { db, findLensesByDpOnProduction } from '@bts/db';
 import { KillerQueryTable } from '@/components/queries/KillerQueryTable';
+import { JsonLd } from '@/lib/jsonLd';
+import { absoluteUrl } from '@/lib/site';
 
-export const metadata: Metadata = { title: 'Greig Fraser lenses on Dune: Part Two' };
+export const metadata: Metadata = {
+  title: 'Greig Fraser lenses on Dune: Part Two',
+  description: 'Every lens series and item used by cinematographer Greig Fraser on Dune: Part Two (2024) — cited, with confidence grades.',
+  alternates: { canonical: '/queries/dune-part-two-lenses' },
+};
 
 export default async function DunePartTwoLensesPage() {
   const rows = await findLensesByDpOnProduction(db, 'greig-fraser', 'dune-part-two-2024');
 
   return (
     <>
+      <JsonLd data={{
+        '@context': 'https://schema.org',
+        '@type': 'TechArticle',
+        '@id': absoluteUrl('/queries/dune-part-two-lenses'),
+        url: absoluteUrl('/queries/dune-part-two-lenses'),
+        headline: 'Greig Fraser lenses on Dune: Part Two',
+        about: { '@type': 'Movie', name: 'Dune: Part Two', url: absoluteUrl('/films/dune-part-two-2024') },
+        author: { '@type': 'Organization', name: 'CineCanon', url: absoluteUrl('/') },
+        publisher: { '@type': 'Organization', name: 'CineCanon', url: absoluteUrl('/') },
+      }} />
       <div className="mb-8">
         <p className="text-xs uppercase tracking-widest text-zinc-500">Killer Query</p>
         <h1 className="mt-1 font-serif text-3xl text-zinc-50">
