@@ -56,9 +56,17 @@ export default async function AdminSeoPage() {
       <header>
         <div className="flex items-baseline justify-between gap-4">
           <h1 className="font-serif text-3xl text-zinc-50">SEO — Google Search Console</h1>
-          <span className="rounded border border-zinc-700 px-2 py-0.5 text-[10px] uppercase tracking-widest text-zinc-400">
-            auth: {gscAuthMode()}
-          </span>
+          <div className="flex items-baseline gap-3">
+            <Link
+              href="/admin/seo/audit?run=1"
+              className="rounded border border-amber-700/60 bg-amber-600/20 px-3 py-1 text-xs font-serif text-amber-300 hover:border-amber-500 hover:bg-amber-600/30"
+            >
+              Run audit →
+            </Link>
+            <span className="rounded border border-zinc-700 px-2 py-0.5 text-[10px] uppercase tracking-widest text-zinc-400">
+              auth: {gscAuthMode()}
+            </span>
+          </div>
         </div>
         <p className="mt-1 text-sm text-zinc-400">
           Organic Google performance for <code className="text-amber-400">{report.site}</code>
