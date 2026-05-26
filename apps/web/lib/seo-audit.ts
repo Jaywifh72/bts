@@ -263,10 +263,14 @@ export async function getPreviousScores(
   excludeRunId: string,
 ): Promise<Map<string, number>> {
   if (urls.length === 0) return new Map();
+  // postgres-js doesn't bind a JS array to ANY(::text[]) reliably via a
+  // single parameter — expand inline with sql.join so each URL becomes
+  // its own bound param.
+  const urlList = sql.join(urls.map((u) => sql`${u}`), sql`, `);
   const rows = await db.execute<{ url: string; score: number }>(sql`
     SELECT DISTINCT ON (url) url, score
     FROM seo_audit_page_results
-    WHERE url = ANY(${urls as string[]}::text[])
+    WHERE url IN (${urlList})
       AND run_id != ${excludeRunId}::uuid
     ORDER BY url, fetched_at DESC
   `);
