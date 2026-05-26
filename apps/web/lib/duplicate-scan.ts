@@ -122,6 +122,52 @@ async function defaultScanPaths(): Promise<string[]> {
   return paths;
 }
 
+export type DuplicateScanRunRow = {
+  id: string;
+  ran_at: string;
+  runtime_ms: number;
+  urls_scanned: number;
+  title_dup_group_count: number;
+  desc_dup_group_count: number;
+  missing_title_count: number;
+  missing_desc_count: number;
+};
+
+export async function persistDuplicateScan(
+  report: DuplicateReport,
+  runtimeMs: number,
+): Promise<void> {
+  try {
+    await db.execute(sql`
+      INSERT INTO seo_duplicate_scan_runs
+        (runtime_ms, urls_scanned, title_dup_group_count, desc_dup_group_count,
+         missing_title_count, missing_desc_count, report)
+      VALUES (
+        ${runtimeMs}, ${report.urlsScanned}, ${report.titleDuplicates.length},
+        ${report.descriptionDuplicates.length}, ${report.missingTitleUrls.length},
+        ${report.missingDescriptionUrls.length}, ${JSON.stringify(report)}::jsonb
+      )
+    `);
+  } catch {
+    // best-effort
+  }
+}
+
+export async function listDuplicateScanRuns(limit = 20): Promise<DuplicateScanRunRow[]> {
+  try {
+    return await db.execute<DuplicateScanRunRow>(sql`
+      SELECT id, ran_at::text AS ran_at, runtime_ms, urls_scanned,
+             title_dup_group_count, desc_dup_group_count,
+             missing_title_count, missing_desc_count
+      FROM seo_duplicate_scan_runs
+      ORDER BY ran_at DESC
+      LIMIT ${limit}
+    `);
+  } catch {
+    return [];
+  }
+}
+
 function extractTag(html: string, re: RegExp): string | null {
   const m = html.match(re);
   if (!m) return null;

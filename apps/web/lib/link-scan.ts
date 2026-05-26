@@ -6,6 +6,7 @@
 
 import { siteUrl } from './site';
 import { PRIORITY_PATHS } from './seo-audit';
+import { db, sql } from '@bts/db';
 
 export type LinkCheck = {
   href: string;
@@ -118,6 +119,56 @@ export async function scanInternalLinks(opts: {
     okSample,
     errors,
   };
+}
+
+export type LinkScanRunRow = {
+  id: string;
+  ran_at: string;
+  runtime_ms: number;
+  pages_crawled: number;
+  links_discovered: number;
+  links_checked: number;
+  ok_count: number;
+  redirect_count: number;
+  broken_count: number;
+  hit_cap: boolean;
+};
+
+export async function persistLinkScan(
+  report: LinkScanReport,
+  runtimeMs: number,
+): Promise<void> {
+  const okCount = report.linksChecked - report.broken.length - report.redirects.length;
+  const hitCap = report.linksDiscovered >= MAX_LINKS;
+  try {
+    await db.execute(sql`
+      INSERT INTO seo_link_scan_runs
+        (runtime_ms, pages_crawled, links_discovered, links_checked,
+         ok_count, redirect_count, broken_count, hit_cap, report)
+      VALUES (
+        ${runtimeMs}, ${report.pagesCrawled}, ${report.linksDiscovered},
+        ${report.linksChecked}, ${okCount}, ${report.redirects.length},
+        ${report.broken.length}, ${hitCap}, ${JSON.stringify(report)}::jsonb
+      )
+    `);
+  } catch {
+    // Persistence is best-effort — never break the live scan UI on a DB hiccup.
+  }
+}
+
+export async function listLinkScanRuns(limit = 20): Promise<LinkScanRunRow[]> {
+  try {
+    return await db.execute<LinkScanRunRow>(sql`
+      SELECT id, ran_at::text AS ran_at, runtime_ms, pages_crawled,
+             links_discovered, links_checked, ok_count, redirect_count,
+             broken_count, hit_cap
+      FROM seo_link_scan_runs
+      ORDER BY ran_at DESC
+      LIMIT ${limit}
+    `);
+  } catch {
+    return [];
+  }
 }
 
 /**

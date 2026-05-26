@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { scanInternalLinks, type LinkCheck } from '@/lib/link-scan';
+import { scanInternalLinks, persistLinkScan, listLinkScanRuns, type LinkCheck, type LinkScanRunRow } from '@/lib/link-scan';
+import { Sparkline } from '@/components/admin/Sparkline';
 
 export const metadata: Metadata = {
   title: 'SEO — Broken-link scan',
@@ -21,7 +22,9 @@ export default async function SeoLinksPage(props: Props) {
     const t0 = Date.now();
     report = await scanInternalLinks();
     runtimeMs = Date.now() - t0;
+    await persistLinkScan(report, runtimeMs);
   }
+  const history = await listLinkScanRuns(20);
 
   return (
     <div className="space-y-6">
@@ -59,7 +62,51 @@ export default async function SeoLinksPage(props: Props) {
       ) : (
         <ReportView report={report} runtimeMs={runtimeMs} />
       )}
+
+      {history.length > 0 && <HistorySection history={history} />}
     </div>
+  );
+}
+
+function HistorySection({ history }: { history: LinkScanRunRow[] }) {
+  const series = [...history].reverse().map((r) => r.broken_count);
+  return (
+    <section>
+      <h2 className="mb-2 text-[10px] uppercase tracking-widest text-zinc-500">Scan history</h2>
+      <div className="rounded border border-zinc-800 bg-zinc-900/40 p-4">
+        <div className="mb-3 flex items-baseline gap-4">
+          <span className="text-xs text-zinc-400">Broken-link count, last {history.length} runs:</span>
+          <Sparkline values={series} width={220} height={32} ariaLabel="Broken-link count trend" />
+        </div>
+        <table className="w-full text-xs">
+          <thead className="border-b border-zinc-800 text-[10px] uppercase tracking-widest text-zinc-500">
+            <tr>
+              <th className="px-2 py-2 text-left font-normal">When</th>
+              <th className="px-2 py-2 text-right font-normal">Pages</th>
+              <th className="px-2 py-2 text-right font-normal">Discovered</th>
+              <th className="px-2 py-2 text-right font-normal">Checked</th>
+              <th className="px-2 py-2 text-right font-normal">Broken</th>
+              <th className="px-2 py-2 text-right font-normal">Redirects</th>
+              <th className="px-2 py-2 text-right font-normal">Runtime</th>
+            </tr>
+          </thead>
+          <tbody className="text-zinc-300">
+            {history.map((r) => (
+              <tr key={r.id} className="border-b border-zinc-900 last:border-0">
+                <td className="px-2 py-2 font-mono text-[11px]">{r.ran_at.slice(0, 16).replace('T', ' ')}</td>
+                <td className="px-2 py-2 text-right font-mono">{r.pages_crawled}</td>
+                <td className="px-2 py-2 text-right font-mono">{r.links_discovered}{r.hit_cap && <span className="text-amber-500">*</span>}</td>
+                <td className="px-2 py-2 text-right font-mono">{r.links_checked}</td>
+                <td className="px-2 py-2 text-right font-mono" style={{ color: r.broken_count > 0 ? '#ef4444' : '#10b981' }}>{r.broken_count}</td>
+                <td className="px-2 py-2 text-right font-mono text-amber-400">{r.redirect_count}</td>
+                <td className="px-2 py-2 text-right font-mono text-zinc-500">{(r.runtime_ms / 1000).toFixed(1)}s</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        <p className="mt-2 text-[10px] text-zinc-600 italic">* = scan hit the MAX_LINKS cap; raise the cap if you suspect more links exist.</p>
+      </div>
+    </section>
   );
 }
 

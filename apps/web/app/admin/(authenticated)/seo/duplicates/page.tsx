@@ -1,6 +1,7 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { scanForDuplicates, type DuplicateGroup } from '@/lib/duplicate-scan';
+import { scanForDuplicates, persistDuplicateScan, listDuplicateScanRuns, type DuplicateGroup, type DuplicateScanRunRow } from '@/lib/duplicate-scan';
+import { Sparkline } from '@/components/admin/Sparkline';
 
 export const metadata: Metadata = {
   title: 'SEO — Duplicate content',
@@ -21,7 +22,9 @@ export default async function SeoDuplicatesPage(props: Props) {
     const t0 = Date.now();
     report = await scanForDuplicates();
     runtimeMs = Date.now() - t0;
+    await persistDuplicateScan(report, runtimeMs);
   }
+  const history = await listDuplicateScanRuns(20);
 
   return (
     <div className="space-y-6">
@@ -59,7 +62,50 @@ export default async function SeoDuplicatesPage(props: Props) {
       ) : (
         <ReportView report={report} runtimeMs={runtimeMs} />
       )}
+
+      {history.length > 0 && <HistorySection history={history} />}
     </div>
+  );
+}
+
+function HistorySection({ history }: { history: DuplicateScanRunRow[] }) {
+  const series = [...history].reverse().map((r) => r.title_dup_group_count + r.desc_dup_group_count);
+  return (
+    <section>
+      <h2 className="mb-2 text-[10px] uppercase tracking-widest text-zinc-500">Scan history</h2>
+      <div className="rounded border border-zinc-800 bg-zinc-900/40 p-4">
+        <div className="mb-3 flex items-baseline gap-4">
+          <span className="text-xs text-zinc-400">Total duplicate groups (titles + descriptions), last {history.length} runs:</span>
+          <Sparkline values={series} width={220} height={32} ariaLabel="Duplicate group count trend" />
+        </div>
+        <table className="w-full text-xs">
+          <thead className="border-b border-zinc-800 text-[10px] uppercase tracking-widest text-zinc-500">
+            <tr>
+              <th className="px-2 py-2 text-left font-normal">When</th>
+              <th className="px-2 py-2 text-right font-normal">URLs</th>
+              <th className="px-2 py-2 text-right font-normal">Title dup groups</th>
+              <th className="px-2 py-2 text-right font-normal">Desc dup groups</th>
+              <th className="px-2 py-2 text-right font-normal">Missing title</th>
+              <th className="px-2 py-2 text-right font-normal">Missing desc</th>
+              <th className="px-2 py-2 text-right font-normal">Runtime</th>
+            </tr>
+          </thead>
+          <tbody className="text-zinc-300">
+            {history.map((r) => (
+              <tr key={r.id} className="border-b border-zinc-900 last:border-0">
+                <td className="px-2 py-2 font-mono text-[11px]">{r.ran_at.slice(0, 16).replace('T', ' ')}</td>
+                <td className="px-2 py-2 text-right font-mono">{r.urls_scanned}</td>
+                <td className="px-2 py-2 text-right font-mono" style={{ color: r.title_dup_group_count > 0 ? '#f59e0b' : '#10b981' }}>{r.title_dup_group_count}</td>
+                <td className="px-2 py-2 text-right font-mono" style={{ color: r.desc_dup_group_count > 0 ? '#f59e0b' : '#10b981' }}>{r.desc_dup_group_count}</td>
+                <td className="px-2 py-2 text-right font-mono">{r.missing_title_count}</td>
+                <td className="px-2 py-2 text-right font-mono">{r.missing_desc_count}</td>
+                <td className="px-2 py-2 text-right font-mono text-zinc-500">{(r.runtime_ms / 1000).toFixed(1)}s</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </section>
   );
 }
 
