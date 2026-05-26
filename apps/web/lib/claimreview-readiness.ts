@@ -33,9 +33,9 @@ export async function getClaimReviewReadiness(): Promise<ClaimReviewReadiness> {
   const emittable = await db.execute<{ status: string; count: number }>(sql`
     SELECT status, COUNT(*)::int AS count
     FROM claims
-    WHERE (status = 'verified' AND confidence IN (${primaryLikePlusBtsList}))
-       OR (status = 'reviewed' AND confidence IN (${primaryLikePlusBtsList}))
-       OR (status = 'sourced'  AND confidence IN (${primaryLikeList}))
+    WHERE (status = 'verified' AND confidence::text IN (${primaryLikePlusBtsList}))
+       OR (status = 'reviewed' AND confidence::text IN (${primaryLikePlusBtsList}))
+       OR (status = 'sourced'  AND confidence::text IN (${primaryLikeList}))
     GROUP BY status
   `);
   const emittableTotal = emittable.reduce((s, r) => s + r.count, 0);
@@ -44,7 +44,7 @@ export async function getClaimReviewReadiness(): Promise<ClaimReviewReadiness> {
     SELECT COUNT(*)::int AS n
     FROM claims c
     WHERE c.status IN ('candidate', 'needs_source')
-      AND c.confidence IN (${primaryLikeList})
+      AND c.confidence::text IN (${primaryLikeList})
       AND EXISTS (SELECT 1 FROM claim_sources WHERE claim_id = c.id)
   `);
   const oneStepAway = oneStepRows[0]?.n ?? 0;
@@ -54,7 +54,7 @@ export async function getClaimReviewReadiness(): Promise<ClaimReviewReadiness> {
     FROM claims c
     JOIN productions p ON p.id = c.production_id
     WHERE c.status IN ('candidate', 'needs_source')
-      AND c.confidence IN (${primaryLikeList})
+      AND c.confidence::text IN (${primaryLikeList})
       AND EXISTS (SELECT 1 FROM claim_sources WHERE claim_id = c.id)
     GROUP BY p.slug, p.title
     ORDER BY awaiting DESC

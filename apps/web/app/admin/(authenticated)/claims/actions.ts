@@ -36,7 +36,7 @@ export async function bulkPromoteEligibleClaimsAction(): Promise<void> {
       FROM claims c
       LEFT JOIN productions p ON p.id = c.production_id
       WHERE c.status IN ('candidate', 'needs_source')
-        AND c.confidence IN (${primaryLikeList})
+        AND c.confidence::text IN (${primaryLikeList})
         AND EXISTS (SELECT 1 FROM claim_sources WHERE claim_id = c.id)
     )
     UPDATE claims SET status = 'sourced', updated_at = now()
