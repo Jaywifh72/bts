@@ -9,6 +9,7 @@ import {
 } from '@bts/db';
 import { ClaimReviewRow } from '@/components/admin/ClaimReviewRow';
 import { Pagination } from '@/components/ui/Pagination';
+import { getClaimReviewReadiness } from '@/lib/claimreview-readiness';
 
 export const metadata: Metadata = {
   title: 'Claims Review',
@@ -89,7 +90,7 @@ export default async function AdminClaimsPage(props: Props) {
   const claimType = parseClaimType(searchParams.claimType);
   const page = Math.max(1, parseInt(searchParams.page ?? '1', 10) || 1);
 
-  const [claims, total] = await Promise.all([
+  const [claims, total, readiness] = await Promise.all([
     listClaimsForReview(db, {
       status,
       claimType,
@@ -97,6 +98,7 @@ export default async function AdminClaimsPage(props: Props) {
       offset: (page - 1) * PAGE_SIZE,
     }),
     countClaimsForReview(db, { status, claimType }),
+    getClaimReviewReadiness(),
   ]);
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
@@ -106,6 +108,48 @@ export default async function AdminClaimsPage(props: Props) {
 
   return (
     <div>
+      <section
+        className="mb-4 rounded border-2 p-4"
+        style={{
+          borderColor: readiness.emittableTotal > 0 ? '#10b98166' : '#92400e66',
+          background: readiness.emittableTotal > 0 ? '#10b98111' : '#92400e11',
+        }}
+      >
+        <p className="text-[10px] uppercase tracking-widest text-zinc-400">ClaimReview readiness</p>
+        <p className="mt-1 font-serif text-xl text-zinc-50">
+          <span style={{ color: readiness.emittableTotal > 0 ? '#10b981' : '#f59e0b' }}>
+            {readiness.emittableTotal.toLocaleString()}
+          </span>{' '}
+          claims currently emit Schema.org ClaimReview
+          {readiness.oneStepAway > 0 && (
+            <>
+              {' '}·{' '}
+              <span className="text-amber-300">{readiness.oneStepAway.toLocaleString()}</span> one step away
+            </>
+          )}
+        </p>
+        {readiness.oneStepAway > 0 && (
+          <p className="mt-2 text-xs text-zinc-400">
+            Have a citation + primary-like confidence but status is still <code>candidate</code> or{' '}
+            <code>needs_source</code>. Promote to <code>sourced</code> to unlock ClaimReview emission.
+          </p>
+        )}
+        {readiness.topProductionsAwaitingPromotion.length > 0 && (
+          <div className="mt-3">
+            <p className="text-[10px] uppercase tracking-widest text-zinc-500">Top productions awaiting promotion</p>
+            <ul className="mt-1 flex flex-wrap gap-2 text-xs">
+              {readiness.topProductionsAwaitingPromotion.map((p) => (
+                <li key={p.slug}>
+                  <a href={`/films/${p.slug}`} target="_blank" rel="noopener noreferrer" className="rounded border border-zinc-700 px-2 py-0.5 text-zinc-300 hover:border-amber-500 hover:text-amber-400">
+                    {p.title} <span className="text-zinc-500">({p.awaiting})</span>
+                  </a>
+                </li>
+              ))}
+            </ul>
+          </div>
+        )}
+      </section>
+
       <header className="mb-4 flex flex-wrap items-baseline justify-between gap-3">
         <h1 className="font-serif text-2xl">Claims Review</h1>
         <div className="text-sm text-zinc-500">
