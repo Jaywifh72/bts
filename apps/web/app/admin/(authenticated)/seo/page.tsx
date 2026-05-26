@@ -82,6 +82,12 @@ export default async function AdminSeoPage() {
               Dup scan →
             </Link>
             <Link
+              href="/admin/seo/noindex?run=1"
+              className="rounded border border-amber-700/60 bg-amber-600/20 px-3 py-1 text-xs font-serif text-amber-300 hover:border-amber-500 hover:bg-amber-600/30"
+            >
+              Noindex scan →
+            </Link>
+            <Link
               href="/admin/seo/digest"
               className="rounded border border-amber-700/60 bg-amber-600/20 px-3 py-1 text-xs font-serif text-amber-300 hover:border-amber-500 hover:bg-amber-600/30"
             >
