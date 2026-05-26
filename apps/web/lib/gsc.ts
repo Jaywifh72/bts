@@ -1,33 +1,35 @@
 // Google Search Console client.
 //
-// Returns top queries, landing pages, and aggregate impressions/clicks for the
-// site over a given window. The client is null when env vars are missing —
-// callers should render an empty/instructions state in that case rather than
-// throwing.
+// Self-healing: callers don't need to know the exact GSC property identifier
+// (sc-domain:cinecanon.com vs https://www.cinecanon.com/ vs ...). The client
+// auto-discovers via sites.list and picks the cinecanon.com property the
+// configured identity owns. GSC_SITE_URL is honored as an override when set
+// AND when it matches a discoverable property; otherwise we fall back.
 //
-// Two auth paths supported. The OAuth refresh-token flow is preferred because
-// it's what the operator configured (May 2026). Service-account JWT auth is
-// kept as a fallback so we can swap back without code changes.
+// Two auth paths supported. OAuth refresh-token is preferred (what's actually
+// configured today). Service-account JWT is the fallback.
 //
 // ---- OAuth path (preferred) ----------------------------------------------
 //
 // Required env vars in Vercel:
 //   GSC_OAUTH_CLIENT_ID       — from Google Cloud Console OAuth credentials
 //   GSC_OAUTH_CLIENT_SECRET   — paired secret
-//   GSC_REFRESH_TOKEN         — exchanged once via OAuth 2.0 Playground while
+//   GSC_REFRESH_TOKEN         — exchanged via OAuth 2.0 Playground while
 //                               signed in as the property owner. Long-lived
 //                               (does not expire unless revoked or 6mo idle).
-//   GSC_SITE_URL              — the property identifier. For Domain
-//                               properties use `sc-domain:cinecanon.com`
-//                               (not the URL — Domain properties are
-//                               identified by the `sc-domain:` prefix).
+//
+// Optional:
+//   GSC_SITE_URL              — if you want to pin to a specific property
+//                               (otherwise auto-detected from sites.list).
+//                               Domain properties are `sc-domain:cinecanon.com`;
+//                               URL-prefix properties are `https://www.cinecanon.com/`
+//                               (trailing slash matters for URL-prefix).
 //
 // ---- Service-account path (fallback) -------------------------------------
 //
 // Required env vars in Vercel:
 //   GSC_SERVICE_ACCOUNT_EMAIL — @...iam.gserviceaccount.com address
 //   GSC_SERVICE_ACCOUNT_KEY   — the entire `private_key` value (keep \n escapes)
-//   GSC_SITE_URL              — same as above
 //
 // The service account must be added as a verified user on the GSC property.
 //
@@ -38,7 +40,8 @@
 
 import { google, type searchconsole_v1 } from 'googleapis';
 
-const GSC_SITE = process.env.GSC_SITE_URL ?? 'sc-domain:cinecanon.com';
+const ENV_SITE = (process.env.GSC_SITE_URL ?? '').trim();
+const SITE_PATTERN = /cinecanon\.com/i;
 
 export type GscRow = {
   keys: string[];
@@ -50,6 +53,8 @@ export type GscRow = {
 
 export type GscReport = {
   site: string;
+  /** Whether the site identifier came from GSC_SITE_URL or auto-discovery. */
+  siteOrigin: 'env' | 'auto-discovered';
   startDate: string;
   endDate: string;
   totals: { clicks: number; impressions: number; ctr: number; position: number };
@@ -77,12 +82,14 @@ export function isGscConfigured(): boolean {
   return gscAuthMode() !== 'none';
 }
 
+export type SiteEntry = { siteUrl: string; permissionLevel: string };
+
 /**
  * Lists every Search Console property the configured identity has access to.
- * Returned as a diagnostic for the /admin/seo error state — if GSC_SITE_URL
- * doesn't match any returned siteUrl, that's the root cause.
+ * Used both as a diagnostic (when the operator is debugging) and by
+ * resolveSiteUrl() to auto-discover the right property.
  */
-export async function listGscSites(): Promise<{ ok: true; sites: Array<{ siteUrl: string; permissionLevel: string }> } | { ok: false; error: string }> {
+export async function listGscSites(): Promise<{ ok: true; sites: SiteEntry[] } | { ok: false; error: string }> {
   if (!isGscConfigured()) return { ok: false, error: 'GSC not configured' };
   try {
     const sc = getClient();
@@ -95,6 +102,83 @@ export async function listGscSites(): Promise<{ ok: true; sites: Array<{ siteUrl
   } catch (err) {
     return { ok: false, error: gscErrorMessage(err) };
   }
+}
+
+/**
+ * Resolve which siteUrl identifier to use for searchanalytics queries.
+ *
+ * Strategy:
+ *   1. If GSC_SITE_URL is set AND matches a property listed by sites.list,
+ *      use it (operator override wins when valid).
+ *   2. Otherwise pick the highest-priority cinecanon.com property the
+ *      identity can access. Priority: sc-domain (Domain property) > https://www
+ *      > https:// > http://. Within ties, prefer siteOwner > siteFullUser >
+ *      siteRestrictedUser.
+ *   3. If no cinecanon.com property is visible, return an error explaining what
+ *      sites the identity CAN see so the operator can fix it.
+ *
+ * Returns the resolved siteUrl and where it came from.
+ */
+export async function resolveSiteUrl(): Promise<
+  | { ok: true; siteUrl: string; origin: 'env' | 'auto-discovered'; allSites: SiteEntry[] }
+  | { ok: false; error: string; allSites: SiteEntry[] }
+> {
+  const probe = await listGscSites();
+  if (!probe.ok) {
+    return { ok: false, error: probe.error, allSites: [] };
+  }
+  const sites = probe.sites;
+
+  // 1. Honor env override if it matches a visible property.
+  if (ENV_SITE) {
+    const hit = sites.find((s) => s.siteUrl === ENV_SITE);
+    if (hit) return { ok: true, siteUrl: hit.siteUrl, origin: 'env', allSites: sites };
+    // If env is set but doesn't match, fall through to auto-discover but log it.
+    console.warn(
+      `[gsc] GSC_SITE_URL="${ENV_SITE}" doesn't match any property the identity owns. ` +
+      `Falling back to auto-discovery.`,
+    );
+  }
+
+  // 2. Auto-discover the right cinecanon.com property.
+  const cinecanonSites = sites.filter((s) => SITE_PATTERN.test(s.siteUrl));
+  if (cinecanonSites.length === 0) {
+    return {
+      ok: false,
+      error: sites.length === 0
+        ? 'The configured identity has no GSC properties at all. Add it as a user on the property in Search Console → Settings → Users and permissions.'
+        : `The configured identity has access to ${sites.length} property/properties, but none match cinecanon.com. Visible: ${sites.map((s) => s.siteUrl).join(', ')}.`,
+      allSites: sites,
+    };
+  }
+
+  // Rank: prefer sc-domain (Domain property — covers all subdomains), then
+  // www, then bare https, then http. Within rank, prefer higher permission.
+  const rank = (siteUrl: string): number => {
+    if (siteUrl.startsWith('sc-domain:')) return 0;
+    if (siteUrl.startsWith('https://www.')) return 1;
+    if (siteUrl.startsWith('https://')) return 2;
+    if (siteUrl.startsWith('http://')) return 3;
+    return 4;
+  };
+  const permRank = (p: string): number => {
+    if (p === 'siteOwner') return 0;
+    if (p === 'siteFullUser') return 1;
+    if (p === 'siteRestrictedUser') return 2;
+    return 3;
+  };
+  cinecanonSites.sort((a, b) => {
+    const r = rank(a.siteUrl) - rank(b.siteUrl);
+    if (r !== 0) return r;
+    return permRank(a.permissionLevel) - permRank(b.permissionLevel);
+  });
+
+  return {
+    ok: true,
+    siteUrl: cinecanonSites[0]!.siteUrl,
+    origin: 'auto-discovered',
+    allSites: sites,
+  };
 }
 
 /** Pulls the most useful one-liner out of a googleapis error. */
@@ -117,10 +201,12 @@ export function gscErrorMessage(err: unknown): string {
 function getClient(): searchconsole_v1.Searchconsole {
   const mode = gscAuthMode();
   if (mode === 'oauth') {
-    const oauth2 = new google.auth.OAuth2({
-      clientId: process.env.GSC_OAUTH_CLIENT_ID!,
-      clientSecret: process.env.GSC_OAUTH_CLIENT_SECRET!,
-    });
+    // Positional-arg form is the most-documented signature; works across
+    // recent google-auth-library versions.
+    const oauth2 = new google.auth.OAuth2(
+      process.env.GSC_OAUTH_CLIENT_ID!,
+      process.env.GSC_OAUTH_CLIENT_SECRET!,
+    );
     oauth2.setCredentials({ refresh_token: process.env.GSC_REFRESH_TOKEN! });
     // googleapis will exchange refresh → access on first request and cache it.
     return google.searchconsole({ version: 'v1', auth: oauth2 });
@@ -138,8 +224,18 @@ function getClient(): searchconsole_v1.Searchconsole {
   throw new Error('GSC not configured');
 }
 
-export async function fetchGscReport(opts: { days?: number } = {}): Promise<GscReport | null> {
-  if (!isGscConfigured()) return null;
+export async function fetchGscReport(opts: { days?: number } = {}): Promise<
+  { ok: true; report: GscReport } | { ok: false; error: string; sites: SiteEntry[] }
+> {
+  if (!isGscConfigured()) {
+    return { ok: false, error: 'GSC not configured', sites: [] };
+  }
+
+  const resolved = await resolveSiteUrl();
+  if (!resolved.ok) {
+    return { ok: false, error: resolved.error, sites: resolved.allSites };
+  }
+
   const sc = getClient();
   const days = clamp(opts.days ?? 28, 1, 90);
   const today = new Date();
@@ -149,7 +245,7 @@ export async function fetchGscReport(opts: { days?: number } = {}): Promise<GscR
 
   const fetch = async (dimensions: string[], rowLimit: number): Promise<GscRow[]> => {
     const res = await sc.searchanalytics.query({
-      siteUrl: GSC_SITE,
+      siteUrl: resolved.siteUrl,
       requestBody: { startDate: start, endDate: end, dimensions, rowLimit },
     });
     return (res.data.rows ?? []).map((r) => ({
@@ -161,36 +257,48 @@ export async function fetchGscReport(opts: { days?: number } = {}): Promise<GscR
     }));
   };
 
-  const [topQueries, topPages, topCountries, byDay] = await Promise.all([
-    fetch(['query'], 50),
-    fetch(['page'], 50),
-    fetch(['country'], 25),
-    fetch(['date'], 90),
-  ]);
+  try {
+    const [topQueries, topPages, topCountries, byDay] = await Promise.all([
+      fetch(['query'], 50),
+      fetch(['page'], 50),
+      fetch(['country'], 25),
+      fetch(['date'], 90),
+    ]);
 
-  const totals = byDay.reduce(
-    (acc, r) => {
-      acc.clicks += r.clicks;
-      acc.impressions += r.impressions;
-      return acc;
-    },
-    { clicks: 0, impressions: 0, ctr: 0, position: 0 },
-  );
-  totals.ctr = totals.impressions > 0 ? totals.clicks / totals.impressions : 0;
-  totals.position = byDay.length > 0
-    ? byDay.reduce((a, r) => a + r.position, 0) / byDay.length
-    : 0;
+    const totals = byDay.reduce(
+      (acc, r) => {
+        acc.clicks += r.clicks;
+        acc.impressions += r.impressions;
+        return acc;
+      },
+      { clicks: 0, impressions: 0, ctr: 0, position: 0 },
+    );
+    totals.ctr = totals.impressions > 0 ? totals.clicks / totals.impressions : 0;
+    totals.position = byDay.length > 0
+      ? byDay.reduce((a, r) => a + r.position, 0) / byDay.length
+      : 0;
 
-  return {
-    site: GSC_SITE,
-    startDate: start,
-    endDate: end,
-    totals,
-    topQueries,
-    topPages,
-    topCountries,
-    byDay,
-  };
+    return {
+      ok: true,
+      report: {
+        site: resolved.siteUrl,
+        siteOrigin: resolved.origin,
+        startDate: start,
+        endDate: end,
+        totals,
+        topQueries,
+        topPages,
+        topCountries,
+        byDay,
+      },
+    };
+  } catch (err) {
+    return {
+      ok: false,
+      error: gscErrorMessage(err),
+      sites: resolved.allSites,
+    };
+  }
 }
 
 function clamp(n: number, lo: number, hi: number): number {

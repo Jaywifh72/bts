@@ -21,34 +21,23 @@ export default async function AdminSeoPage() {
     return <ConfigurePrompt />;
   }
 
-  // Use a wrapper that captures the underlying error so we can render it
-  // instead of swallowing into a generic message.
-  let report: Awaited<ReturnType<typeof fetchGscReport>> = null;
-  let fetchError: string | null = null;
-  try {
-    report = await fetchGscReport({ days: 28 });
-  } catch (err) {
-    fetchError = gscErrorMessage(err);
-    console.warn('[admin/seo] GSC fetch failed', err);
-  }
+  const result = await fetchGscReport({ days: 28 }).catch((err) => ({
+    ok: false as const,
+    error: gscErrorMessage(err),
+    sites: [],
+  }));
 
-  if (!report) {
-    // On error, run sites.list to show what the OAuth identity actually
-    // sees — almost always the issue is GSC_SITE_URL doesn't match any
-    // property the principal owns.
-    const sitesProbe = await listGscSites().catch((err) => ({
-      ok: false as const,
-      error: gscErrorMessage(err),
-    }));
-    const expectedSiteUrl = process.env.GSC_SITE_URL ?? 'sc-domain:cinecanon.com';
+  if (!result.ok) {
+    const configuredSite = (process.env.GSC_SITE_URL ?? '').trim() || '(unset — auto-discovery)';
     return <ErrorState
       mode={gscAuthMode()}
-      configuredSite={expectedSiteUrl}
-      fetchError={fetchError}
-      sitesProbe={sitesProbe}
+      configuredSite={configuredSite}
+      fetchError={result.error}
+      sitesProbe={{ ok: true, sites: result.sites }}
     />;
   }
 
+  const report = result.report;
   const t = report.totals;
   const days = report.byDay;
   const clicksSeries = days.map((d) => d.clicks);
@@ -67,7 +56,8 @@ export default async function AdminSeoPage() {
           </span>
         </div>
         <p className="mt-1 text-sm text-zinc-400">
-          Organic Google performance for <code className="text-amber-400">{report.site}</code> over the
+          Organic Google performance for <code className="text-amber-400">{report.site}</code>
+          {' '}<span className="text-[10px] text-zinc-600">({report.siteOrigin})</span> over the
           last <span className="text-zinc-200">{days.length} days</span>
           {' '}({report.startDate} → {report.endDate}).
           GSC has a 2–3 day data lag.
