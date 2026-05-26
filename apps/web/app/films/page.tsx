@@ -15,8 +15,14 @@ import { Pagination } from '@/components/ui/Pagination';
 import { PageHero } from '@/components/ui/PageHero';
 import { ViewToggle, parseView } from '@/components/ui/ViewToggle';
 import { CompareCheckbox, CompareDrawer } from '@/components/ui/Compare';
+import { JsonLd } from '@/lib/jsonLd';
+import { absoluteUrl, siteUrl } from '@/lib/site';
 
-export const metadata: Metadata = { title: 'Films' };
+export const metadata: Metadata = {
+  title: 'Films',
+  description: 'Browse cited, confidence-graded technical data for thousands of films — cameras, lenses, formats, aspect ratios, and crew, filterable by decade, genre, and studio.',
+  alternates: { canonical: '/films' },
+};
 
 // QA — revalidate hourly so search/filter result pages aren't dynamic
 // per visitor. Admin pages bypass this with their own dynamic exports.
@@ -106,8 +112,28 @@ export default async function FilmsPage(props: Props) {
   if (decades) csvParams.set('decade', decades.join(','));
   const csvHref = `/api/export/films.csv${csvParams.toString() ? `?${csvParams.toString()}` : ''}`;
 
+  const itemListJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'CollectionPage',
+    '@id': siteUrl() + '/films',
+    url: siteUrl() + '/films',
+    name: 'Films — CineCanon',
+    description: 'Browse cited, confidence-graded technical data for thousands of films.',
+    mainEntity: {
+      '@type': 'ItemList',
+      numberOfItems: total,
+      itemListElement: rows.slice(0, 20).map((r, i) => ({
+        '@type': 'ListItem',
+        position: (page - 1) * PAGE_SIZE + i + 1,
+        url: absoluteUrl(`/films/${r.slug}`),
+        name: r.title,
+      })),
+    },
+  };
+
   return (
     <>
+      <JsonLd data={itemListJsonLd} />
       <PageHero
         eyebrow="Archive"
         title="Films"

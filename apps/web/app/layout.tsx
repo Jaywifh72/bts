@@ -17,19 +17,19 @@ export const metadata: Metadata = {
     template: '%s | CineCanon',
     default: 'CineCanon — Cinematic Technical Reference',
   },
-  description: 'CineCanon is the cinematic technical reference for working camera-department professionals — cited, confidence-graded data on what every film was shot on, by whom, with what gear, lighting, color, sound, music, stunts, and VFX.',
+  description: 'Cited, confidence-graded technical data on every film — cameras, lenses, lighting, color, sound, music, stunts, and VFX — for working camera-department pros.',
   applicationName: 'CineCanon',
   openGraph: {
     type: 'website',
     siteName: 'CineCanon',
     locale: 'en_US',
     title: 'CineCanon — Cinematic Technical Reference',
-    description: 'CineCanon is the cinematic technical reference for working camera-department professionals — cited, confidence-graded data on what every film was shot on, by whom, with what gear, lighting, color, sound, music, stunts, and VFX.',
+    description: 'Cited, confidence-graded technical data on every film — cameras, lenses, lighting, color, sound, music, stunts, and VFX — for working camera-department pros.',
   },
   twitter: {
     card: 'summary_large_image',
     title: 'CineCanon — Cinematic Technical Reference',
-    description: 'CineCanon is the cinematic technical reference for working camera-department professionals — cited, confidence-graded data on what every film was shot on, by whom, with what gear, lighting, color, sound, music, stunts, and VFX.',
+    description: 'Cited, confidence-graded technical data on every film — cameras, lenses, lighting, color, sound, music, stunts, and VFX — for working camera-department pros.',
   },
   // T9-6: feed autodiscovery — readers like NetNewsWire or Feedly pick
   // this up automatically when the user enters the homepage URL.

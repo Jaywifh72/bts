@@ -79,18 +79,21 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   // truncates around 160. Cap at 155 on a sentence/word boundary so we
   // stop shipping bloated descriptions to AI summarizers.
   const description = truncateForMeta(production.synopsis, 155);
+  const titleWithYear = production.release_year
+    ? `${production.title} (${production.release_year}) — Cameras, Lenses & Crew`
+    : `${production.title} — Cameras, Lenses & Crew`;
   return {
-    title: production.title,
+    title: titleWithYear,
     description,
     openGraph: {
-      title: production.title,
+      title: titleWithYear,
       description,
       type: 'video.movie',
       ...(production.release_year ? { releaseDate: String(production.release_year) } : {}),
     },
     twitter: {
       card: 'summary_large_image',
-      title: production.title,
+      title: titleWithYear,
       description,
     },
     alternates: {

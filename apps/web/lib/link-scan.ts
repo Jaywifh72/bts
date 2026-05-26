@@ -30,7 +30,7 @@ export type LinkScanReport = {
 };
 
 const CONCURRENCY = 10;
-const MAX_LINKS = 500;
+const MAX_LINKS = 1500;
 
 export async function scanInternalLinks(opts: {
   paths?: ReadonlyArray<string>;

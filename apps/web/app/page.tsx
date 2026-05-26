@@ -17,9 +17,11 @@ import { ProductionCard } from '@/components/productions/ProductionCard';
 import { ShotOfTheDayCard } from '@/components/productions/ShotOfTheDayCard';
 import { formatRelativeTime } from '@/lib/format-time';
 import { safeAuth } from '@/lib/safe-auth';
+import { JsonLd } from '@/lib/jsonLd';
+import { siteUrl } from '@/lib/site';
 
 const HOMEPAGE_DESCRIPTION =
-  'CineCanon is the cinematic technical reference for working camera-department professionals — cited, confidence-graded data on what every film was shot on, by whom, with what gear, lighting, color, sound, music, stunts, and VFX.';
+  'The cinematic technical reference: cited, confidence-graded data on what every film was shot on — cameras, lenses, lighting, color, sound, stunts, and VFX.';
 
 export const metadata: Metadata = {
   title: 'CineCanon — Cinematic Technical Reference',
@@ -114,8 +116,24 @@ export default async function HomePage() {
     .filter((r) => !featuredSlugs.has(r.slug))
     .slice(0, 4);
 
+  const homeJsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'WebSite',
+    '@id': siteUrl() + '/',
+    url: siteUrl() + '/',
+    name: 'CineCanon',
+    description: HOMEPAGE_DESCRIPTION,
+    publisher: { '@type': 'Organization', name: 'CineCanon', url: siteUrl() + '/' },
+    potentialAction: {
+      '@type': 'SearchAction',
+      target: { '@type': 'EntryPoint', urlTemplate: `${siteUrl()}/ask?q={search_term_string}` },
+      'query-input': 'required name=search_term_string',
+    },
+  };
+
   return (
     <>
+      <JsonLd data={homeJsonLd} />
       {/* Hero — leads with the moat. */}
       <div className="mb-12 border-b border-zinc-800 pb-10">
         <p className="text-[11px] uppercase tracking-[0.25em] text-amber-500/80">

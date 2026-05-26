@@ -9,7 +9,11 @@ import { PageHero } from '@/components/ui/PageHero';
 import { ViewToggle, parseView } from '@/components/ui/ViewToggle';
 import { CompareCheckbox, CompareDrawer } from '@/components/ui/Compare';
 
-export const metadata: Metadata = { title: 'Crew' };
+export const metadata: Metadata = {
+  title: 'Crew',
+  description: 'Directors, cinematographers, editors, production designers, sound and VFX leads — searchable crew database with film credits and department filters.',
+  alternates: { canonical: '/crew' },
+};
 
 // QA — revalidate hourly. People rows are slow-moving; search/filter
 // permutations cache well.

@@ -3,7 +3,11 @@ import Link from 'next/link';
 import { db, listVfxHouses } from '@bts/db';
 import { PageHero, PageHeroStat } from '@/components/ui/PageHero';
 
-export const metadata: Metadata = { title: 'VFX Houses' };
+export const metadata: Metadata = {
+  title: 'VFX Houses',
+  description: 'Directory of visual-effects houses and their film credits — full-service, boutique, in-house, previs, and postvis facilities ranked by primary VFX work and shot counts.',
+  alternates: { canonical: '/vfx' },
+};
 
 // QA — VFX house roster is slow-moving; daily revalidate is right.
 export const revalidate = 86400;

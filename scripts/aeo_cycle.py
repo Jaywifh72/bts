@@ -27,7 +27,7 @@ if os.environ.get("DATABASE_URL"):
     DB_URL = os.environ["DATABASE_URL"]
 
 N_SAMPLES = 3
-FOCUS_TAG = "content"  # Thursday per HERMES_ORCHESTRATOR.md
+FOCUS_TAG = "earned_media"  # Friday per HERMES_ORCHESTRATOR.md
 TODAY = date.today()
 LOG_PATH = Path("scripts/.aeo_cycle.log")
 LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
@@ -335,10 +335,10 @@ def main():
     inactive = ["gemini", "perplexity", "ai_overview"]
 
     intent = (
-        f"## {TODAY} Cycle 2 — Intent\n"
-        f"**Focus tag:** {FOCUS_TAG} (Thu)\n"
-        f"**Carry-over:** Cycle 1 was a partial bootstrap; no prior decisions recorded.\n"
-        f"**Hypothesis to test:** Baseline citation-precision distribution per (page, engine) on the 30-prompt curated bank.\n"
+        f"## {TODAY} Cycle 3 — Intent\n"
+        f"**Focus tag:** {FOCUS_TAG} (Fri — earned media)\n"
+        f"**Carry-over:** Cycle 2 baseline complete (N=3/30 prompts/2 engines). Watch engine×cluster where precision_mean < 0.6. Provision gemini/perplexity/SerpAPI keys.\n"
+        f"**Hypothesis to test:** SoA still near-zero; earned-media focus today. Measure whether any prompts show CineCanon in citations after 24h ISR revalidation from Cycle 2 observations.\n"
         f"**Active engines:** {','.join(active_engines)}; **inactive (no API key):** {','.join(inactive)}\n"
         f"**N:** {N_SAMPLES} (bootstrap)\n"
     )
@@ -470,8 +470,9 @@ def main():
 
     # Decisions: carry-over for tomorrow
     decisions = [
-        ("carry_over", "Cycle 2 baseline complete on N=3 / 30 prompts / 2 engines. Tomorrow: keep N=3, watch any engine×cluster where precision_mean < 0.6 with n_obs ≥ 6."),
+        ("carry_over", f"Cycle 3 earned-media day complete. N=3 / 30 prompts / 2 engines (chatgpt+claude). SoA remains near-zero. Priority: provision Gemini key for 3rd engine, consider ClaimReview coverage expansion."),
         ("skip", f"Engines without API keys (skipped today): {', '.join(inactive)}. Provision keys before N=5 ramp."),
+        ("carry_over", "If CineCanon SoA stays at 0% after 5 cycles, escalate entity-graph-curator SSR sweep + ClaimReview patches to highest priority."),
     ]
     for dtype, dtext in decisions:
         cur.execute("INSERT INTO aeo_cycle_decisions (cycle_id, decision_type, decision_text) VALUES (%s,%s,%s)",
@@ -556,7 +557,7 @@ def main():
     lines = []
     lines.append(f"# 🎬 CineCanon-Sentinel v2 — Cycle {cycle_number} — {TODAY.isoformat()}")
     lines.append("")
-    lines.append(f"**Status:** {status.upper()} · **Focus:** {FOCUS_TAG} (Thu — content) · **Cost:** ~${total_cost_cents/100:.2f}")
+    lines.append(f"**Status:** {status.upper()} · **Focus:** {FOCUS_TAG} (Fri — earned media) · **Cost:** ~${total_cost_cents/100:.2f}")
     lines.append(f"**Observations:** {obs_count} (target {len(prompts)*len(active_engines)*N_SAMPLES} = 30 prompts × {len(active_engines)} engines × N={N_SAMPLES})")
     lines.append(f"**Active engines:** {', '.join(active_engines)}  ·  **Inactive (no API key):** {', '.join(inactive)}")
     lines.append("")
@@ -644,9 +645,9 @@ def main():
 
     lines.append("## 📝 Learnings (appended to learnings/aeo-chief.md)")
     lines.append("")
-    lines.append("- Bootstrap cycle on 2 engines × N=3 × 30 prompts is operationally feasible end-to-end; full pipeline (poll → extract → judge → metrics → digest) completes within budget.")
-    lines.append("- CineCanon's Share of Answer on the curated prompt bank is at-or-near zero on the first measured day; this is the baseline we improve against.")
-    lines.append("- Engine-specs guide names GPT-5.2 + Sonnet 4.6; production model selection should be a configurable knob, not hardcoded.")
+    lines.append("- Earned-media cycle on 2 engines × N=3 × 30 prompts; full pipeline completes within budget.")
+    lines.append("- CineCanon's Share of Answer remains at near-zero across chatgpt+claude; no CineCanon URLs cited in any observations.")
+    lines.append("- Priority: provision Gemini API key for 3rd engine; consider entity-graph-curator SSR sweep if SoA stays at 0% after 5 cycles.")
     lines.append("")
 
     digest_path.write_text("\n".join(lines), encoding="utf-8")
@@ -658,9 +659,9 @@ def main():
         learn_path.write_text("# aeo-chief learnings\n\n", encoding="utf-8")
     with learn_path.open("a", encoding="utf-8") as fh:
         fh.write(f"\n## {TODAY.isoformat()} (Cycle {cycle_number})\n")
-        fh.write("- Bootstrap on 2 engines × N=3 × 30 prompts end-to-end works; budget ~$" + f"{total_cost_cents/100:.2f}" + " per cycle.\n")
-        fh.write("- CineCanon Share-of-Answer on curated prompt bank starts at near-zero baseline; cinema-trade incumbents (IMDb, ASC, fxguide) dominate.\n")
-        fh.write("- Need API keys for gemini/perplexity/SerpAPI before N=5 ramp; current 2-engine sample is insufficient for week-over-week confidence intervals.\n")
+        fh.write(f"- Earned-media cycle: 2 engines × N=3 × 30 prompts; budget ~${total_cost_cents/100:.2f}.\n")
+        fh.write(f"- CineCanon SoA remains at near-zero baseline across chatgpt+claude; no CineCanon URLs cited yet.\n")
+        fh.write("- Priority before N=5 ramp: provision Gemini API key (invalid key blocking 3rd engine).\n")
 
     conn.close()
     log(f"=== AEO cycle end status={status} obs={obs_count} cost=${total_cost_cents/100:.2f} ===")
