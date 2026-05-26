@@ -224,6 +224,68 @@ function getClient(): searchconsole_v1.Searchconsole {
   throw new Error('GSC not configured');
 }
 
+// ---- URL Inspection -----------------------------------------------------
+
+export type UrlInspectionResult = {
+  ok: true;
+  inspectedUrl: string;
+  /** sc-domain:... or https://... — the property the call was made against */
+  inspectedSite: string;
+  /** Verdict on indexing: PASS | NEUTRAL | FAIL | PARTIAL */
+  verdict: string | null;
+  coverageState: string | null;
+  robotsTxtState: string | null;
+  indexingState: string | null;
+  lastCrawlTime: string | null;
+  crawledAs: string | null;
+  pageFetchState: string | null;
+  googleCanonical: string | null;
+  userCanonical: string | null;
+  /** Raw response — useful for debugging unexpected fields. */
+  raw: unknown;
+} | { ok: false; error: string };
+
+/**
+ * Calls Search Console's URL Inspection API for the given URL.
+ * Equivalent to clicking "Inspect URL" in the GSC web UI, returned as JSON.
+ *
+ * Auto-resolves the GSC property via the same path as fetchGscReport.
+ */
+export async function inspectUrl(targetUrl: string): Promise<UrlInspectionResult> {
+  if (!isGscConfigured()) return { ok: false, error: 'GSC not configured' };
+  const resolved = await resolveSiteUrl();
+  if (!resolved.ok) return { ok: false, error: resolved.error };
+
+  try {
+    const sc = getClient();
+    const res = await sc.urlInspection.index.inspect({
+      requestBody: {
+        inspectionUrl: targetUrl,
+        siteUrl: resolved.siteUrl,
+      },
+    });
+    const r = res.data.inspectionResult ?? {};
+    const idx = r.indexStatusResult ?? {};
+    return {
+      ok: true,
+      inspectedUrl: targetUrl,
+      inspectedSite: resolved.siteUrl,
+      verdict: idx.verdict ?? null,
+      coverageState: idx.coverageState ?? null,
+      robotsTxtState: idx.robotsTxtState ?? null,
+      indexingState: idx.indexingState ?? null,
+      lastCrawlTime: idx.lastCrawlTime ?? null,
+      crawledAs: idx.crawledAs ?? null,
+      pageFetchState: idx.pageFetchState ?? null,
+      googleCanonical: idx.googleCanonical ?? null,
+      userCanonical: idx.userCanonical ?? null,
+      raw: res.data,
+    };
+  } catch (err) {
+    return { ok: false, error: gscErrorMessage(err) };
+  }
+}
+
 export async function fetchGscReport(opts: { days?: number } = {}): Promise<
   { ok: true; report: GscReport } | { ok: false; error: string; sites: SiteEntry[] }
 > {

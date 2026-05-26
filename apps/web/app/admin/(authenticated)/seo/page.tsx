@@ -64,6 +64,12 @@ export default async function AdminSeoPage() {
               Run audit →
             </Link>
             <Link
+              href="/admin/seo/inspect"
+              className="rounded border border-amber-700/60 bg-amber-600/20 px-3 py-1 text-xs font-serif text-amber-300 hover:border-amber-500 hover:bg-amber-600/30"
+            >
+              Inspect URL →
+            </Link>
+            <Link
               href="/admin/seo/digest"
               className="rounded border border-amber-700/60 bg-amber-600/20 px-3 py-1 text-xs font-serif text-amber-300 hover:border-amber-500 hover:bg-amber-600/30"
             >
