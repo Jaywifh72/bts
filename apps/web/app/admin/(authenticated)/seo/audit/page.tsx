@@ -1,6 +1,17 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
-import { runAudit, type AuditReport, type OnPageResult, type CwvResult, type Severity, PRIORITY_PATHS } from '@/lib/seo-audit';
+import {
+  runAudit,
+  listAuditRuns,
+  getPreviousScores,
+  type AuditReport,
+  type AuditRunSummary,
+  type OnPageResult,
+  type CwvResult,
+  type Severity,
+  PRIORITY_PATHS,
+} from '@/lib/seo-audit';
+import { Sparkline } from '@/components/admin/Sparkline';
 
 export const metadata: Metadata = {
   title: 'SEO — Audit',
@@ -18,12 +29,22 @@ export default async function SeoAuditPage(props: Props) {
   const shouldRun = params.run === '1';
   const includeCwv = params.cwv !== '0';
 
-  let report: AuditReport | null = null;
+  let report: (AuditReport & { runId?: string }) | null = null;
   let runtimeMs = 0;
   if (shouldRun) {
     const t0 = Date.now();
     report = await runAudit({ includeCwv });
     runtimeMs = Date.now() - t0;
+  }
+
+  // Trend history regardless of whether we just ran an audit
+  const history = await listAuditRuns(20);
+  let previousScores = new Map<string, number>();
+  if (report?.runId) {
+    previousScores = await getPreviousScores(
+      report.onPage.map((p) => p.url),
+      report.runId,
+    );
   }
 
   return (
@@ -65,10 +86,15 @@ export default async function SeoAuditPage(props: Props) {
         </form>
       </section>
 
+      {history.length > 0 && <HistorySection history={history} />}
+
       {!report ? (
         <section className="rounded border border-zinc-800 bg-zinc-900/40 p-4 text-sm text-zinc-400">
           <p className="italic">
-            No audit run yet. Click <strong className="not-italic text-amber-400">Run audit</strong> above.
+            {history.length === 0
+              ? 'No audit run yet. '
+              : 'No audit run this session. '}
+            Click <strong className="not-italic text-amber-400">Run audit</strong> above to generate fresh results.
           </p>
           <p className="mt-2 text-xs">
             Priority pages audited:{' '}
@@ -81,15 +107,95 @@ export default async function SeoAuditPage(props: Props) {
           </p>
         </section>
       ) : (
-        <ReportView report={report} runtimeMs={runtimeMs} includeCwv={includeCwv} />
+        <ReportView
+          report={report}
+          runtimeMs={runtimeMs}
+          includeCwv={includeCwv}
+          previousScores={previousScores}
+        />
       )}
     </div>
   );
 }
 
+function HistorySection({ history }: { history: AuditRunSummary[] }) {
+  // History came back DESC; flip to ASC for the sparkline so left-to-right = oldest → newest.
+  const asc = [...history].reverse();
+  const scores = asc.map((r) => r.avgScore);
+  const labels = asc.map((r) => r.ranAt.slice(0, 16));
+  const latest = history[0]!;
+  const prev = history[1];
+  const delta = prev ? latest.avgScore - prev.avgScore : 0;
+  const deltaSign = delta > 0 ? '+' : delta < 0 ? '' : '±';
+
+  return (
+    <section className="rounded border border-zinc-800 bg-zinc-900/40 p-4">
+      <div className="flex flex-wrap items-baseline justify-between gap-4">
+        <div>
+          <h2 className="text-[10px] uppercase tracking-widest text-zinc-500">Trend · last {history.length} runs</h2>
+          <p className="mt-2 font-serif text-2xl text-zinc-50">
+            Latest avg score{' '}
+            <span style={{ color: latest.avgScore >= 90 ? '#34d399' : latest.avgScore >= 70 ? '#f59e0b' : '#ef4444' }}>
+              {latest.avgScore}/100
+            </span>
+            {prev && (
+              <span className="ml-2 font-sans text-sm" style={{ color: delta > 0 ? '#34d399' : delta < 0 ? '#ef4444' : '#9b9b9b' }}>
+                {deltaSign}{delta} vs prior
+              </span>
+            )}
+          </p>
+          <p className="text-xs text-zinc-500">Run at {new Date(latest.ranAt).toLocaleString()}</p>
+        </div>
+        <Sparkline
+          values={scores}
+          labels={labels}
+          ariaLabel="Average audit score"
+          width={280}
+          height={42}
+          color="#f59e0b"
+        />
+      </div>
+      <details className="mt-3 text-xs">
+        <summary className="cursor-pointer text-zinc-500 hover:text-amber-400">Show table of recent runs</summary>
+        <table className="mt-2 w-full">
+          <thead className="border-b border-zinc-800 text-[10px] uppercase tracking-widest text-zinc-500">
+            <tr>
+              <th className="px-2 py-1 text-left font-normal">Ran at</th>
+              <th className="px-2 py-1 text-right font-normal">Pages</th>
+              <th className="px-2 py-1 text-right font-normal">Score</th>
+              <th className="px-2 py-1 text-right font-normal">OK</th>
+              <th className="px-2 py-1 text-right font-normal">Warn</th>
+              <th className="px-2 py-1 text-right font-normal">Fail</th>
+            </tr>
+          </thead>
+          <tbody className="text-zinc-300">
+            {history.map((r) => (
+              <tr key={r.id} className="border-b border-zinc-900 last:border-0">
+                <td className="px-2 py-1 font-mono">{r.ranAt.slice(0, 16).replace('T', ' ')}</td>
+                <td className="px-2 py-1 text-right font-mono">{r.pagesCount}</td>
+                <td className="px-2 py-1 text-right font-mono font-bold">{r.avgScore}</td>
+                <td className="px-2 py-1 text-right font-mono text-emerald-400">{r.okCount}</td>
+                <td className="px-2 py-1 text-right font-mono text-amber-400">{r.warnCount}</td>
+                <td className="px-2 py-1 text-right font-mono text-red-400">{r.failCount}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </details>
+    </section>
+  );
+}
+
 // =========================================================================
 
-function ReportView({ report, runtimeMs, includeCwv }: { report: AuditReport; runtimeMs: number; includeCwv: boolean }) {
+function ReportView({
+  report, runtimeMs, includeCwv, previousScores,
+}: {
+  report: AuditReport;
+  runtimeMs: number;
+  includeCwv: boolean;
+  previousScores: Map<string, number>;
+}) {
   const { summary, onPage, cwv } = report;
   return (
     <>
@@ -133,7 +239,8 @@ function ReportView({ report, runtimeMs, includeCwv }: { report: AuditReport; ru
         <ul className="space-y-3">
           {onPage.map((p) => {
             const c = cwv.find((x) => x.url === p.url);
-            return <PageCard key={p.url} page={p} cwv={c} includeCwv={includeCwv} />;
+            const prev = previousScores.get(p.url);
+            return <PageCard key={p.url} page={p} cwv={c} includeCwv={includeCwv} previousScore={prev} />;
           })}
         </ul>
       </section>
@@ -163,8 +270,16 @@ function Stat({ label, value, color }: { label: string; value: number; color: st
   );
 }
 
-function PageCard({ page, cwv, includeCwv }: { page: OnPageResult; cwv?: CwvResult; includeCwv: boolean }) {
+function PageCard({
+  page, cwv, includeCwv, previousScore,
+}: {
+  page: OnPageResult;
+  cwv?: CwvResult;
+  includeCwv: boolean;
+  previousScore?: number;
+}) {
   const path = pathOf(page.url);
+  const delta = previousScore != null ? page.score - previousScore : null;
   return (
     <li className={`rounded border ${cardBorder(page.worst)} bg-zinc-900/40 p-4`}>
       <div className="flex flex-wrap items-baseline justify-between gap-3">
@@ -180,6 +295,15 @@ function PageCard({ page, cwv, includeCwv }: { page: OnPageResult; cwv?: CwvResu
         <div className="flex items-center gap-4 text-xs">
           <span className="text-zinc-500">
             score <span className="font-mono text-zinc-200">{page.score}</span>
+            {delta != null && delta !== 0 && (
+              <span
+                className="ml-1 font-mono"
+                style={{ color: delta > 0 ? '#34d399' : '#ef4444' }}
+                title={`Previous score: ${previousScore}`}
+              >
+                ({delta > 0 ? '+' : ''}{delta})
+              </span>
+            )}
           </span>
           {includeCwv && cwv && <CwvBadges cwv={cwv} />}
         </div>

@@ -17,6 +17,7 @@
 // hand-written HTML but our pages are Next.js rendered with predictable shape.
 
 import { siteUrl } from './site';
+import { db, sql } from '@bts/db';
 
 // ---- Types ---------------------------------------------------------------
 
@@ -113,7 +114,9 @@ export const PRIORITY_PATHS: ReadonlyArray<string> = [
 export async function runAudit(opts: {
   paths?: ReadonlyArray<string>;
   includeCwv?: boolean;
-} = {}): Promise<AuditReport> {
+  /** If true (default), persist the run to seo_audit_runs + seo_audit_page_results. */
+  persist?: boolean;
+} = {}): Promise<AuditReport & { runId?: string }> {
   const paths = opts.paths ?? PRIORITY_PATHS;
   const includeCwv = opts.includeCwv ?? true;
   const base = siteUrl();
@@ -142,7 +145,7 @@ export async function runAudit(opts: {
   const cwvGoodCount = cwv.filter((c) => c.ok && isCwvGood(c)).length;
   const cwvPoorCount = cwv.filter((c) => c.ok && isCwvPoor(c)).length;
 
-  return {
+  const report: AuditReport = {
     ranAt: new Date().toISOString(),
     onPage,
     cwv,
@@ -151,6 +154,123 @@ export async function runAudit(opts: {
       cwvGoodCount, cwvPoorCount,
     },
   };
+
+  // Persist (default true; disable for tests by passing persist: false)
+  if (opts.persist !== false) {
+    try {
+      const runId = await persistAuditRun(report, includeCwv);
+      return { ...report, runId };
+    } catch (err) {
+      console.warn('[seo-audit] persist failed (continuing anyway)', err);
+    }
+  }
+  return report;
+}
+
+// ---- Persistence ---------------------------------------------------------
+
+async function persistAuditRun(report: AuditReport, includeCwv: boolean): Promise<string> {
+  const ranMs = report.onPage.reduce(
+    (a, p) => Math.max(a, Date.parse(p.fetchedAt) - Date.parse(report.ranAt)),
+    0,
+  );
+  const headerRows = await db.execute<{ id: string }>(sql`
+    INSERT INTO seo_audit_runs (
+      ran_at, runtime_ms, include_cwv, pages_count, ok_count, warn_count, fail_count, avg_score
+    ) VALUES (
+      ${report.ranAt}::timestamptz,
+      ${Math.max(0, ranMs)},
+      ${includeCwv},
+      ${report.onPage.length},
+      ${report.summary.okPages},
+      ${report.summary.warnPages},
+      ${report.summary.failPages},
+      ${report.summary.averageScore}
+    )
+    RETURNING id::text
+  `);
+  const runId = headerRows[0]!.id;
+
+  // Insert per-page rows in a single batched VALUES list (avoids N round-trips)
+  if (report.onPage.length > 0) {
+    for (const p of report.onPage) {
+      const c = report.cwv.find((x) => x.url === p.url) ?? null;
+      await db.execute(sql`
+        INSERT INTO seo_audit_page_results (
+          run_id, url, http_status, worst, score, signals, issues, cwv, fetched_at
+        ) VALUES (
+          ${runId}::uuid,
+          ${p.url},
+          ${p.status},
+          ${p.worst},
+          ${p.score},
+          ${JSON.stringify(p.signals)}::jsonb,
+          ${JSON.stringify(p.issues)}::jsonb,
+          ${c ? JSON.stringify(c) : null}::jsonb,
+          ${p.fetchedAt}::timestamptz
+        )
+      `);
+    }
+  }
+  return runId;
+}
+
+// ---- History queries -----------------------------------------------------
+
+export type AuditRunSummary = {
+  id: string;
+  ranAt: string;
+  pagesCount: number;
+  okCount: number;
+  warnCount: number;
+  failCount: number;
+  avgScore: number;
+};
+
+/** Most recent N runs, newest first. */
+export async function listAuditRuns(limit = 10): Promise<AuditRunSummary[]> {
+  const rows = await db.execute<{
+    id: string;
+    ran_at: string;
+    pages_count: number;
+    ok_count: number;
+    warn_count: number;
+    fail_count: number;
+    avg_score: number;
+  }>(sql`
+    SELECT id::text, ran_at::text, pages_count, ok_count, warn_count, fail_count, avg_score
+    FROM seo_audit_runs
+    ORDER BY ran_at DESC
+    LIMIT ${limit}
+  `);
+  return rows.map((r) => ({
+    id: r.id,
+    ranAt: r.ran_at,
+    pagesCount: r.pages_count,
+    okCount: r.ok_count,
+    warnCount: r.warn_count,
+    failCount: r.fail_count,
+    avgScore: r.avg_score,
+  }));
+}
+
+/**
+ * For each URL, return the most recent prior score (before the given runId).
+ * Used to show ↑/↓ deltas on the per-page cards.
+ */
+export async function getPreviousScores(
+  urls: ReadonlyArray<string>,
+  excludeRunId: string,
+): Promise<Map<string, number>> {
+  if (urls.length === 0) return new Map();
+  const rows = await db.execute<{ url: string; score: number }>(sql`
+    SELECT DISTINCT ON (url) url, score
+    FROM seo_audit_page_results
+    WHERE url = ANY(${urls as string[]}::text[])
+      AND run_id != ${excludeRunId}::uuid
+    ORDER BY url, fetched_at DESC
+  `);
+  return new Map(rows.map((r) => [r.url, r.score]));
 }
 
 // ---- On-page audit ------------------------------------------------------
