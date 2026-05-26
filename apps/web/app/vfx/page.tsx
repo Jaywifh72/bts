@@ -7,7 +7,7 @@ import { absoluteUrl } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'VFX Houses — Studios, Boutique & In-House Facilities',
-  description: 'Directory of visual-effects houses and their film credits — full-service, boutique, in-house, previs, and postvis facilities ranked by primary VFX work and shot counts.',
+  description: 'Visual-effects houses and their film credits — full-service, boutique, in-house, previs and postvis facilities ranked by primary work.',
   alternates: { canonical: '/vfx' },
 };
 
