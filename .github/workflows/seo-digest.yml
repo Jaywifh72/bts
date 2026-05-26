@@ -1,0 +1,98 @@
+name: SEO/AEO weekly digest
+
+# Hits the production digest endpoint, opens a GitHub issue with the
+# markdown body. GitHub fires email notifications to subscribers of the
+# `seo-digest` label, so this is the "email delivery" path without any
+# external email service.
+#
+# Required secrets:
+#   DIGEST_AUTH_TOKEN  — shared with the matching Vercel env var
+#
+# Optional:
+#   RESEND_API_KEY     — uncomment the Resend block below to also send a
+#                        real email. Pairs with DIGEST_TO_EMAIL.
+#   DIGEST_TO_EMAIL    — recipient address for Resend.
+
+on:
+  schedule:
+    # 14:00 UTC every Monday = 10:00 ET in DST, well after the morning AEO cycle.
+    - cron: '0 14 * * 1'
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Print the digest but do not open a GitHub issue.'
+        required: false
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+  issues: write
+
+concurrency:
+  group: seo-digest
+  cancel-in-progress: false
+
+jobs:
+  digest:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Fetch markdown from prod
+        id: fetch
+        env:
+          DIGEST_AUTH_TOKEN: ${{ secrets.DIGEST_AUTH_TOKEN }}
+        run: |
+          set -e
+          if [ -z "$DIGEST_AUTH_TOKEN" ]; then
+            echo "::error::DIGEST_AUTH_TOKEN secret is not set in this repo"
+            exit 1
+          fi
+          curl -sS --fail \
+            -H "Authorization: Bearer $DIGEST_AUTH_TOKEN" \
+            "https://www.cinecanon.com/api/admin/digest?format=markdown" \
+            -o digest.md
+          echo "size=$(wc -c < digest.md)"
+          # Save first 60 chars of the H1 line as the title suffix
+          TITLE=$(head -1 digest.md | sed 's/^# //' | cut -c1-80)
+          echo "title=$TITLE" >> "$GITHUB_OUTPUT"
+
+      - name: Show first 40 lines (workflow log)
+        run: head -40 digest.md
+
+      - name: Open GitHub issue (email-equivalent via GH notifications)
+        if: ${{ !inputs.dry_run }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const fs = require('fs');
+            const body = fs.readFileSync('digest.md', 'utf-8');
+            const title = `📊 SEO/AEO digest — ${new Date().toISOString().slice(0, 10)}`;
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title,
+              body,
+              labels: ['seo-digest', 'ops'],
+            });
+            console.log('Opened weekly digest issue.');
+
+      # ---- Optional: real email via Resend ---------------------------------
+      # Uncomment when RESEND_API_KEY + DIGEST_TO_EMAIL are configured.
+      # Free tier: 3000/mo, plenty for weekly.
+      # - name: Send via Resend
+      #   if: ${{ secrets.RESEND_API_KEY != '' && !inputs.dry_run }}
+      #   env:
+      #     RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+      #     DIGEST_TO_EMAIL: ${{ secrets.DIGEST_TO_EMAIL }}
+      #   run: |
+      #     BODY=$(cat digest.md | jq -Rs .)
+      #     curl -sS --fail https://api.resend.com/emails \
+      #       -H "Authorization: Bearer $RESEND_API_KEY" \
+      #       -H "Content-Type: application/json" \
+      #       -d "{
+      #         \"from\": \"digest@cinecanon.com\",
+      #         \"to\": \"$DIGEST_TO_EMAIL\",
+      #         \"subject\": \"📊 SEO/AEO digest — $(date +%Y-%m-%d)\",
+      #         \"text\": $BODY
+      #       }"
