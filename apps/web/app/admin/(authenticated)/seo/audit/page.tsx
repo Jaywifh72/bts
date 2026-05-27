@@ -20,7 +20,7 @@ export const metadata: Metadata = {
 
 // Audits are heavy. Force dynamic + long timeout.
 export const dynamic = 'force-dynamic';
-export const maxDuration = 60;
+export const maxDuration = 300;
 
 type Props = { searchParams: Promise<{ run?: string; cwv?: string }> };
 

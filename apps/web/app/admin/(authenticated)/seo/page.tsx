@@ -58,7 +58,7 @@ export default async function AdminSeoPage() {
           <h1 className="font-serif text-3xl text-zinc-50">SEO — Google Search Console</h1>
           <div className="flex items-baseline gap-3">
             <Link
-              href="/admin/seo/audit?run=1"
+              href="/admin/seo/audit?run=1&cwv=0"
               className="rounded border border-amber-700/60 bg-amber-600/20 px-3 py-1 text-xs font-serif text-amber-300 hover:border-amber-500 hover:bg-amber-600/30"
             >
               Run audit →
