@@ -41,6 +41,22 @@ const config = {
     // Components that need this set `unoptimized` on the Image.
     dangerouslyAllowSVG: false,
   },
+  // Security headers (gets Lighthouse Best-Practices to 100 and reduces
+  // common XSS / clickjacking / sniffing risk). HSTS is already set by
+  // Vercel automatically; the rest are added here.
+  async headers() {
+    return [
+      {
+        source: '/(.*)',
+        headers: [
+          { key: 'X-Content-Type-Options', value: 'nosniff' },
+          { key: 'X-Frame-Options', value: 'SAMEORIGIN' },
+          { key: 'Referrer-Policy', value: 'strict-origin-when-cross-origin' },
+          { key: 'Permissions-Policy', value: 'camera=(), microphone=(), geolocation=(), browsing-topics=()' },
+        ],
+      },
+    ];
+  },
 };
 
 export default config;

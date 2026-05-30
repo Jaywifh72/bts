@@ -55,9 +55,24 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   if (!person) return {};
   // E-39 — oEmbed autodiscovery (matches the films/[slug] pattern).
   const pageUrl = `/crew/${person.slug}`;
+
+  // SEO — thin-content gate. ~12k crew pages exist (TMDb-imported), most
+  // with no biography and a tiny credit count. Google's Helpful Content
+  // classifier treats this as "scaled content abuse" and dilutes the
+  // domain. Noindex any page that doesn't yet meet the editorial bar.
+  //
+  // Rule: index when EITHER a hand-written biography exists OR the person
+  // has accumulated meaningful credits (≥3 filmography rows). Follow stays
+  // true so internal links continue to flow PageRank to richer pages.
+  const filmography = await getPersonFilmography(db, params.slug).catch(() => []);
+  const hasBio = !!person.biography && person.biography.trim().length >= 80;
+  const hasCredits = filmography.length >= 3;
+  const isIndexable = hasBio || hasCredits;
+
   return {
     title: person.display_name,
     description: person.biography ?? undefined,
+    robots: isIndexable ? undefined : { index: false, follow: true },
     openGraph: {
       title: person.display_name,
       description: person.biography ?? undefined,
