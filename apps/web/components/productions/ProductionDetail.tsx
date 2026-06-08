@@ -1,8 +1,17 @@
 import Link from 'next/link';
 import Image from 'next/image';
+import dynamic from 'next/dynamic';
 import { getProductionWithFullDetail, getProductionVfxData } from '@bts/db';
 import type { ClaimRow, ClaimSourceRow, EvidenceItem, VideoTimestampAnnotation, getProductionVideos } from '@bts/db';
-import { VideoGallery } from './VideoGallery';
+
+// SEO QC 2026-06-08 — VideoGallery is the only sizable client component
+// on /films/[slug] (284 lines + useState + memo). Defer its hydration so
+// it doesn't compete with the LCP element for main-thread time during
+// page load. The server still renders the section markup; just the JS
+// payload arrives after the page is interactive.
+const VideoGallery = dynamic(() => import('./VideoGallery').then((m) => ({ default: m.VideoGallery })), {
+  loading: () => <div className="rounded border border-zinc-800 bg-zinc-900/40 p-6 text-sm text-zinc-500 italic">Loading videos…</div>,
+});
 import { FormatBadge } from './FormatBadge';
 // MediaGallery is intentionally not imported here — the call site below was
 // passing backdropPaths={[]} which always rendered null. Wiring the real
