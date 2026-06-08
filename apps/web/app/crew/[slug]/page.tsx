@@ -31,7 +31,7 @@ import { PersonAvatar } from '@/components/people/PersonAvatar';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { EntityProvenanceFooter } from '@/components/ui/EntityProvenanceFooter';
 import { EntityClaimsList } from '@/components/ui/EntityClaimsList';
-import { JsonLd, buildPersonJsonLd } from '@/lib/jsonLd';
+import { JsonLd, buildPersonJsonLd, buildBreadcrumbJsonLd } from '@/lib/jsonLd';
 import { profileUrl, posterUrl } from '@/lib/tmdb-image';
 import { pickPrimaryRole } from '@/lib/primary-role';
 import { orgLabel } from '@/lib/award-labels';
@@ -62,11 +62,17 @@ export async function generateMetadata(props: Props): Promise<Metadata> {
   // domain. Noindex any page that doesn't yet meet the editorial bar.
   //
   // Rule: index when EITHER a hand-written biography exists OR the person
-  // has accumulated meaningful credits (≥3 filmography rows). Follow stays
+  // has accumulated meaningful credits (≥8 filmography rows). Follow stays
   // true so internal links continue to flow PageRank to richer pages.
+  //
+  // SEO QC 2026-06-08 — raised threshold from 3 → 8 after a random
+  // sample showed ~50% of TMDb crew pages were still slipping past the
+  // gate (3-7 minor credits + no bio remained indexable). The Helpful
+  // Content classifier rewards depth, not count — a 5-credit grip with
+  // no bio isn't depth.
   const filmography = await getPersonFilmography(db, params.slug).catch(() => []);
   const hasBio = !!person.biography && person.biography.trim().length >= 80;
-  const hasCredits = filmography.length >= 3;
+  const hasCredits = filmography.length >= 8;
   const isIndexable = hasBio || hasCredits;
 
   return {
@@ -181,9 +187,19 @@ export default async function CrewDetailPage(props: Props) {
     })),
   });
 
+  // SEO QC 2026-06-08 — emit BreadcrumbList alongside Person so Google
+  // SERP can render crew detail pages with the "Crew › Name" trail. Films
+  // already have this; crew was missing it.
+  const breadcrumbJsonLd = buildBreadcrumbJsonLd([
+    { name: 'Home', path: '/' },
+    { name: 'Crew', path: '/crew' },
+    { name: person.display_name, path: `/crew/${person.slug}` },
+  ]);
+
   return (
     <>
       <JsonLd data={jsonLd} />
+      <JsonLd data={breadcrumbJsonLd} />
       <article>
         <header className="mb-8 flex gap-5">
           <PersonAvatar
