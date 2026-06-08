@@ -20,7 +20,7 @@ import {
   getDoublingHistoryForActor,
 
   getStuntPersonReel,
-  getClaimsBundleForEntity,
+  getClaimsBundleForPerson,
 } from '@bts/db';
 import { FilmographyTable } from '@/components/people/FilmographyTable';
 import { EquipmentUsedTable } from '@/components/people/EquipmentUsedTable';
@@ -117,7 +117,7 @@ export default async function CrewDetailPage(props: Props) {
   } catch { /* table missing */ }
   if (!person) notFound();
   // F2 — fetch the polymorphic claims bundle for this person.
-  const claimsBundle = await getClaimsBundleForEntity(db, 'person', person.id, person.slug);
+  const claimsBundle = await getClaimsBundleForPerson(db, person.id, person.slug);
 
   // Resolve stunt-section relations for the stunt block. Only triggers
   // a roundtrip when at least one of the slug arrays is populated.
