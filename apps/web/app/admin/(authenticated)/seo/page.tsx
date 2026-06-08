@@ -21,11 +21,16 @@ export default async function AdminSeoPage() {
     return <ConfigurePrompt />;
   }
 
-  const result = await fetchGscReport({ days: 28 }).catch((err) => ({
-    ok: false as const,
-    error: gscErrorMessage(err),
-    sites: [],
-  }));
+  // Defensive: catch ANYTHING fetchGscReport throws — including non-Error
+  // shapes that googleapis sometimes hands back (token expiry, quota,
+  // network blips). The page must never 500 out.
+  let result: Awaited<ReturnType<typeof fetchGscReport>>;
+  try {
+    result = await fetchGscReport({ days: 28 });
+  } catch (err) {
+    console.error('[admin/seo] fetchGscReport threw', err);
+    result = { ok: false, error: gscErrorMessage(err), sites: [] };
+  }
 
   if (!result.ok) {
     const configuredSite = (process.env.GSC_SITE_URL ?? '').trim() || '(unset — auto-discovery)';
@@ -37,19 +42,25 @@ export default async function AdminSeoPage() {
     />;
   }
 
+  // Defensive: handle missing fields on the report shape. The GSC API
+  // very occasionally returns partial responses (quota throttling sends
+  // 200 with empty bodies). Default to safe empties rather than crashing.
   const report = result.report;
-  const t = report.totals;
-  const days = report.byDay;
+  const t = report.totals ?? { clicks: 0, impressions: 0, ctr: 0, position: 0 };
+  const days = report.byDay ?? [];
+  const topQueries = report.topQueries ?? [];
+  const topPages = report.topPages ?? [];
+  const topCountries = report.topCountries ?? [];
   // The actual query window in days, not the count of returned rows.
-  const windowDays = Math.round(
-    (Date.parse(report.endDate) - Date.parse(report.startDate)) / (24 * 3600 * 1000),
-  );
+  const windowDays = Math.max(0, Math.round(
+    (Date.parse(report.endDate ?? '') - Date.parse(report.startDate ?? '')) / (24 * 3600 * 1000),
+  )) || 28;
   const hasAnyData = t.clicks > 0 || t.impressions > 0 || days.length > 0;
-  const clicksSeries = days.map((d) => d.clicks);
-  const imprSeries = days.map((d) => d.impressions);
-  const ctrSeries = days.map((d) => d.ctr * 100);
-  const posSeries = days.map((d) => d.position);
-  const dateLabels = days.map((d) => d.keys[0] ?? '');
+  const clicksSeries = days.map((d) => d.clicks ?? 0);
+  const imprSeries = days.map((d) => d.impressions ?? 0);
+  const ctrSeries = days.map((d) => (d.ctr ?? 0) * 100);
+  const posSeries = days.map((d) => d.position ?? 0);
+  const dateLabels = days.map((d) => d.keys?.[0] ?? '');
 
   return (
     <div className="space-y-8">
@@ -191,14 +202,14 @@ export default async function AdminSeoPage() {
       <RowTable
         title="Top queries"
         subtitle="What people are searching that surfaces CineCanon"
-        rows={report.topQueries}
+        rows={topQueries}
         keyLabel="Query"
       />
 
       <RowTable
         title="Top landing pages"
         subtitle="Which URLs Google sent the traffic to"
-        rows={report.topPages}
+        rows={topPages}
         keyLabel="URL"
         linkKey
       />
@@ -206,7 +217,7 @@ export default async function AdminSeoPage() {
       <RowTable
         title="Top countries"
         subtitle="Where the search audience is"
-        rows={report.topCountries}
+        rows={topCountries}
         keyLabel="Country"
       />
     </div>
