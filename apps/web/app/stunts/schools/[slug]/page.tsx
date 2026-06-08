@@ -7,7 +7,7 @@ import { BrandLogo } from '@/components/ui/BrandLogo';
 import { BookmarkButton } from '@/components/ui/BookmarkButton';
 import { EntityProvenanceFooter } from '@/components/ui/EntityProvenanceFooter';
 import { EntityClaimsList } from '@/components/ui/EntityClaimsList';
-import { getClaimsBundleForEntity } from '@bts/db';
+import { getClaimsBundleForStuntSchool } from '@bts/db';
 import { JsonLd, buildOrganizationJsonLd } from '@/lib/jsonLd';
 
 interface Props { params: Promise<{ slug: string }> }
@@ -42,7 +42,7 @@ export default async function StuntSchoolPage(props: Props) {
   if (!s) notFound();
 
   // F2 — polymorphic claims. StuntSchoolRow doesn't carry id.
-  const claimsBundle = await getClaimsBundleForEntity(db, 'stunt_school', 0, s.slug);
+  const claimsBundle = await getClaimsBundleForStuntSchool(db, s.slug);
 
   const jsonLd = buildOrganizationJsonLd({
     slug: `stunt-school-${s.slug}`,

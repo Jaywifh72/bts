@@ -8,7 +8,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { BookmarkButton } from '@/components/ui/BookmarkButton';
 import { EntityProvenanceFooter } from '@/components/ui/EntityProvenanceFooter';
 import { EntityClaimsList } from '@/components/ui/EntityClaimsList';
-import { getClaimsBundleForEntity } from '@bts/db';
+import { getClaimsBundleForFormat } from '@bts/db';
 import { JsonLd, buildBreadcrumbJsonLd } from '@/lib/jsonLd';
 import { posterUrl } from '@/lib/tmdb-image';
 
@@ -41,7 +41,7 @@ export default async function FormatPage(props: Props) {
   const [productions, claimsBundle] = await Promise.all([
     listProductionsByFormatPatterns(db, fmt.patterns),
     // F2 — format entities are slug-keyed (no row id); pass 0 and match on entity_slug.
-    getClaimsBundleForEntity(db, 'format', 0, fmt.slug),
+    getClaimsBundleForFormat(db, fmt.slug),
   ]);
 
   const breadcrumbJsonLd = buildBreadcrumbJsonLd([

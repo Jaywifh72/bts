@@ -5,7 +5,7 @@ import {
   db,
   getPartnershipBySlug,
   listJointFilmography,
-  getClaimsBundleForEntity,
+  getClaimsBundleForPartnership,
 } from '@bts/db';
 import { PageHero, PageHeroStat } from '@/components/ui/PageHero';
 import {
@@ -51,9 +51,7 @@ export default async function PartnershipDetailPage(
 
   // Phase 2 follow-up — ClaimReview emission keyed on the partnership
   // entity (migration 0093). Reuses the same status/confidence rubric.
-  const { claims, sourcesByClaimId } = await getClaimsBundleForEntity(
-    db, 'partnership', p.id, p.slug,
-  );
+  const { claims, sourcesByClaimId } = await getClaimsBundleForPartnership(db, p.id, p.slug);
   const claimReviewJsonLds = claims
     .slice(0, 12)
     .filter((c) => shouldEmitClaimReview(c.status, c.confidence))

@@ -4,7 +4,7 @@ import { notFound } from 'next/navigation';
 import {
   db,
   getDecisionTreeBySlug,
-  getClaimsBundleForEntity,
+  getClaimsBundleForDecisionTree,
 } from '@bts/db';
 import { PageHero } from '@/components/ui/PageHero';
 import {
@@ -44,9 +44,7 @@ export default async function DecisionDetailPage(
 
   // Phase 2 follow-up — ClaimReview emission keyed on the decision_tree
   // entity (migration 0093). Reuses the same status/confidence rubric.
-  const { claims, sourcesByClaimId } = await getClaimsBundleForEntity(
-    db, 'decision_tree', t.id, t.slug,
-  );
+  const { claims, sourcesByClaimId } = await getClaimsBundleForDecisionTree(db, t.id, t.slug);
   const claimReviewJsonLds = claims
     .slice(0, 12)
     .filter((c) => shouldEmitClaimReview(c.status, c.confidence))

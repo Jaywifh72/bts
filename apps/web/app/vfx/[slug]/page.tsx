@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import { notFound } from 'next/navigation';
 import Link from 'next/link';
 import Image from 'next/image';
-import { db, listVfxHouses, getVfxHouseWithFilmography, getAwardsForVfxHouse, getClaimsBundleForEntity } from '@bts/db';
+import { db, listVfxHouses, getVfxHouseWithFilmography, getAwardsForVfxHouse, getClaimsBundleForVfxHouse } from '@bts/db';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { Badge } from '@/components/ui/Badge';
 import { BookmarkButton } from '@/components/ui/BookmarkButton';
@@ -48,7 +48,7 @@ export default async function VfxHousePage(props: Props) {
   ]);
   if (!data) notFound();
   const { house, filmography, techniques, offices, highlights } = data;
-  const claimsBundle = await getClaimsBundleForEntity(db, 'vfx_house', house.id, house.slug);
+  const claimsBundle = await getClaimsBundleForVfxHouse(db, house.id, house.slug);
 
   const totalShots = house.total_shots != null ? Math.round(house.total_shots) : null;
 

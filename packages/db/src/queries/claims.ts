@@ -351,6 +351,42 @@ export async function getClaimsBundleForEntity(
   return { claims, sourcesByClaimId, evidenceByClaimId };
 }
 
+// ---------------------------------------------------------------------------
+// Per-entity-type wrappers for getClaimsBundleForEntity.
+//
+// These are PURELY ADDITIVE — they delegate to the polymorphic version above.
+// Call sites get stronger types (you can't pass `'persn'` by mistake), a
+// shorter signature, and a self-documenting name. The polymorphic function
+// stays the canonical implementation for any future entity types.
+//
+// graphify audit 2026-05-29 traced 8 call sites — these wrappers replace the
+// `getClaimsBundleForEntity(db, 'x', id, slug)` pattern at each one.
+// ---------------------------------------------------------------------------
+
+export const getClaimsBundleForPerson = (db: SeedDb, id: number, slug?: string) =>
+  getClaimsBundleForEntity(db, 'person', id, slug);
+
+export const getClaimsBundleForVfxHouse = (db: SeedDb, id: number, slug?: string) =>
+  getClaimsBundleForEntity(db, 'vfx_house', id, slug);
+
+export const getClaimsBundleForStuntCompany = (db: SeedDb, slug: string) =>
+  getClaimsBundleForEntity(db, 'stunt_company', 0, slug);
+
+export const getClaimsBundleForStuntSchool = (db: SeedDb, slug: string) =>
+  getClaimsBundleForEntity(db, 'stunt_school', 0, slug);
+
+export const getClaimsBundleForSociety = (db: SeedDb, slug: string) =>
+  getClaimsBundleForEntity(db, 'society', 0, slug);
+
+export const getClaimsBundleForFormat = (db: SeedDb, slug: string) =>
+  getClaimsBundleForEntity(db, 'format', 0, slug);
+
+export const getClaimsBundleForDecisionTree = (db: SeedDb, id: number, slug?: string) =>
+  getClaimsBundleForEntity(db, 'decision_tree', id, slug);
+
+export const getClaimsBundleForPartnership = (db: SeedDb, id: number, slug?: string) =>
+  getClaimsBundleForEntity(db, 'partnership', id, slug);
+
 export async function getClaimSources(
   db: SeedDb = defaultDb,
   claimId: number,

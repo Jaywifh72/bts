@@ -9,6 +9,7 @@ import {
   listCompanyMembers,
   listCompanyProductions,
   getAwardsForStuntCompany,
+  getClaimsBundleForStuntCompany,
 } from '@bts/db';
 import { SectionHeader } from '@/components/ui/SectionHeader';
 import { BrandLogo } from '@/components/ui/BrandLogo';
@@ -54,7 +55,7 @@ export default async function StuntCompanyPage(props: Props) {
 
   // F2 — polymorphic claims. The StuntCompanyRow doesn't include id, so
   // we pass 0 and rely on the entity_slug fallback in claim_entities.
-  const claimsBundle = await getClaimsBundleForEntity(db, 'stunt_company', 0, c.slug);
+  const claimsBundle = await getClaimsBundleForStuntCompany(db, c.slug);
 
   // Phase-8 — pull members + productions in parallel with the
   // existing company fetch so the page renders in one DB roundtrip

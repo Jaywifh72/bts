@@ -6,7 +6,7 @@ import { SectionHeader } from '@/components/ui/SectionHeader';
 import { BookmarkButton } from '@/components/ui/BookmarkButton';
 import { EntityProvenanceFooter } from '@/components/ui/EntityProvenanceFooter';
 import { EntityClaimsList } from '@/components/ui/EntityClaimsList';
-import { getClaimsBundleForEntity } from '@bts/db';
+import { getClaimsBundleForSociety } from '@bts/db';
 import { departmentLabel } from '@/lib/department-labels';
 
 interface Props { params: Promise<{ slug: string }> }
@@ -39,7 +39,7 @@ export default async function SocietyDetailPage(props: Props) {
   if (!data) notFound();
   const { society, members } = data;
   // F2 — societies are slug-keyed.
-  const claimsBundle = await getClaimsBundleForEntity(db, 'society', 0, society.slug);
+  const claimsBundle = await getClaimsBundleForSociety(db, society.slug);
 
   // Group members by their primary department (taken as the first
   // alphabetically — cinematographers virtually all have `camera`, so
