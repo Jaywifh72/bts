@@ -58,6 +58,10 @@ type MovieInput = {
   directors?: { name: string; slug: string }[];
   posterUrl?: string | null;
   tmdbId?: number | null;
+  /** IMDb title id, e.g. "tt9620288" — used for sameAs. */
+  imdbId?: string | null;
+  /** Wikidata QID, e.g. "Q63185189" — used for sameAs. */
+  wikidataId?: string | null;
   /** TMDb vote average (0-10) for AggregateRating. */
   voteAverage?: number | null;
   voteCount?: number | null;
@@ -73,10 +77,21 @@ type MovieInput = {
   contributors?: { name: string; slug: string; role: string }[];
   /** Citations from `sources` joined via attributions.production_id. */
   citations?: { title: string | null; url: string; publisher?: string | null }[];
+  /** ISO-8601 timestamp of last editorial review (Schema.org dateModified). */
+  dateModified?: string | null;
 };
 
 export function buildMovieJsonLd(m: MovieInput): JsonLdObject {
   const url = absoluteUrl(`/films/${m.slug}`);
+  // SEO QC 2026-06-08 — build sameAs from every available external ID.
+  // Previously only TMDb was emitted; this denied AI engines + Google the
+  // entity-disambiguation signal that the same Movie has known canonical
+  // identifiers in IMDb / Wikidata / TMDb. Matches the Person-builder
+  // pattern at lines 180-194.
+  const sameAs: string[] = [];
+  if (m.imdbId) sameAs.push(`https://www.imdb.com/title/${m.imdbId}/`);
+  if (m.tmdbId) sameAs.push(`https://www.themoviedb.org/movie/${m.tmdbId}`);
+  if (m.wikidataId) sameAs.push(`https://www.wikidata.org/wiki/${m.wikidataId}`);
   return {
     '@context': 'https://schema.org',
     '@type': 'Movie',
@@ -86,6 +101,7 @@ export function buildMovieJsonLd(m: MovieInput): JsonLdObject {
     alternateName: m.originalTitle ?? undefined,
     description: m.synopsis ?? undefined,
     datePublished: m.releaseYear ? String(m.releaseYear) : undefined,
+    dateModified: m.dateModified ?? undefined,
     // Falls back to undefined when no poster. Per-detail-page OG image
     // generation is deferred (see commit message for details); the
     // site-level og:image set via root layout still applies.
@@ -98,7 +114,7 @@ export function buildMovieJsonLd(m: MovieInput): JsonLdObject {
             url: absoluteUrl(`/crew/${d.slug}`),
           }))
         : undefined,
-    sameAs: m.tmdbId ? [`https://www.themoviedb.org/movie/${m.tmdbId}`] : undefined,
+    sameAs: sameAs.length > 0 ? sameAs : undefined,
     genre: m.genres && m.genres.length > 0 ? m.genres : undefined,
     duration: m.runtime ? `PT${m.runtime}M` : undefined, // ISO-8601 duration
     // T6-3: AggregateRating from TMDb's vote_average. ratingCount required by spec.
