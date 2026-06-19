@@ -2,6 +2,8 @@ import type { Metadata } from 'next';
 import Link from 'next/link';
 import { db, listManufacturers, getGearArchiveStats } from '@bts/db';
 import { PageHero, PageHeroStat } from '@/components/ui/PageHero';
+import { JsonLd } from '@/lib/jsonLd';
+import { siteUrl } from '@/lib/site';
 
 export const metadata: Metadata = {
   title: 'Gear',
@@ -44,6 +46,16 @@ export default async function GearPage() {
 
   return (
     <>
+      <JsonLd
+        data={{
+          '@context': 'https://schema.org',
+          '@type': 'CollectionPage',
+          name: 'Gear Database — CineCanon',
+          description:
+            'Browse cameras, lenses, lighting, filters, and rental houses with filmography credits and curated specs.',
+          url: siteUrl() + '/gear',
+        }}
+      />
       <PageHero
         eyebrow="Archive"
         title="Gear"

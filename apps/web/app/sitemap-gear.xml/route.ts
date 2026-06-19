@@ -7,7 +7,11 @@ export const revalidate = 3600;
 
 export async function GET() {
   const base = siteUrl();
-  const now = new Date().toISOString();
+  // H6 fix (SEO audit 2026-06-18): omit lastmod rather than emit a fake "now"
+  // timestamp. Google trusts lastmod when it's real; a dynamic timestamp
+  // degrades that trust. Films sitemap already uses real per-entity lastmod
+  // via listProductionLastmods — gear/vfx DB queries don't expose updated_at
+  // yet, so omitting is more honest than lying.
   const [manufacturers, gearPaths] = await Promise.all([
     listManufacturers(db),
     listAllGearPaths(db),
@@ -19,19 +23,16 @@ export async function GET() {
   const entries: SitemapEntry[] = [
     ...manufacturers.map((m) => ({
       loc: `${base}/gear/${m.slug}`,
-      lastmod: now,
       changefreq: 'monthly' as const,
       priority: 0.6,
     })),
     ...[...seriesPaths].map((path) => ({
       loc: `${base}/gear/${path}`,
-      lastmod: now,
       changefreq: 'monthly' as const,
       priority: 0.6,
     })),
     ...gearPaths.map((g) => ({
       loc: `${base}/gear/${g.manufacturer_slug}/${g.series_slug}/${g.item_slug}`,
-      lastmod: now,
       changefreq: 'monthly' as const,
       priority: 0.5,
     })),
