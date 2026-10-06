@@ -9,7 +9,7 @@ name: AEO cycle (daily)
 # Required secrets:
 #   DATABASE_URL          — Neon pooler URL (already set, used by migrate.yml)
 #   OPENAI_API_KEY        — already set
-#   ANTHROPIC_API_KEY     — set
+#   ANTHROPIC_API_KEY     — not passed: Claude as a measured engine is opt-in (AEO_MEASURE_CLAUDE=1), no Anthropic API outside Claude Code
 #   GOOGLE_AI_API_KEY     — set (free-tier quota may 429; throttle handles it)
 #   FIRECRAWL_API_KEY     — set (covers the 'ai_overview' engine slot)
 #
@@ -67,7 +67,6 @@ jobs:
         env:
           DATABASE_URL: ${{ secrets.DATABASE_URL }}
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
           GOOGLE_AI_API_KEY: ${{ secrets.GOOGLE_AI_API_KEY }}
           FIRECRAWL_API_KEY: ${{ secrets.FIRECRAWL_API_KEY }}
           AEO_SAMPLES_PER_PROMPT: ${{ inputs.samples_per_prompt || '2' }}
