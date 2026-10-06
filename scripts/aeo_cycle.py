@@ -1,11 +1,14 @@
 """CineCanon-Sentinel AEO daily cycle orchestrator.
 
-Polls ChatGPT + Claude (Gemini skipped — no API key set) for each active
+Polls ChatGPT (and, only with AEO_MEASURE_CLAUDE=1, Claude as a *measured engine*) for each active
 prompt in aeo_prompts, N=3 samples per (prompt, engine). Extracts citations,
-judges each with Claude Haiku, aggregates daily metrics, writes digest.
+judges each with an OpenAI model (JUDGE_MODEL), aggregates daily metrics, writes digest.
+
+Jay 2026-10-06: no Anthropic API use outside Claude Code. The judge is OpenAI; querying Claude to measure
+CineCanon's visibility *in Claude* is opt-in (AEO_MEASURE_CLAUDE=1 + ANTHROPIC_API_KEY), off by default.
 
 Run:  python scripts/aeo_cycle.py
-Env required: ANTHROPIC_API_KEY, OPENAI_API_KEY
+Env required: OPENAI_API_KEY (ANTHROPIC_API_KEY only with AEO_MEASURE_CLAUDE=1)
 """
 from __future__ import annotations
 import os, sys, json, re, time, uuid, traceback, urllib.parse
@@ -35,7 +38,8 @@ LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
 # Models — try newer, fall back
 OAI_ENGINE_MODEL = "gpt-4o"          # ChatGPT engine sample
 CLAUDE_ENGINE_MODEL = "claude-sonnet-4-5"
-JUDGE_MODEL = "claude-haiku-4-5"
+JUDGE_MODEL = os.environ.get("AEO_JUDGE_MODEL", "gpt-6-luna")   # OpenAI (was claude-haiku-4-5)
+MEASURE_CLAUDE = os.environ.get("AEO_MEASURE_CLAUDE") == "1" and bool(ANTHROPIC_KEY)
 # Approx cost per call in cents (rough — for budget tracking)
 COST_OAI = 2          # $0.02
 COST_CLAUDE = 1.5     # $0.015
@@ -251,7 +255,7 @@ def domain_of(url: str) -> str:
 
 # ---------------- judge ----------------
 def judge_citations(prompt: str, response_text: str, citations: list[dict]) -> list[dict]:
-    """Batch-judge all citations for one observation via Claude Haiku.
+    """Batch-judge all citations for one observation via an OpenAI model (JUDGE_MODEL).
     Returns list of dicts: {url, judge_score 0|1|2, rationale}.
     score 2 = fully supports the answer's relevant claim,
     score 1 = partially supports / plausible source,
@@ -259,7 +263,7 @@ def judge_citations(prompt: str, response_text: str, citations: list[dict]) -> l
     """
     if not citations:
         return []
-    url = "https://api.anthropic.com/v1/messages"
+    url = "https://api.openai.com/v1/chat/completions"
     cit_lines = "\n".join(f"{i+1}. {c['url']}" for i, c in enumerate(citations))
     judge_prompt = f"""You are evaluating citation precision for an AI search response.
 
@@ -282,17 +286,17 @@ Return STRICT JSON only, no prose, on one line:
 """
     payload = {
         "model": JUDGE_MODEL,
-        "max_tokens": 800,
+        "max_completion_tokens": 800,
         "messages": [{"role": "user", "content": judge_prompt}],
     }
-    headers = {"x-api-key": ANTHROPIC_KEY, "anthropic-version": "2023-06-01", "content-type": "application/json"}
+    headers = {"Authorization": f"Bearer {OPENAI_KEY}", "content-type": "application/json"}
     try:
         r = requests.post(url, headers=headers, json=payload, timeout=60)
         if r.status_code != 200:
             log(f"  judge http {r.status_code}: {r.text[:200]}")
             return [{"url": c["url"], "judge_score": None, "rationale": f"judge_err_{r.status_code}"} for c in citations]
         data = r.json()
-        txt = "".join(b.get("text","") for b in data.get("content", []) if b.get("type")=="text")
+        txt = (data.get("choices") or [{}])[0].get("message", {}).get("content") or ""
         m = re.search(r"\{.*\}", txt, re.DOTALL)
         if not m:
             return [{"url": c["url"], "judge_score": None, "rationale": "no_json"} for c in citations]
@@ -313,8 +317,6 @@ Return STRICT JSON only, no prose, on one line:
 # ---------------- main cycle ----------------
 def main():
     log(f"=== AEO cycle start {TODAY} focus={FOCUS_TAG} ===")
-    if not ANTHROPIC_KEY:
-        log("FATAL: ANTHROPIC_API_KEY not set"); sys.exit(1)
     if not OPENAI_KEY:
         log("FATAL: OPENAI_API_KEY not set"); sys.exit(1)
 
@@ -331,7 +333,7 @@ def main():
     engines = {r["code"]: r["id"] for r in cur.fetchall()}
     log(f"loaded {len(prompts)} prompts, engines: {list(engines)}")
 
-    active_engines = ["chatgpt", "claude"]  # gemini/perplexity/ai_overview keys not configured
+    active_engines = ["chatgpt"] + (["claude"] if MEASURE_CLAUDE else [])  # claude: opt-in measured engine only
     inactive = ["gemini", "perplexity", "ai_overview"]
 
     intent = (

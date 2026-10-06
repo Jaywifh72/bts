@@ -3,7 +3,8 @@ import { db, sql } from '@bts/db';
 
 /**
  * E-50 — newsletter LLM-write helper. Pulls the week's curatorial
- * deltas from the database, feeds them to Anthropic's claude-haiku-4-5
+ * deltas from the database, feeds them to an OpenAI model (NEWSLETTER_MODEL,
+ * default gpt-6-sol; was Anthropic Haiku until 2026-10-06 — no Anthropic API outside Claude Code)
  * with a strict template, and returns:
  *   1. Markdown newsletter copy (intro + sections)
  *   2. Bluesky thread (split into 280-char posts)
@@ -11,12 +12,12 @@ import { db, sql } from '@bts/db';
  * Editor reviews + ships — we don't auto-publish here. Pairs with
  * E-40 (social:post) for a curated-film cadence.
  *
- * Without ANTHROPIC_API_KEY, the helper still computes the audit
+ * Without OPENAI_API_KEY, the helper still computes the audit
  * feed and prints it; the LLM call is skipped.
  */
 
-const ANTHROPIC_BASE = 'https://api.anthropic.com/v1/messages';
-const MODEL = 'claude-haiku-4-5-20251001';
+const OPENAI_BASE = 'https://api.openai.com/v1/chat/completions';
+const MODEL = process.env.NEWSLETTER_MODEL ?? 'gpt-6-sol';
 
 type AuditDelta = {
   newCurated: Array<{ slug: string; title: string; year: number | null; verified_at: string }>;
@@ -173,33 +174,31 @@ export async function draftNewsletter(opts: { sinceDays?: number; dryRun?: boole
     return { newsletter_md: '', bluesky_thread: '', delta, audit_summary };
   }
 
-  const key = process.env.ANTHROPIC_API_KEY;
+  const key = process.env.OPENAI_API_KEY;
   if (!key) {
-    console.warn('ANTHROPIC_API_KEY not set — returning audit summary only');
+    console.warn('OPENAI_API_KEY not set — returning audit summary only');
     return { newsletter_md: '', bluesky_thread: '', delta, audit_summary };
   }
 
-  const res = await fetch(ANTHROPIC_BASE, {
+  const res = await fetch(OPENAI_BASE, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'x-api-key': key,
-      'anthropic-version': '2023-06-01',
-    },
+    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
     body: JSON.stringify({
       model: MODEL,
-      max_tokens: 2048,
-      system: SYSTEM_PROMPT,
-      messages: [{ role: 'user', content: audit_summary }],
+      max_completion_tokens: 2048,
+      messages: [
+        { role: 'system', content: SYSTEM_PROMPT },
+        { role: 'user', content: audit_summary },
+      ],
     }),
   });
   if (!res.ok) {
-    throw new Error(`Anthropic ${res.status}: ${(await res.text()).slice(0, 300)}`);
+    throw new Error(`OpenAI ${res.status}: ${(await res.text()).slice(0, 300)}`);
   }
-  const json = (await res.json()) as { content: Array<{ type: string; text: string }> };
-  const text = json.content.find((c) => c.type === 'text')?.text ?? '';
+  const json = (await res.json()) as { choices: Array<{ message: { content: string | null } }> };
+  const text = json.choices?.[0]?.message?.content ?? '';
 
-  // Try to parse the JSON envelope; if Haiku wrapped it in markdown
+  // Try to parse the JSON envelope; if the model wrapped it in markdown
   // fences, strip them.
   const cleaned = text.replace(/^```(?:json)?\s*/i, '').replace(/\s*```\s*$/i, '');
   let parsed: { newsletter_md: string; bluesky_thread: string };

@@ -16,7 +16,8 @@
 // Env:
 //   DATABASE_URL          — required (Neon pooler URL in prod)
 //   OPENAI_API_KEY        — optional; absence skips chatgpt
-//   ANTHROPIC_API_KEY     — optional; absence skips claude
+//   AEO_MEASURE_CLAUDE=1 + ANTHROPIC_API_KEY — opt-in only: poll Claude as a *measured* answer engine.
+//                           Off by default (Jay 2026-10-06: no Anthropic API use outside Claude Code).
 //   GOOGLE_AI_API_KEY     — optional; absence skips gemini
 //   AEO_SAMPLES_PER_PROMPT (default 3)
 //   DRY_RUN=1             — count what would run, no API calls or writes
@@ -32,7 +33,7 @@ type EngineCode = 'chatgpt' | 'claude' | 'gemini' | 'perplexity' | 'ai_overview'
 
 const ENGINES: Array<{ code: EngineCode; envKey: string; key: string | undefined }> = [
   { code: 'chatgpt',     envKey: 'OPENAI_API_KEY',    key: process.env.OPENAI_API_KEY },
-  { code: 'claude',      envKey: 'ANTHROPIC_API_KEY', key: process.env.ANTHROPIC_API_KEY },
+  { code: 'claude',      envKey: 'ANTHROPIC_API_KEY', key: process.env.AEO_MEASURE_CLAUDE === '1' ? process.env.ANTHROPIC_API_KEY : undefined },
   { code: 'gemini',      envKey: 'GOOGLE_AI_API_KEY', key: process.env.GOOGLE_AI_API_KEY },
   // 'ai_overview' is the aeo_engines row we use for Firecrawl-via-Google
   // search results. Firecrawl /v1/search returns the top organic SERP
@@ -45,7 +46,7 @@ const activeEngines = ENGINES.filter((e) => e.key);
 console.log(`[i] active engines: ${activeEngines.map((e) => e.code).join(', ') || '(none)'} `
   + `| samples per (prompt × engine): ${SAMPLES}`);
 if (activeEngines.length === 0) {
-  console.error('[!] no engine keys present — set at least OPENAI_API_KEY / ANTHROPIC_API_KEY / GOOGLE_AI_API_KEY');
+  console.error('[!] no engine keys present — set at least OPENAI_API_KEY / GOOGLE_AI_API_KEY / FIRECRAWL_API_KEY');
   process.exit(1);
 }
 
