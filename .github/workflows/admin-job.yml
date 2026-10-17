@@ -43,7 +43,7 @@ jobs:
     # backfill:claims) can be 60+. Cap at 90 to avoid runaway.
     timeout-minutes: 90
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
         with:
           version: 10.33.2

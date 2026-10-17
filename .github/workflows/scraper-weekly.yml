@@ -37,7 +37,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
         with:
           version: 10.33.2
@@ -59,7 +59,7 @@ jobs:
     timeout-minutes: 20
     needs: tmdb-enrich  # serial so we don't double-tap Neon
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
         with:
           version: 10.33.2
@@ -86,7 +86,7 @@ jobs:
     timeout-minutes: 20
     needs: discover-videos
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
       - uses: pnpm/action-setup@v6
         with:
           version: 10.33.2
