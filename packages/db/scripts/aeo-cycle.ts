@@ -36,7 +36,7 @@ const ENGINES: Array<{ code: EngineCode; envKey: string; key: string | undefined
   { code: 'claude',      envKey: 'ANTHROPIC_API_KEY', key: process.env.AEO_MEASURE_CLAUDE === '1' ? process.env.ANTHROPIC_API_KEY : undefined },
   { code: 'gemini',      envKey: 'GOOGLE_AI_API_KEY', key: process.env.GOOGLE_AI_API_KEY },
   // 'ai_overview' is the aeo_engines row we use for Firecrawl-via-Google
-  // search results. Firecrawl /v1/search returns the top organic SERP
+  // search results. Firecrawl /v2/search returns the top organic SERP
   // results — a reasonable proxy for "what Google's index surfaces" since
   // SerpAPI's actual AI Overview panel is paid-only.
   { code: 'ai_overview', envKey: 'FIRECRAWL_API_KEY', key: process.env.FIRECRAWL_API_KEY },
@@ -483,11 +483,11 @@ async function pollGemini(key: string, prompt: string): Promise<PollResult> {
 }
 
 async function pollFirecrawl(key: string, prompt: string): Promise<PollResult> {
-  // Firecrawl /v1/search returns top-N organic Google results for the query.
+  // Firecrawl /v2/search returns top-N organic Google results for the query.
   // We treat each result URL as a "citation" — what Google's index surfaces
   // for this working-pro question, which is the input AI Overviews draw from.
   // Pricing: ~1 credit per search (~$0.001 on standard plan).
-  const res = await fetch('https://api.firecrawl.dev/v1/search', {
+  const res = await fetch('https://api.firecrawl.dev/v2/search', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${key}` },
     body: JSON.stringify({ query: prompt, limit: 10 }),
@@ -495,9 +495,10 @@ async function pollFirecrawl(key: string, prompt: string): Promise<PollResult> {
   if (!res.ok) throw new Error(`Firecrawl ${res.status}: ${(await res.text()).slice(0, 200)}`);
   const json = (await res.json()) as {
     success?: boolean;
-    data?: Array<{ url?: string; title?: string; description?: string }>;
+    // v2 groups results by source; web results live under data.web (v1 returned them under data).
+    data?: { web?: Array<{ url?: string; title?: string; description?: string }> };
   };
-  const results = json.data ?? [];
+  const results = json.data?.web ?? [];
   // Synthesize a response_text from titles + descriptions so the row is
   // useful for downstream judge-LLM scoring later (when we add it).
   const responseText = results
