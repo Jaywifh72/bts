@@ -36,8 +36,19 @@ jobs:
             echo "::group::$label"
             echo "URL: $url"
             local body code
-            body=$(curl -sL -o /tmp/body -w "%{http_code}" "$url")
-            code=$?
+            # Retry transient throttling / upstream errors (429, 502-504) with
+            # backoff so a momentary rate limit doesn't fail the whole smoke run.
+            local attempt delay=5
+            for attempt in 1 2 3 4; do
+              body=$(curl -sL -A "bts-smoke/1.0 (+github-actions)" -o /tmp/body -w "%{http_code}" "$url")
+              code=$?
+              if [ "$code" -eq 0 ] && ! [[ "$body" =~ ^(429|502|503|504)$ ]]; then
+                break
+              fi
+              echo "attempt $attempt: curl exit $code, HTTP $body; retrying in ${delay}s"
+              sleep "$delay"
+              delay=$((delay * 2))
+            done
             local httpcode=$body
             if [ "$code" -ne 0 ]; then
               echo "::error::curl failed for $label (exit $code)"
@@ -61,6 +72,7 @@ jobs:
             fi
             echo "✓ $label OK"
             echo "::endgroup::"
+            sleep 2  # space out requests to stay under the rate limit
           }
 
           check "API root"        "https://www.cinecanon.com/api/v1"                          '"name":"CineCanon API"'
